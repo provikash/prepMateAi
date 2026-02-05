@@ -1,0 +1,12 @@
+Django
+djangorestframework
+python-dotenv
+
+# Authentication (for next step – JWT)
+djangorestframework-simplejwt
+
+# CORS (for Flutter / frontend)
+django-cors-headers
+
+# Database (optional – for production later)
+psycopg2-binary
