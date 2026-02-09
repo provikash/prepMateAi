@@ -21,6 +21,6 @@ class LoginView(APIView):
     username =request.data.get("username")
     password = request.data.get("password")
     user =authenticate(username=username,password=password)
-    if user :
-      return Response({"message":"Login successful","user_id"=user.id,"username"=user.username"})
-      return Response ()
+    if user:
+      return Response({"message":"Login successful","user_id":user.id,"username":user.username})
+    return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)

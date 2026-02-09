@@ -131,3 +131,10 @@ REST_FRAMEWORK ={
 }
 
 AUTH_USER_MODEL ='users.User'
+
+EMAIL_BACKEND= 'django.core.mail.backend.smtp.EmailBackend'
+EMAIL_HOST='smtp.gmail.com'
+Email_PORT=587
+EMAIL_USE_TLS=True
+Email_HOST_USER='vkchaurasiyatrade@myyahoo.com'
+EMAIL_HOST_PASSWORD='Vikash@8081'
