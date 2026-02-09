@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 """
 Django settings for core project.
 
@@ -25,7 +27,7 @@ SECRET_KEY = 'django-insecure-y7x-w2#^(9(d%u6-a69&t06aa6-&m&q+hcsrn#86w5uzin9t4)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -131,3 +133,14 @@ REST_FRAMEWORK ={
 }
 
 AUTH_USER_MODEL ='users.User'
+SIMPLE_JWT ={
+  'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+  'REFRESH_TOKEN_LIFETIME': timedelta(days=1)
+}
+
+EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST='smtp.gmail.com'
+Email_PORT=587
+EMAIL_USE_TLS=True
+Email_HOST_USER='vkchaurasiyatrade@myyahoo.com'
+EMAIL_HOST_PASSWORD='Vikash@8081'
