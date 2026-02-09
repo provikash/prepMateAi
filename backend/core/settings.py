@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 """
 Django settings for core project.
 
@@ -131,8 +133,12 @@ REST_FRAMEWORK ={
 }
 
 AUTH_USER_MODEL ='users.User'
+SIMPLE_JWT ={
+  'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+  'REFRESH_TOKEN_LIFETIME': timedelta(days=1)
+}
 
-EMAIL_BACKEND= 'django.core.mail.backend.smtp.EmailBackend'
+EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST='smtp.gmail.com'
 Email_PORT=587
 EMAIL_USE_TLS=True
