@@ -1,4 +1,3 @@
-from rest_framework.compat import re
 from rest_framework.views import APIView
 from rest_framework.response import Response 
 from rest_framework import status
@@ -24,3 +23,15 @@ class LoginView(APIView):
     if user:
       return Response({"message":"Login successful","user_id":user.id,"username":user.username})
     return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+class VerifyOTPView(APIView):
+    def post(self, request):
+        return Response({"message": "Endpoint under construction"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+class ForgetPasswordView(APIView):
+    def post(self, request):
+        return Response({"message": "Endpoint under construction"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+class ResetPasswordView(APIView):
+    def post(self, request):
+        return Response({"message": "Endpoint under construction"}, status=status.HTTP_501_NOT_IMPLEMENTED)
