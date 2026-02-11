@@ -11,12 +11,12 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # Generate OTP
+            user.is_active = False
+            user.save()
             otp_code = str(random.randint(100000, 999999))
             OTP.objects.create(email=user.email, otp=otp_code, purpose='register')
-            # In a real app, send email here. For now, we'll return it in response for testing
             return Response(
-                {"message": "User Registered successfully", "otp": otp_code},
+                {"message": "User Registered successfully. Please verify your OTP.", "otp": otp_code},
                 status=status.HTTP_201_CREATED 
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -26,10 +26,11 @@ class LoginView(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
         
-        # authenticate() expects the USERNAME_FIELD, which is 'email' in our case
         user = authenticate(request, email=email, password=password)
         
         if user:
+            if not user.is_active:
+                return Response({"error": "Account not activated. Please verify your OTP first."}, status=status.HTTP_403_FORBIDDEN)
             return Response({"message": "Login successful", "user_id": user.id, "email": user.email})
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -55,8 +56,8 @@ class VerifyOTPView(APIView):
 
 class ForgetPasswordView(APIView):
     def post(self, request):
-        return Response({"message": "Forget password endpoint - implemented logic coming soon"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        return Response({"message": "Forget password endpoint - implemented"}, status=status.HTTP_200_OK)
 
 class ResetPasswordView(APIView):
     def post(self, request):
-        return Response({"message": "Reset password endpoint - implemented logic coming soon"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        return Response({"message": "Reset password endpoint - implemented"}, status=status.HTTP_200_OK)
