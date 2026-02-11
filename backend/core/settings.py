@@ -1,4 +1,6 @@
 from datetime import timedelta
+from pathlib import Path
+import os
 
 """
 Django settings for core project.
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'users',
+    
 ]
 
 MIDDLEWARE = [
@@ -128,19 +131,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK ={
     'DEFAULT_AUTHENTICATION_CLASSES' :(
-        'rest_framework.authentication.SessionAuthentication',
-    )
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        
+        
+    ),
+    'DEFAULT_PERMISSION_CLASSES':(
+     'rest_framework.permissions.AllowAny',
+    ),
 }
 
 AUTH_USER_MODEL ='users.User'
 SIMPLE_JWT ={
   'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-  'REFRESH_TOKEN_LIFETIME': timedelta(days=1)
+  'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFREASH_TOKENS':True,
+    'BLACKLIST_AFTER_ROTATION':True,
+    'UPDATE_LAST_LOGIN':True,
+    'AUTH_HEADER_TYPES':('Bearer',),
 }
 
 EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST='smtp.gmail.com'
-Email_PORT=587
-EMAIL_USE_TLS=True
-Email_HOST_USER='vkchaurasiyatrade@myyahoo.com'
-EMAIL_HOST_PASSWORD='Vikash@8081'
+#EMAIL_HOST='smtp.gmail.com'
+#Email_PORT=587
+#EMAIL_USE_TLS=True
+#Email_HOST_USER='vkchaurasiyatrade@myyahoo.com'
+#EMAIL_HOST_PASSWORD='Vikash@8081'
