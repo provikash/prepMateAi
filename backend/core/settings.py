@@ -31,6 +31,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://d42766e5-fef3-4ab6-bed4-32d7ec32972c-00-2uqqnijv241bq.sisko.replit.dev',
+    'https://*.replit.dev',
+    'https://*.repl.co',
+]
+
 
 # Application definition
 
