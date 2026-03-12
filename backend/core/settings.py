@@ -42,8 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'users',
-    
 ]
 
 MIDDLEWARE = [
@@ -150,9 +150,4 @@ SIMPLE_JWT ={
     'AUTH_HEADER_TYPES':('Bearer',),
 }
 
-EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'
-#EMAIL_HOST='smtp.gmail.com'
-#Email_PORT=587
-#EMAIL_USE_TLS=True
-#Email_HOST_USER='vkchaurasiyatrade@myyahoo.com'
-#EMAIL_HOST_PASSWORD='Vikash@8081'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
