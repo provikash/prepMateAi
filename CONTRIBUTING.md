@@ -22,7 +22,7 @@ You can contribute in many ways:
 
 Clone the repository
 
-git clone https://github.com/yourusername/smartresume-ai.git
+git clone https://github.com/provikash/prepMateAi.git
 
 Backend Setup
 
