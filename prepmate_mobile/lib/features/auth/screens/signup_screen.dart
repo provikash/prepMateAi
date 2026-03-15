@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/core/widgets/app_input_field.dart';
 import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
 import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
@@ -92,93 +93,122 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
                 const SizedBox(height: 40.0),
                 //Full_Name
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    hintText: 'Tony Stark',
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                  validator:(value){
-                    if(value == null || value.trim().isEmpty){
-                      return 'Please enter your full name';
-                    }
-                    return null;
-                  },
-                ),
+                // TextFormField(
+                //   controller: _nameController,
+                //   decoration: const InputDecoration(
+                //     labelText: 'Full Name',
+                //     hintText: 'Tony Stark',
+                //   ),
+                //   textCapitalization: TextCapitalization.words,
+                //   validator:(value){
+                //     if(value == null || value.trim().isEmpty){
+                //       return 'Please enter your full name';
+                //     }
+                //     return null;
+                //   },
+                // ),
+
+                AppInputField(controller: _nameController, label: 'Full Name', hint: 'Tony Stark',
+                validator: (value){
+                      if(value == null || value.trim().isEmpty){
+                        return 'Please enter your full name';
+                      }
+                      return null;
+                    },),
                 const SizedBox(height: 24.0),
                 //Email
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'tony@exampe.com',
-                  ),
+                // TextFormField(
+                //   controller: _emailController,
+                //   decoration: const InputDecoration(
+                //     labelText: 'Email',
+                //     hintText: 'tony@exampe.com',
+                //   ),
+                //
+                //   keyboardType: TextInputType.emailAddress,
+                //   validator:(value){
+                //     if (value == null || value.isEmpty){
+                //       return 'Please enter your email';
+                //
+                //     }
+                //     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)){
+                //       return 'Please enter a valid email ';
+                //     }
+                //     return null;
+                //   }
+                // ),
+                AppInputField(controller: _emailController, label: 'Email', hint: 'tony@example.com',validator: (value){
+                      if (value == null || value.isEmpty){
+                        return 'Please enter your email';
 
-                  keyboardType: TextInputType.emailAddress,
-                  validator:(value){
-                    if (value == null || value.isEmpty){
-                      return 'Please enter your email';
-
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)){
-                      return 'Please enter a valid email ';
-                    }
-                    return null;
-                  }
-                ),
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)){
+                        return 'Please enter a valid email ';
+                      }
+                      return null;
+                    } ,),
                 const SizedBox(height: 24.0),
                 //Password
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'Create a Password',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-
-                  validator:(value){
-                    if (value == null || value.isEmpty)
-                      return 'Please enter a password';
-                    if (value.length < 6) return 'Password must be at least 6 Characters';
-                    return null;
-                  },
-                ),
+                // TextFormField(
+                //   controller: _passwordController,
+                //   obscureText: _obscurePassword,
+                //   decoration: InputDecoration(
+                //     labelText: 'Password',
+                //     hintText: 'Create a Password',
+                //     suffixIcon: IconButton(
+                //       icon: Icon(
+                //         _obscurePassword
+                //             ? Icons.visibility_off
+                //             : Icons.visibility,
+                //       ),
+                //
+                //       onPressed: () =>
+                //           setState(() => _obscurePassword = !_obscurePassword),
+                //     ),
+                //   ),
+                //
+                //   validator:(value){
+                //     if (value == null || value.isEmpty)
+                //       return 'Please enter a password';
+                //     if (value.length < 6) return 'Password must be at least 6 Characters';
+                //     return null;
+                //   },
+                // ),
+                AppInputField(controller: _passwordController, label: 'Password',isPassword: true,hint: 'Create a Text',validator: (value){
+                      if (value == null || value.isEmpty)
+                        return 'Please enter a password';
+                      if (value.length < 6) return 'Password must be at least 6 Characters';
+                      return null;
+                    },),
                 const SizedBox(height: 24.0),
 
                 //confirm password
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    hintText: 'Repeat Password',
-                    suffixIcon: IconButton(
-                      onPressed: () => setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      }),
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                    ),
-                  ),
-                  validator:(value){
-                    if(value == null || value.isEmpty) return 'Please Enter Confirm Password';
-                    if(value != _passwordController.text) return 'Passwords do not match';
-                  }
-                ),
+                // TextFormField(
+                //   controller: _confirmPasswordController,
+                //   obscureText: _obscureConfirmPassword,
+                //   decoration: InputDecoration(
+                //     labelText: 'Confirm Password',
+                //     hintText: 'Repeat Password',
+                //     suffixIcon: IconButton(
+                //       onPressed: () => setState(() {
+                //         _obscureConfirmPassword = !_obscureConfirmPassword;
+                //       }),
+                //       icon: Icon(
+                //         _obscureConfirmPassword
+                //             ? Icons.visibility
+                //             : Icons.visibility_off,
+                //       ),
+                //     ),
+                //   ),
+                //   validator:(value){
+                //     if(value == null || value.isEmpty) return 'Please Enter Confirm Password';
+                //     if(value != _passwordController.text) return 'Passwords do not match';
+                //   }
+                // ),
+
+                AppInputField(controller: _confirmPasswordController, label: 'Confirm Password',hint: 'Repeat Password', isPassword: true,validator: (value){
+                      if(value == null || value.isEmpty) return 'Please Enter Confirm Password';
+                      if(value != _passwordController.text) return 'Passwords do not match';
+                    } ),
                 const SizedBox(height: 32.0),
 
                 //create Account Button
@@ -223,7 +253,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 const Center(
                   child: Text(
                     'OR SIGN UP WITH',
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                 ),
                 const SizedBox(height: 16),

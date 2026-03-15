@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
 import 'package:prepmate_mobile/core/widgets/loading_button.dart';
+import '../../../core/widgets/app_input_field.dart';
 import '/features/auth/providers/auth_provider.dart';
 
 
@@ -58,28 +59,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: const Text('Sign in to continue building your future.'),
               ),
               const SizedBox(height: 40),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email Address'),
-                keyboardType: TextInputType.emailAddress,
-              ),
+              // TextField(
+              //   controller: _emailController,
+              //   decoration: const InputDecoration(labelText: 'Email Address'),
+              //   keyboardType: TextInputType.emailAddress,
+              // ),
+              AppInputField (controller: _emailController, label: 'Email Address',keyboardType: TextInputType.emailAddress,),
               const SizedBox(height: 20),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-              ),
+              // TextField(
+              //   controller: _passwordController,
+              //   obscureText: _obscurePassword,
+              //   decoration: InputDecoration(
+              //     labelText: 'Password',
+              //     suffixIcon: IconButton(
+              //       icon: Icon(
+              //         _obscurePassword
+              //             ? Icons.visibility_off
+              //             : Icons.visibility,
+              //       ),
+              //       onPressed: () =>
+              //           setState(() => _obscurePassword = !_obscurePassword),
+              //     ),
+              //   ),
+              // ),
+
+              AppInputField(controller: _passwordController, label: 'Password',isPassword:true,),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
