@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
+import 'package:prepmate_mobile/core/widgets/loading_button.dart';
+import 'package:prepmate_mobile/core/widgets/error_text.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -40,17 +42,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     await ref
         .read(authNotifierProvider.notifier)
         .signup(name: name, email: email, password: password);
-
-    final authState = ref.read(authNotifierProvider);
-    if (authState.email != null && authState.status != AuthStatus.error) {
-      context.push('/otp-verify?flow=register');
-    }
   }
-
-  @override
+    @override
   Widget build(BuildContext context) {
+
+      ref.listen(authNotifierProvider, (previous, next) {
+        if (next.status == AuthStatus.success && next.email != null) {
+          context.push('/verify-otp?flow=register',
+          extra: next.email,);
+        }
+      });
+
+
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.status == AuthStatus.loading;
+
+
 
     return Scaffold(
       appBar: AppBar(
@@ -85,23 +92,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
                 const SizedBox(height: 40.0),
                 //Full_Name
-                TextField(
+                TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
                     labelText: 'Full Name',
                     hintText: 'Tony Stark',
                   ),
                   textCapitalization: TextCapitalization.words,
-                  // validator:(value){
-                  //   if(value == null || value.trim().isEmpty){
-                  //     return 'Please enter your full name';
-                  //   }
-                  //   return null;
-                  // },
+                  validator:(value){
+                    if(value == null || value.trim().isEmpty){
+                      return 'Please enter your full name';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 24.0),
                 //Email
-                TextField(
+                TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
@@ -109,20 +116,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ),
 
                   keyboardType: TextInputType.emailAddress,
-                  // validator:(value){
-                  //   if (value == null || value.isEmpty){
-                  //     return 'Please enter your email';
-                  //
-                  //   }
-                  //   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)){
-                  //     return 'Please enter a valid email '
-                  //   }
-                  //   return null;
-                  // }
+                  validator:(value){
+                    if (value == null || value.isEmpty){
+                      return 'Please enter your email';
+
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)){
+                      return 'Please enter a valid email ';
+                    }
+                    return null;
+                  }
                 ),
                 const SizedBox(height: 24.0),
                 //Password
-                TextField(
+                TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
@@ -140,17 +147,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
 
-                  // validator:(value){
-                  //   if (value == null || value.isEmpty)
-                  //     return 'Please enter a password';
-                  //   if (value.length >6) return 'Password must be at least 6 Characters';
-                  //   return null;
-                  // },
+                  validator:(value){
+                    if (value == null || value.isEmpty)
+                      return 'Please enter a password';
+                    if (value.length < 6) return 'Password must be at least 6 Characters';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 24.0),
 
                 //confirm password
-                TextField(
+                TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
@@ -167,38 +174,44 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                     ),
                   ),
-                  // validator:(value){
-                  //   if(value == null || value.isEmpty) return 'Please Enter Confirm Password';
-                  //   if(value != _passwordController.text) return 'Passwords do not match';
-                  // }
+                  validator:(value){
+                    if(value == null || value.isEmpty) return 'Please Enter Confirm Password';
+                    if(value != _passwordController.text) return 'Passwords do not match';
+                  }
                 ),
                 const SizedBox(height: 32.0),
 
                 //create Account Button
-                ElevatedButton.icon(
-                  onPressed: isLoading ? null : _signup,
+                // ElevatedButton.icon(
+                //   onPressed: isLoading ? null : _signup,
+                //
+                //   icon: isLoading
+                //       ? const SizedBox.shrink()
+                //       : const Icon(Icons.arrow_forward, size: 20),
+                //   label: isLoading
+                //       ? const SizedBox(
+                //           height: 20,
+                //           width: 20,
+                //           child: CircularProgressIndicator(strokeWidth: 2.5),
+                //         )
+                //       : const Text(
+                //           'Create Account ',
+                //           style: TextStyle(fontSize: 16),
+                //         ),
+                //   style: ElevatedButton.styleFrom(
+                //     padding: const EdgeInsets.symmetric(vertical: 16),
+                //     shape: RoundedRectangleBorder(
+                //       borderRadius: BorderRadius.circular(12),
+                //     ),
+                //
+                //   ),
+                // ),
 
-                  icon: isLoading
-                      ? const SizedBox.shrink()
-                      : const Icon(Icons.arrow_forward, size: 20),
-                  label: isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        )
-                      : const Text(
-                          'Create Account ',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-
-                  ),
+                LoadingButton(isLoading: isLoading, onPressed: _signup,text: 'Create Account' , icon: Icons.arrow_forward,
                 ),
+                ErrorText(message: authState.errorMessage,),
+
+
                 if (authState.errorMessage != null )...[ const SizedBox(height: 16,),
                 Text(authState.errorMessage!,
                 style: const TextStyle(color: Colors.red,fontSize: 14
@@ -233,7 +246,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       icon: const Text('G', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                       label: const Text('Google'),
                       onPressed: () {
-                        // TODO: Google Sign-In
+                        ref.read(authNotifierProvider.notifier).signInWithGoogle();
                       },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),

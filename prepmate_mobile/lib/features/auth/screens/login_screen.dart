@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/core/widgets/error_text.dart';
+import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import '/features/auth/providers/auth_provider.dart';
-import 'package:prepmate_mobile/features/auth/screens/signup_screen.dart';
+
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -18,7 +20,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    ref.listen(authNotifierProvider, (previous, next) {
+
+      if (next.status == AuthStatus.authenticated) {
+        context.go("/home");
+      }});
     final authState = ref.watch(authNotifierProvider);
+
+
+
 
     return Scaffold(
       appBar: AppBar(
@@ -77,30 +88,62 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                ),
-                onPressed: authState.status == AuthStatus.loading
-                    ? null
-                    : () async {
-                        await ref
-                            .read(authNotifierProvider.notifier)
-                            .login(
-                              _emailController.text.trim(),
-                              _passwordController.text,
-                            );
+              // ElevatedButton(
+              //   style: ElevatedButton.styleFrom(
+              //     minimumSize: const Size.fromHeight(50),
+              //   ),
+              //   onPressed: authState.status == AuthStatus.loading
+              //       ? null
+              //       : () async {
+              //
+              //     await ref
+              //         .read(authNotifierProvider.notifier)
+              //         .login(
+              //       _emailController.text.trim(),
+              //       _passwordController.text,
+              //     );
+              //
+              //     if (!mounted) return;
+              //
+              //     final state = ref.read(authNotifierProvider);
+              //
+              //     if (state.status == AuthStatus.authenticated) {
+              //       context.go('/home');
+              //     } else if (state.status == AuthStatus.error) {
+              //       ScaffoldMessenger.of(context).showSnackBar(
+              //         SnackBar(content: Text(state.errorMessage ?? "Login failed")),
+              //       );
+              //     }
+              //   },
+              //   child: authState.status == AuthStatus.loading
+              //       ? const CircularProgressIndicator()
+              //       : const Text('Sign In'),
+              // ),
 
-                        if (!mounted) return;
+              LoadingButton(isLoading: authState.status== AuthStatus.loading, onPressed: () async {
 
-                        if (ref.read(authNotifierProvider).email != null) {
-                          context.push('/otp-verify?flow=login');
-                        }
-                      },
-                child: authState.status == AuthStatus.loading
-                    ? const CircularProgressIndicator()
-                    : const Text('Sign In'),
-              ),
+                    await ref
+                        .read(authNotifierProvider.notifier)
+                        .login(
+                      _emailController.text.trim(),
+                      _passwordController.text,
+                    );
+
+                    if (!mounted) return;
+
+                    final state = ref.read(authNotifierProvider);
+
+                    if (state.status == AuthStatus.authenticated) {
+                      context.go('/home');
+                    } else if (state.status == AuthStatus.error) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(state.errorMessage ?? "Login failed")),
+                      );
+                    }
+                  },  text: 'Sign In', icon: Icons.login),
+              ErrorText(message: authState.errorMessage),
+
+
               if (authState.errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.all(8.0),

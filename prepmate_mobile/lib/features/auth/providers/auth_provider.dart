@@ -1,14 +1,23 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../config/dio_client.dart';
+
+import 'package:google_sign_in/google_sign_in.dart';
 
 // Storage provider
 final secureStorageProvider = Provider<FlutterSecureStorage>(
   (ref) => const FlutterSecureStorage(),
 );
 
+
+final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+
+
+
+
 // Auth state
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+enum AuthStatus { initial, loading, authenticated, unauthenticated, error,success, otpSent }
 
 class AuthState {
   final AuthStatus status;
@@ -30,9 +39,14 @@ class AuthState {
   }
 }
 
+
+
 final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(() {
   return AuthNotifier();
 });
+
+
+
 
 class AuthNotifier extends Notifier<AuthState> {
   @override
@@ -44,14 +58,18 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       final response = await ref
           .read(dioProvider)
-          .post('auth/login/', data: {'email': email, 'password': password});
+          .post('users/login/', data: {'email': email, 'password': password});
       if (response.statusCode == 200) {
-        state = state.copyWith(
-          status: AuthStatus.loading, // still loading for OTP
-          email: email,
-          errorMessage: null,
+
+        final token = response.data["access"];
+
+        await ref.read(secureStorageProvider).write(
+          key: "auth_token",
+          value: token,
         );
-        // Navigate to OTP screen from UI
+
+        state = state.copyWith(status: AuthStatus.authenticated);
+
       } else {
         state = state.copyWith(
           status: AuthStatus.error,
@@ -66,45 +84,68 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  // Verify OTP (for login / signup / reset) - returns token on success
-  Future<String?> verifyOtp(String otp, String email, String flow) async {
-    // flow: 'login', 'register', 'reset'
+  Future<bool> verifyOtp(String otp, String email, String flow) async {
     try {
+
       final endpoint = flow == 'login'
           ? 'auth/verify-login-otp/'
           : flow == 'register'
-          ? 'auth/verify-otp/'
-          : 'auth/reset-password/'; // adjust based on your backend
+          ? 'users/verify-otp/'
+          : 'users/reset-password/';
 
       final data = flow == 'reset'
           ? {
-        'email': email,
-        'otp': otp,
-        'new_password': '...' /* from another screen */,
+        "email": email,
+        "otp": otp,
+        "new_password": "..." // send from reset screen
       }
-          : {'email': email, 'otp': otp};
+          : {
+        "email": email,
+        "otp": otp,
+      };
 
-      final response = await ref.read(dioProvider).post(endpoint, data: data);
+      final response = await ref.read(dioProvider).post(
+        endpoint,
+        data: data,
+      );
+
+      print("OTP RESPONSE STATUS: ${response.statusCode}");
+      print("OTP RESPONSE DATA: ${response.data}");
 
       if (response.statusCode == 200) {
-        final token = response.data['token'] as String?;
-        if (token != null) {
-          await ref
-              .read(secureStorageProvider)
-              .write(key: 'auth_token', value: token);
-          state = AuthState(status: AuthStatus.authenticated);
-          return token;
+
+        // login flow → token returned
+        if (flow == "login") {
+          final token = response.data["token"];
+
+          if (token != null) {
+            await ref.read(secureStorageProvider).write(
+              key: "auth_token",
+              value: token,
+            );
+
+            state = state.copyWith(status: AuthStatus.authenticated);
+          }
         }
+
+        return true;
       }
-      return null;
+
+      return false;
+
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: 'Invalid OTP or error',
+        errorMessage: "Invalid OTP or network error",
       );
-      return null;
+      return false;
     }
   }
+
+
+
+
+
 
   Future<void> signup({
     required String name,
@@ -115,7 +156,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
     try {
       final response = await ref.read(dioProvider).post(
-        'auth/register/', // your endpoint
+        'users/register/', // your endpoint
         data: {
           'full_name': name, // adjust key if your backend uses different name
           'email': email,
@@ -126,16 +167,19 @@ class AuthNotifier extends Notifier<AuthState> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         state = state.copyWith(
-          status: AuthStatus.loading, // wait for OTP
+          status: AuthStatus.success, // wait for OTP
           email: email,
-          errorMessage: null,
+
         );
         // UI will navigate to OTP
       } else {
         state = state.copyWith(
           status: AuthStatus.error,
-          errorMessage: response.data['detail'] ?? 'Signup failed',
+          errorMessage: response.data['message'] ?? 'Signup failed',
+
         );
+
+
       }
     } catch (e) {
       state = state.copyWith(
@@ -153,7 +197,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
     try {
       final response = await ref.read(dioProvider).post(
-        'auth/forgot-password/',
+        'users/forgot-password/',
         data: {'email': email},
       );
 
@@ -211,6 +255,45 @@ class AuthNotifier extends Notifier<AuthState> {
       );
     }
   }
+
+// Google Login FUnction
+  Future<void> signInWithGoogle() async {
+    try {
+      state = state.copyWith(status: AuthStatus.loading);
+
+      final GoogleSignInAccount account =
+      await GoogleSignIn.instance.authenticate();
+
+      final GoogleSignInAuthentication auth = account.authentication;
+
+      final idToken = auth.idToken;
+
+      final response = await ref.read(dioProvider).post(
+        'auth/google/',
+        data: {
+          "id_token": idToken,
+        },
+      );
+
+      final token = response.data['access'];
+
+      await ref.read(secureStorageProvider).write(
+        key: 'auth_token',
+        value: token,
+      );
+
+      state = state.copyWith(status: AuthStatus.authenticated);
+
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: "Google login failed",
+      );
+    }
+  }
+
+
+
 
 }
 

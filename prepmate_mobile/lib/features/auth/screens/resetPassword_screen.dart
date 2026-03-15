@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prepmate_mobile/core/widgets/loading_button.dart';
+
+import '../providers/auth_provider.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -46,6 +49,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    final authState = ref.watch(authNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -189,22 +194,24 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             const SizedBox(height: 35),
 
             /// Update Button
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  "Update Password →",
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
+            // SizedBox(
+            //   width: double.infinity,
+            //   height: 55,
+            //   child: ElevatedButton(
+            //     onPressed: () {},
+            //     style: ElevatedButton.styleFrom(
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(12),
+            //       ),
+            //     ),
+            //     child: const Text(
+            //       "Update Password →",
+            //       style: TextStyle(fontSize: 16),
+            //     ),
+            //   ),
+            // ),
+
+            LoadingButton(isLoading: authState.status== AuthStatus.loading, onPressed: () {}, text: 'Update Password'),
 
             const SizedBox(height: 15),
 

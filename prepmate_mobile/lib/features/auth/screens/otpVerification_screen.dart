@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinput/pinput.dart';
+import 'package:prepmate_mobile/core/widgets/loading_button.dart';
+import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String email;
@@ -14,7 +17,6 @@ class OtpVerificationScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
-
   final TextEditingController otpController = TextEditingController();
 
   int secondsRemaining = 59;
@@ -45,30 +47,45 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     super.dispose();
   }
 
-  void verifyOtp() {
-    final otp = otpController.text;
+  void verifyOtp() async {
+    final otp = otpController.text.trim();
 
     if (otp.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Enter valid OTP")),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Enter valid OTP")));
       return;
     }
 
-    // call provider
-    // ref.read(authNotifierProvider.notifier).verifyOtp(otp, widget.email, "reset");
+    try {
+      final success = await ref
+          .read(authNotifierProvider.notifier)
+          .verifyOtp(otp, widget.email, "register");
+
+      if (success) {
+        if (!context.mounted) return;
+           context.go('/login');
+
+
+
+
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Invalid OTP")));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
 
+    final authState = ref.watch(authNotifierProvider);
     final defaultPinTheme = PinTheme(
       width: 50,
       height: 55,
-      textStyle: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-      ),
+      textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade300),
@@ -87,7 +104,6 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 25),
         child: Column(
           children: [
-
             const SizedBox(height: 20),
 
             /// Image
@@ -104,10 +120,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
 
             const Text(
               "Verification Code",
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 10),
@@ -130,23 +143,21 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
             const SizedBox(height: 40),
 
             /// Verify Button
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: verifyOtp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  "Verify",
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            ),
+            // SizedBox(
+            //   width: double.infinity,
+            //   height: 55,
+            //   child: ElevatedButton(
+            //     onPressed: verifyOtp,
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: Colors.blue,
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(12),
+            //       ),
+            //     ),
+            //     child: const Text("Verify", style: TextStyle(fontSize: 18)),
+            //   ),
+            // )
+            LoadingButton(isLoading: authState.status == AuthStatus.loading, onPressed: verifyOtp, text: "Verify", ),
 
             const SizedBox(height: 30),
 
@@ -157,26 +168,27 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 const Text("Didn't receive code? "),
                 secondsRemaining == 0
                     ? GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      secondsRemaining = 59;
-                    });
-                    startTimer();
-                  },
-                  child: const Text(
-                    "Resend",
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
+                        onTap: () {
+                          setState(() {
+                            secondsRemaining = 59;
+                          });
+                          startTimer();
+
+                        },
+                        child: const Text(
+                          "Resend",
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
                     : Text(
-                  "Resend 00:${secondsRemaining.toString().padLeft(2, '0')}",
-                  style: const TextStyle(color: Colors.grey),
-                )
+                        "Resend 00:${secondsRemaining.toString().padLeft(2, '0')}",
+                        style: const TextStyle(color: Colors.grey),
+                      ),
               ],
-            )
+            ),
           ],
         ),
       ),

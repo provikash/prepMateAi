@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.hashers import make_password
+
 
 User = get_user_model()
 
@@ -8,10 +10,19 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'full_name')
+        fields = ( 'email', 'password', 'full_name')
+        extra_kwargs = {
+                                   'password': {'write_only': True},}
 
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        password = validated_data.pop('password')
+
+        user = User(**validated_data)
+        user.password = make_password(password)
+        user.username = validated_data['email']  # since username required
+        user.save()
+
+        return user
 
 class otpVerifySerializer(serializers.Serializer):
     email = serializers.EmailField()

@@ -5,12 +5,12 @@ from django.utils import timezone
 
 class User(AbstractUser):
     email = models.EmailField(unique=True, max_length=255)
-    full_name = models.CharField(max_length=255, blank=True, null=True)
+    full_name = models.CharField(max_length=255)
     avatar_url = models.URLField(max_length=1024, blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ['username','full_name']
 
     def __str__(self):
         return self.email
