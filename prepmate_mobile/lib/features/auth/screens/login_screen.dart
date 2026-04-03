@@ -9,7 +9,6 @@ import 'package:prepmate_mobile/core/widgets/socialButton.dart';
 
 import '/features/auth/providers/auth_provider.dart';
 
-
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -24,16 +23,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     ref.listen(authNotifierProvider, (previous, next) {
-
       if (next.status == AuthStatus.authenticated) {
         context.go("/home");
-      }});
+      }
+    });
     final authState = ref.watch(authNotifierProvider);
-
-
-
 
     return Scaffold(
       appBar: AppBar(
@@ -67,8 +62,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               //   decoration: const InputDecoration(labelText: 'Email Address'),
               //   keyboardType: TextInputType.emailAddress,
               // ),
-              NeuTextField(controller: _emailController,prefixIcon: Icons.email, label: 'Email Address',keyboardType: TextInputType.emailAddress,),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  "Email",
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+              SizedBox(height: 8.0),
+
+              NeuTextField(
+                controller: _emailController,
+                prefixIcon: Icons.email,
+                hint: 'Email Address',
+                keyboardType: TextInputType.emailAddress,
+
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(value)) {
+                    return 'Please enter a valid email ';
+                  }
+                  return null;
+                },
+              ),
               const SizedBox(height: 20),
+
               // TextField(
               //   controller: _passwordController,
               //   obscureText: _obscurePassword,
@@ -85,16 +107,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               //     ),
               //   ),
               // ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  "Password",
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ),
+              SizedBox(height: 8.0),
 
-              NeuTextField(controller: _passwordController,prefixIcon: Icons.password, label: 'Password',isPassword:true,),
+              NeuTextField(
+                controller: _passwordController,
+                prefixIcon: Icons.password,
+                hint: 'Password',
+                isPassword: true,
+
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Please enter a password';
+                  if (value.length < 6)
+                    return 'Password must be at least 6 Characters';
+                  return null;
+                },
+              ),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => context.push('/forgot-password'),
-                  child: const Text('Forgot Password?'),
+                  child: Text(
+                    'Forgot Password?',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
+
               // ElevatedButton(
               //   style: ElevatedButton.styleFrom(
               //     minimumSize: const Size.fromHeight(50),
@@ -126,39 +173,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               //       ? const CircularProgressIndicator()
               //       : const Text('Sign In'),
               // ),
-
-              NeuButton(isLoading: authState.status== AuthStatus.loading, onPressed: () async {
-
-                    await ref
-                        .read(authNotifierProvider.notifier)
-                        .login(
-                      _emailController.text.trim(),
-                      _passwordController.text,
-                    );
-
-                    if (!mounted) return;
-
-                    final state = ref.read(authNotifierProvider);
-
-                    if (state.status == AuthStatus.authenticated) {
-                      context.go('/home');
-                    } else if (state.status == AuthStatus.error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(state.errorMessage ?? "Login failed")),
+              NeuButton(
+                isLoading: authState.status == AuthStatus.loading,
+                onPressed: () async {
+                  await ref
+                      .read(authNotifierProvider.notifier)
+                      .login(
+                        _emailController.text.trim(),
+                        _passwordController.text,
                       );
-                    }
-                  },  text: 'Sign In', icon: Icons.login),
-              ErrorText(message: authState.errorMessage),
 
+                  if (!mounted) return;
 
-              if (authState.errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    authState.errorMessage!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
+                  final state = ref.read(authNotifierProvider);
+
+                  if (state.status == AuthStatus.authenticated) {
+                    context.go('/home');
+                  } else if (state.status == AuthStatus.error) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.errorMessage ?? "Login failed"),
+                      ),
+                    );
+                  }
+                },
+                text: 'Sign In',
+                icon: Icons.login,
+              ),
+              SizedBox(child: ErrorText(message: authState.errorMessage)),
+
+              // if (authState.errorMessage != null)
+              //   Padding(
+              //     padding: const EdgeInsets.all(8.0),
+              //     child: Text(
+              //       authState.errorMessage!,
+              //       style: const TextStyle(color: Colors.red),
+              //     ),
+              //   ),
               const SizedBox(height: 32),
               const Center(child: Text('OR CONTINUE WITH')),
               const SizedBox(height: 16),
@@ -170,17 +221,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   //   label: const Text('Google'),
                   //   onPressed: () {},
                   // ),
+                  const SizedBox(width: 16),
+                  SocialButton(
+                    text: 'Linkedin',
+                    icon: Icons.cases,
+                    onTap: () {},
+                  ),
 
-                  const SizedBox(width: 16),SocialButton(text: 'Linkedin', icon: Icons.cases, onTap: (){} )
-
-                  ,
                   // OutlinedButton.icon(
                   //   icon: const Icon(Icons.business),
                   //   label: const Text('LinkedIn'),
                   //   onPressed: () {},
                   // ),
-
-                  SocialButton(text: 'Google', icon: Icons.g_mobiledata, onTap: (){})
+                  SocialButton(
+                    text: 'Google',
+                    icon: Icons.g_mobiledata,
+                    onTap: () {},
+                  ),
                 ],
               ),
               const SizedBox(height: 32),

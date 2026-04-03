@@ -3,7 +3,7 @@ import '../../config/theme.dart';
 
 class NeuTextField extends StatefulWidget {
   final TextEditingController controller;
-  final String label;
+
   final String? hint;
   final bool isPassword;
   final IconData? prefixIcon;
@@ -14,7 +14,6 @@ class NeuTextField extends StatefulWidget {
   const NeuTextField({
     super.key,
     required this.controller,
-    required this.label,
     this.hint,
     this.isPassword = false,
     this.prefixIcon,
@@ -57,7 +56,6 @@ class _NeuTextFieldState extends State<NeuTextField> {
         obscureText: widget.isPassword ? obscure : false,
         style: theme.textTheme.labelMedium,
         decoration: InputDecoration(
-          labelText: widget.label,
           hintText: widget.hint,
           hintStyle: theme.textTheme.bodyMedium,
           border: InputBorder.none,
@@ -67,23 +65,23 @@ class _NeuTextFieldState extends State<NeuTextField> {
 
           prefixIcon: widget.prefixIcon != null
               ? Icon(
-            widget.prefixIcon,
-            color: theme.textTheme.bodyMedium?.color,
-          )
+                  widget.prefixIcon,
+                  color: theme.textTheme.bodyMedium?.color,
+                )
               : null,
 
           suffixIcon: widget.isPassword
               ? IconButton(
-            icon: Icon(
-              obscure ? Icons.visibility_off : Icons.visibility,
-              color: theme.textTheme.bodyMedium?.color,
-            ),
-            onPressed: () {
-              setState(() {
-                obscure = !obscure;
-              });
-            },
-          )
+                  icon: Icon(
+                    obscure ? Icons.visibility_off : Icons.visibility,
+                    color: theme.textTheme.bodyMedium?.color,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      obscure = !obscure;
+                    });
+                  },
+                )
               : null,
 
           contentPadding: const EdgeInsets.symmetric(

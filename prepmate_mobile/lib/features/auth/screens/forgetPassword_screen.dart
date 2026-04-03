@@ -103,7 +103,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   }
 
                   return null;
-                }, label: 'Enter your Email',
+                }, hint: 'Enter your Email',
               ),
 
               const SizedBox(height: 30),

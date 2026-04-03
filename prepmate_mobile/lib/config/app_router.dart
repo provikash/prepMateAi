@@ -1,5 +1,8 @@
+import 'package:prepmate_mobile/features/auth/screens/resetPassword_screen.dart';
 import 'package:prepmate_mobile/features/home/screens/home_screen.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/features/resume/presentation/screens/resume_list_screen.dart';
+import 'package:prepmate_mobile/features/resume/presentation/screens/template_screen.dart';
 
 import '../features/auth/screens/forgetPassword_screen.dart';
 import '../features/auth/screens/otpVerification_screen.dart';
@@ -18,7 +21,7 @@ final appRouter = GoRouter(
 
     GoRoute(
       path: '/',
-      builder: (context, state) => const LoginScreen(),
+      builder: (context, state) => const ResumeListScreen(),
 
     ),
     GoRoute(
