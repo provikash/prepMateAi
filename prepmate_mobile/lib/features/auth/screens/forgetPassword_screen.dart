@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/core/widgets/neo_button.dart';
+import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -84,12 +86,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
               const SizedBox(height: 40),
 
-              TextFormField(
+              NeuTextField(
                 controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: "Email Address",
-                  prefixIcon: Icon(Icons.email),
-                ),
+
+                prefixIcon: Icons.email,
                 validator: (value) {
 
                   if (value == null || value.isEmpty) {
@@ -103,7 +103,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   }
 
                   return null;
-                },
+                }, label: 'Enter your Email',
               ),
 
               const SizedBox(height: 30),
@@ -111,13 +111,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: ElevatedButton(
+                child: NeuButton(
 
                   onPressed: isLoading ? null : sendOtp,
 
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Send OTP"),
+                   isLoading:false, text: 'Send OTP',
 
                 ),
               ),

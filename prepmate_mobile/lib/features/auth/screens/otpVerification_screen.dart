@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinput/pinput.dart';
 import 'package:prepmate_mobile/core/widgets/loading_button.dart';
+import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 
@@ -157,7 +158,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
             //     child: const Text("Verify", style: TextStyle(fontSize: 18)),
             //   ),
             // )
-            LoadingButton(isLoading: authState.status == AuthStatus.loading, onPressed: verifyOtp, text: "Verify", ),
+            NeuButton(isLoading: authState.status == AuthStatus.loading, onPressed: verifyOtp, text: "Verify", ),
 
             const SizedBox(height: 30),
 

@@ -17,8 +17,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'PrepMate',
-      theme: appTheme(),
       routerConfig: appRouter,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
     );
   }
 }

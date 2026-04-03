@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/core/widgets/app_input_field.dart';
+import 'package:prepmate_mobile/core/widgets/neo_button.dart';
+import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
 import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
@@ -21,8 +23,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+
 
   @override
   void dispose() {
@@ -108,7 +109,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 //   },
                 // ),
 
-                AppInputField(controller: _nameController, label: 'Full Name', hint: 'Tony Stark',
+                NeuTextField(controller: _nameController,prefixIcon: Icons.person, label: 'Full Name', hint: 'Tony Stark',
                 validator: (value){
                       if(value == null || value.trim().isEmpty){
                         return 'Please enter your full name';
@@ -136,7 +137,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 //     return null;
                 //   }
                 // ),
-                AppInputField(controller: _emailController, label: 'Email', hint: 'tony@example.com',validator: (value){
+                NeuTextField(controller: _emailController, label: 'Email', prefixIcon: Icons.email,hint: 'tony@example.com',validator: (value){
                       if (value == null || value.isEmpty){
                         return 'Please enter your email';
 
@@ -173,7 +174,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 //     return null;
                 //   },
                 // ),
-                AppInputField(controller: _passwordController, label: 'Password',isPassword: true,hint: 'Create a Text',validator: (value){
+                NeuTextField(controller: _passwordController,prefixIcon: Icons.password, label: 'Password',isPassword: true,hint: 'Create a Text',validator: (value){
                       if (value == null || value.isEmpty)
                         return 'Please enter a password';
                       if (value.length < 6) return 'Password must be at least 6 Characters';
@@ -205,7 +206,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 //   }
                 // ),
 
-                AppInputField(controller: _confirmPasswordController, label: 'Confirm Password',hint: 'Repeat Password', isPassword: true,validator: (value){
+                NeuTextField(controller: _confirmPasswordController,prefixIcon: Icons.password, label: 'Confirm Password',hint: 'Repeat Password', isPassword: true,validator: (value){
                       if(value == null || value.isEmpty) return 'Please Enter Confirm Password';
                       if(value != _passwordController.text) return 'Passwords do not match';
                     } ),
@@ -237,7 +238,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 //   ),
                 // ),
 
-                LoadingButton(isLoading: isLoading, onPressed: _signup,text: 'Create Account' , icon: Icons.arrow_forward,
+                NeuButton(isLoading: isLoading, onPressed: _signup,text: 'Create Account' , icon: Icons.arrow_forward,
                 ),
                 ErrorText(message: authState.errorMessage,),
 

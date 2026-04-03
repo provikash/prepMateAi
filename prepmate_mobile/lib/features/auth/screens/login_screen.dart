@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
-import 'package:prepmate_mobile/core/widgets/loading_button.dart';
-import '../../../core/widgets/app_input_field.dart';
+
+import 'package:prepmate_mobile/core/widgets/neo_button.dart';
+import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
+import 'package:prepmate_mobile/core/widgets/socialButton.dart';
+
 import '/features/auth/providers/auth_provider.dart';
 
 
@@ -15,7 +18,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'name@company.com');
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
@@ -64,7 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               //   decoration: const InputDecoration(labelText: 'Email Address'),
               //   keyboardType: TextInputType.emailAddress,
               // ),
-              AppInputField (controller: _emailController, label: 'Email Address',keyboardType: TextInputType.emailAddress,),
+              NeuTextField(controller: _emailController,prefixIcon: Icons.email, label: 'Email Address',keyboardType: TextInputType.emailAddress,),
               const SizedBox(height: 20),
               // TextField(
               //   controller: _passwordController,
@@ -83,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               //   ),
               // ),
 
-              AppInputField(controller: _passwordController, label: 'Password',isPassword:true,),
+              NeuTextField(controller: _passwordController,prefixIcon: Icons.password, label: 'Password',isPassword:true,),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -124,7 +127,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               //       : const Text('Sign In'),
               // ),
 
-              LoadingButton(isLoading: authState.status== AuthStatus.loading, onPressed: () async {
+              NeuButton(isLoading: authState.status== AuthStatus.loading, onPressed: () async {
 
                     await ref
                         .read(authNotifierProvider.notifier)
@@ -162,17 +165,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.g_translate),
-                    label: const Text('Google'),
-                    onPressed: () {},
-                  ),
-                  const SizedBox(width: 16),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.business),
-                    label: const Text('LinkedIn'),
-                    onPressed: () {},
-                  ),
+                  // OutlinedButton.icon(
+                  //   icon: const Icon(Icons.g_translate),
+                  //   label: const Text('Google'),
+                  //   onPressed: () {},
+                  // ),
+
+                  const SizedBox(width: 16),SocialButton(text: 'Linkedin', icon: Icons.cases, onTap: (){} )
+
+                  ,
+                  // OutlinedButton.icon(
+                  //   icon: const Icon(Icons.business),
+                  //   label: const Text('LinkedIn'),
+                  //   onPressed: () {},
+                  // ),
+
+                  SocialButton(text: 'Google', icon: Icons.g_mobiledata, onTap: (){})
                 ],
               ),
               const SizedBox(height: 32),
