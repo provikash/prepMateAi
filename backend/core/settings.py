@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'users',
-<<<<<<< HEAD
+
     'django.contrib.sites',
 
     'allauth',
@@ -66,11 +66,10 @@ INSTALLED_APPS = [
 
     'dj_rest_auth',
     'dj_rest_auth.registration',
-=======
+
     'corsheaders',
     'resume',
-    
->>>>>>> bd95e79c01c678857f1e6be9bffa0be316b132e3
+
 ]
 
 SITE_ID = 1
