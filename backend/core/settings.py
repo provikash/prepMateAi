@@ -34,6 +34,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://d42766e5-fef3-4ab6-bed4-32d7ec32972c-00-2uqqnijv241bq.sisko.replit.dev',
+    'https://*.replit.dev',
+    'https://*.repl.co',
+]
+
 
 # Application definition
 
@@ -45,11 +51,29 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'users',
+<<<<<<< HEAD
+    'django.contrib.sites',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'rest_framework.authtoken',
+
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.linkedin_oauth2',
+
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+=======
     'corsheaders',
     'resume',
     
+>>>>>>> bd95e79c01c678857f1e6be9bffa0be316b132e3
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

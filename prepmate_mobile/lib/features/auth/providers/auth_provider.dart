@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../config/dio_client.dart';
@@ -10,14 +9,18 @@ final secureStorageProvider = Provider<FlutterSecureStorage>(
   (ref) => const FlutterSecureStorage(),
 );
 
-
 final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
-
-
-
 // Auth state
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error,success, otpSent }
+enum AuthStatus {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  error,
+  success,
+  otpSent,
+}
 
 class AuthState {
   final AuthStatus status;
@@ -39,14 +42,9 @@ class AuthState {
   }
 }
 
-
-
 final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(() {
   return AuthNotifier();
 });
-
-
-
 
 class AuthNotifier extends Notifier<AuthState> {
   @override
@@ -60,16 +58,13 @@ class AuthNotifier extends Notifier<AuthState> {
           .read(dioProvider)
           .post('users/login/', data: {'email': email, 'password': password});
       if (response.statusCode == 200) {
-
         final token = response.data["access"];
 
-        await ref.read(secureStorageProvider).write(
-          key: "auth_token",
-          value: token,
-        );
+        await ref
+            .read(secureStorageProvider)
+            .write(key: "auth_token", value: token);
 
         state = state.copyWith(status: AuthStatus.authenticated);
-
       } else {
         state = state.copyWith(
           status: AuthStatus.error,
@@ -86,7 +81,6 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<bool> verifyOtp(String otp, String email, String flow) async {
     try {
-
       final endpoint = flow == 'login'
           ? 'auth/verify-login-otp/'
           : flow == 'register'
@@ -95,34 +89,26 @@ class AuthNotifier extends Notifier<AuthState> {
 
       final data = flow == 'reset'
           ? {
-        "email": email,
-        "otp": otp,
-        "new_password": "..." // send from reset screen
-      }
-          : {
-        "email": email,
-        "otp": otp,
-      };
+              "email": email,
+              "otp": otp,
+              "new_password": "...", // send from reset screen
+            }
+          : {"email": email, "otp": otp};
 
-      final response = await ref.read(dioProvider).post(
-        endpoint,
-        data: data,
-      );
+      final response = await ref.read(dioProvider).post(endpoint, data: data);
 
       print("OTP RESPONSE STATUS: ${response.statusCode}");
       print("OTP RESPONSE DATA: ${response.data}");
 
       if (response.statusCode == 200) {
-
         // login flow → token returned
         if (flow == "login") {
           final token = response.data["token"];
 
           if (token != null) {
-            await ref.read(secureStorageProvider).write(
-              key: "auth_token",
-              value: token,
-            );
+            await ref
+                .read(secureStorageProvider)
+                .write(key: "auth_token", value: token);
 
             state = state.copyWith(status: AuthStatus.authenticated);
           }
@@ -132,7 +118,6 @@ class AuthNotifier extends Notifier<AuthState> {
       }
 
       return false;
-
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
@@ -142,11 +127,6 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-
-
-
-
-
   Future<void> signup({
     required String name,
     required String email,
@@ -155,31 +135,30 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
-      final response = await ref.read(dioProvider).post(
-        'users/register/', // your endpoint
-        data: {
-          'full_name': name, // adjust key if your backend uses different name
-          'email': email,
-          'password': password,
-          // 'confirm_password': password,  // if backend requires it
-        },
-      );
+      final response = await ref
+          .read(dioProvider)
+          .post(
+            'users/register/', // your endpoint
+            data: {
+              'full_name':
+                  name, // adjust key if your backend uses different name
+              'email': email,
+              'password': password,
+              // 'confirm_password': password,  // if backend requires it
+            },
+          );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         state = state.copyWith(
           status: AuthStatus.success, // wait for OTP
           email: email,
-
         );
         // UI will navigate to OTP
       } else {
         state = state.copyWith(
           status: AuthStatus.error,
           errorMessage: response.data['message'] ?? 'Signup failed',
-
         );
-
-
       }
     } catch (e) {
       state = state.copyWith(
@@ -189,17 +168,15 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-
   // forget password Function
 
   Future<void> forgotPassword(String email) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
-      final response = await ref.read(dioProvider).post(
-        'users/forgot-password/',
-        data: {'email': email},
-      );
+      final response = await ref
+          .read(dioProvider)
+          .post('users/forgot-password/', data: {'email': email});
 
       if (response.statusCode == 200) {
         state = state.copyWith(
@@ -220,7 +197,6 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-
   // reset Password
 
   Future<void> resetPassword({
@@ -231,14 +207,12 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
-      final response = await ref.read(dioProvider).post(
-        'auth/reset-password/',
-        data: {
-          'email': email,
-          'otp': otp,
-          'new_password': newPassword,
-        },
-      );
+      final response = await ref
+          .read(dioProvider)
+          .post(
+            'auth/reset-password/',
+            data: {'email': email, 'otp': otp, 'new_password': newPassword},
+          );
 
       if (response.statusCode == 200) {
         state = state.copyWith(status: AuthStatus.unauthenticated);
@@ -256,34 +230,29 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-// Google Login FUnction
+  // Google Login FUnction
   Future<void> signInWithGoogle() async {
     try {
       state = state.copyWith(status: AuthStatus.loading);
 
-      final GoogleSignInAccount account =
-      await GoogleSignIn.instance.authenticate();
+      final GoogleSignInAccount account = await GoogleSignIn.instance
+          .authenticate();
 
       final GoogleSignInAuthentication auth = account.authentication;
 
       final idToken = auth.idToken;
 
-      final response = await ref.read(dioProvider).post(
-        'auth/google/',
-        data: {
-          "id_token": idToken,
-        },
-      );
+      final response = await ref
+          .read(dioProvider)
+          .post('auth/google/', data: {"id_token": idToken});
 
       final token = response.data['access'];
 
-      await ref.read(secureStorageProvider).write(
-        key: 'auth_token',
-        value: token,
-      );
+      await ref
+          .read(secureStorageProvider)
+          .write(key: 'auth_token', value: token);
 
       state = state.copyWith(status: AuthStatus.authenticated);
-
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
@@ -291,9 +260,4 @@ class AuthNotifier extends Notifier<AuthState> {
       );
     }
   }
-
-
-
-
 }
-

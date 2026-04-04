@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:prepmate_mobile/core/widgets/loading_button.dart';
+import 'package:prepmate_mobile/core/widgets/neo_button.dart';
+import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 
 import '../providers/auth_provider.dart';
 
@@ -106,28 +108,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
             const SizedBox(height: 8),
 
-            TextField(
+            NeuTextField(
               controller: passwordController,
-              obscureText: obscurePassword,
-              onChanged: checkPassword,
-              decoration: InputDecoration(
-                hintText: "Enter new password",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    obscurePassword
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      obscurePassword = !obscurePassword;
-                    });
-                  },
-                ),
-              ),
+              isPassword: true,
+              hint: 'Enter new password',
             ),
 
             const SizedBox(height: 20),
@@ -143,28 +127,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
             const SizedBox(height: 8),
 
-            TextField(
-              controller: confirmController,
-              obscureText: obscureConfirm,
-              decoration: InputDecoration(
-                hintText: "Re-enter new password",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    obscureConfirm
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      obscureConfirm = !obscureConfirm;
-                    });
-                  },
-                ),
-              ),
-            ),
+            NeuTextField(controller: confirmController, hint: 'Re-enter new password',
+            isPassword: true,),
+
 
             const SizedBox(height: 25),
 
@@ -211,7 +176,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             //   ),
             // ),
 
-            LoadingButton(isLoading: authState.status== AuthStatus.loading, onPressed: () {}, text: 'Update Password'),
+            NeuButton(isLoading: authState.status== AuthStatus.loading, onPressed: () {}, text: 'Update Password'),
 
             const SizedBox(height: 15),
 
