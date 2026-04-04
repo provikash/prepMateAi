@@ -1,0 +1,39 @@
+[33m4a8b223[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m updated
+[33m70303b2[m reusable widgets added
+[33medd2f2d[m authentication added
+[33m5a5ae53[m authentication added
+[33mfe06898[m Update repository URL in CONTRIBUTING.md
+[33m4b366b3[m Add contributing guidelines for PrepMate AI
+[33m8131e7e[m Include LICENSE file with MIT License
+[33m34a7bfd[m Initialize README with project details and features
+[33m4f7b565[m auth_ui
+[33md4bca0f[m auth_ui
+[33m53b471c[m frontend_auth
+[33md21d8ba[m changes
+[33m4850008[m Merge pull request #4 from provikash/backend
+[33m7fc2a85[m Saved progress at the end of the loop
+[33me81f288[m Add user profile, password change, and OTP resend functionality
+[33m6e8aa71[m Saved progress at the end of the loop
+[33m18bab43[m Update authentication and user management configurations
+[33m863cac8[m Update user activation status to require verification
+[33m4d626b2[m Update registration and login to include OTP verification and fix user activation
+[33m05e1675[m Add script to test API endpoints for user authentication
+[33m27a810e[m Add tests to verify API endpoint functionality and responses
+[33m4bcf2c2[m Saved progress at the end of the loop
+[33m2f275b6[m Fix server errors and configure authentication and email settings
+[33m81d1508[m Merge pull request #3 from provikash/backend
+[33m456a40f[m Saved progress at the end of the loop
+[33m1c630a6[m Update Django settings and user authentication configurations
+[33mf55d74f[m Allow all hosts to access the Django application
+[33m2c62f18[m Update user authentication and password reset features
+[33me48962d[m Fix user authentication and management in the backend system
+[33m9957bb0[m Add user authentication and email functionality to the application
+[33m299f6ea[m[33m ([m[1;31morigin/frontend[m[33m)[m flutter added
+[33m71e23aa[m Add login functionality for users to access their accounts
+[33m39e2407[m Merge pull request #2 from provikash/backend
+[33m8d49950[m init
+[33mda92632[m Merge pull request #1 from provikash/backend
+[33mfc38f06[m Create a new Django project in the backend folder
+[33m1595260[m new
+[33mcd0ee7e[m Frist
+[33m4603934[m Initial commit

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'users',
+<<<<<<< HEAD
     'django.contrib.sites',
 
     'allauth',
@@ -62,6 +63,10 @@ INSTALLED_APPS = [
 
     'dj_rest_auth',
     'dj_rest_auth.registration',
+=======
+    'corsheaders',
+    
+>>>>>>> bd95e79c01c678857f1e6be9bffa0be316b132e3
 ]
 
 SITE_ID = 1
@@ -74,9 +79,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
+CORS_ALLOW_ALL_ORIGINS = True
 
 TEMPLATES = [
     {
@@ -170,4 +177,13 @@ SIMPLE_JWT ={
     'AUTH_HEADER_TYPES':('Bearer',),
 }
 
+<<<<<<< HEAD
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+=======
+EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST='smtp.gmail.com'
+Email_PORT=587
+EMAIL_USE_TLS=True
+Email_HOST_USER='vkchaurasiyatrade@myyahoo.com'
+EMAIL_HOST_PASSWORD='Vikash@8081'
+>>>>>>> bd95e79c01c678857f1e6be9bffa0be316b132e3
