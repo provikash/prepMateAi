@@ -17,7 +17,7 @@ final dioProvider = Provider<Dio>((ref) {
     BaseOptions(
       // Change this based on your environment
       baseUrl: kDebugMode
-          ? 'http://192.168.89.108:8000/api/' // local dev (replace with your IP)
+          ? 'http://10.145.242.1:8000/api/' // local dev (replace with your IP)
           : 'https://api.prepmate.in/api/', // production URL
       connectTimeout: const Duration(seconds: 12),
       receiveTimeout: const Duration(seconds: 12),
@@ -32,15 +32,12 @@ final dioProvider = Provider<Dio>((ref) {
   //
   // ────────────────────────────────────────
 
-
   dio.interceptors.add(
     InterceptorsWrapper(
-
       onRequest: (options, handler) async {
-
         final token = await ref
             .read(secureStorageProvider)
-            .read(key: 'auth_token');
+            .read(key: 'access_token');
 
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -57,7 +54,6 @@ final dioProvider = Provider<Dio>((ref) {
       },
 
       onResponse: (response, handler) {
-
         if (kDebugMode) {
           debugPrint(
             '← RESPONSE [${response.statusCode}] ${response.requestOptions.uri}',
@@ -72,6 +68,13 @@ final dioProvider = Provider<Dio>((ref) {
       },
 
       onError: (DioException e, handler) {
+        if (e.response?.statusCode == 401) {
+          // Token expired / invalid
+          debugPrint("Unauthorized → token may be expired");
+
+          // optional:
+          // await ref.read(secureStorageProvider).delete(key: 'access_token');
+        }
 
         if (kDebugMode) {
           debugPrint(
@@ -82,7 +85,9 @@ final dioProvider = Provider<Dio>((ref) {
 
         handler.next(e);
       },
+
     ),
+
   );
 
   // Optional: add pretty logger in debug (requires dio_logger package or custom)

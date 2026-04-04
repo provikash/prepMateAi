@@ -57,11 +57,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: const Text('Sign in to continue building your future.'),
               ),
               const SizedBox(height: 40),
-              // TextField(
-              //   controller: _emailController,
-              //   decoration: const InputDecoration(labelText: 'Email Address'),
-              //   keyboardType: TextInputType.emailAddress,
-              // ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
@@ -91,22 +86,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 20),
 
-              // TextField(
-              //   controller: _passwordController,
-              //   obscureText: _obscurePassword,
-              //   decoration: InputDecoration(
-              //     labelText: 'Password',
-              //     suffixIcon: IconButton(
-              //       icon: Icon(
-              //         _obscurePassword
-              //             ? Icons.visibility_off
-              //             : Icons.visibility,
-              //       ),
-              //       onPressed: () =>
-              //           setState(() => _obscurePassword = !_obscurePassword),
-              //     ),
-              //   ),
-              // ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
@@ -142,37 +121,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ElevatedButton(
-              //   style: ElevatedButton.styleFrom(
-              //     minimumSize: const Size.fromHeight(50),
-              //   ),
-              //   onPressed: authState.status == AuthStatus.loading
-              //       ? null
-              //       : () async {
-              //
-              //     await ref
-              //         .read(authNotifierProvider.notifier)
-              //         .login(
-              //       _emailController.text.trim(),
-              //       _passwordController.text,
-              //     );
-              //
-              //     if (!mounted) return;
-              //
-              //     final state = ref.read(authNotifierProvider);
-              //
-              //     if (state.status == AuthStatus.authenticated) {
-              //       context.go('/home');
-              //     } else if (state.status == AuthStatus.error) {
-              //       ScaffoldMessenger.of(context).showSnackBar(
-              //         SnackBar(content: Text(state.errorMessage ?? "Login failed")),
-              //       );
-              //     }
-              //   },
-              //   child: authState.status == AuthStatus.loading
-              //       ? const CircularProgressIndicator()
-              //       : const Text('Sign In'),
-              // ),
               NeuButton(
                 isLoading: authState.status == AuthStatus.loading,
                 onPressed: () async {
@@ -202,25 +150,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               SizedBox(child: ErrorText(message: authState.errorMessage)),
 
-              // if (authState.errorMessage != null)
-              //   Padding(
-              //     padding: const EdgeInsets.all(8.0),
-              //     child: Text(
-              //       authState.errorMessage!,
-              //       style: const TextStyle(color: Colors.red),
-              //     ),
-              //   ),
               const SizedBox(height: 32),
               const Center(child: Text('OR CONTINUE WITH')),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // OutlinedButton.icon(
-                  //   icon: const Icon(Icons.g_translate),
-                  //   label: const Text('Google'),
-                  //   onPressed: () {},
-                  // ),
                   const SizedBox(width: 16),
                   SocialButton(
                     text: 'Linkedin',

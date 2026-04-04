@@ -1,10 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:prepmate_mobile/features/resume/data/models/resume_model.dart';
 
 import '../../../config/dio_client.dart';
+import '../../../core/services/storage.dart';
 
-
+import 'package:http/http.dart' as http;
 
 final resumeApiProvider = Provider<ResumeApi>((ref) {
   final dio = ref.watch(dioProvider);
@@ -16,27 +19,33 @@ class ResumeApi {
 
   ResumeApi(this.dio);
 
-  Future<List<Resume>> getResume() async{
+  static const String baseUrl = "http://10.145.242:8000/api";
 
-    final res = await dio.get("/api/resume/");
-    return (res.data as List).map((e)=> Resume.fromJson(e)).toList();
+  Future<List<Resume>> getResume() async {
+    final res = await dio.get("resumes/");
+    return (res.data as List).map((e) => Resume.fromJson(e)).toList();
   }
 
-  Future<Resume> createResume() async{
-    final res = await dio.post("/api/resume/create", data: {
+  static Future createResume() async {
+    final token = await TokenService.getToken();
 
-      "title":"Untitled",
-      "temeplate":"morden",
-      "content":{"ops":[]}
+    final response = await http.post(
+      Uri.parse("$baseUrl/resumes/"),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({"title": "Untitled Resume"}),
+    );
 
-    });
-    return Resume.fromJson(res.data);
+    return jsonDecode(response.body);
   }
-  Future<void> updateResume(int id, Map data) async{
-    await dio.put("/api/resume/$id/",data: data);
+
+  Future<void> updateResume(int id, Map data) async {
+    await dio.put("/api/resume/$id/", data: data);
   }
 
-  Future<void> deleteResume(int id) async{
+  Future<void> deleteResume(int id) async {
     await dio.put("api/resume/delete/$id/");
   }
 }

@@ -22,7 +22,7 @@ class ResumeNotifier extends StateNotifier<List<Resume>> {
 
   /// Create new resume
   Future<Resume>createResume() async{
-    final resume = await api.createResume();
+    final resume = await ResumeApi.createResume();
     state = [...state,resume];
     return resume;
   }

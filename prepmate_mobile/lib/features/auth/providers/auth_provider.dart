@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:prepmate_mobile/core/services/storage.dart';
 import '../../../../config/dio_client.dart';
+
+
 
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -48,21 +51,21 @@ final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(() {
 
 class AuthNotifier extends Notifier<AuthState> {
   @override
+
+  final tokenService = TokenService();
   AuthState build() => AuthState();
 
-  // Login - Step 1: Send credentials → get OTP
+
   Future<void> login(String email, String password) async {
     state = state.copyWith(status: AuthStatus.loading);
     try {
       final response = await ref
           .read(dioProvider)
-          .post('users/login/', data: {'email': email, 'password': password});
+          .post('auth/login/', data: {'email': email, 'password': password});
       if (response.statusCode == 200) {
-        final token = response.data["access"];
+        final access_token = response.data["tokens"]?["access"];
 
-        await ref
-            .read(secureStorageProvider)
-            .write(key: "auth_token", value: token);
+        await TokenService.saveToken(access_token);
 
         state = state.copyWith(status: AuthStatus.authenticated);
       } else {
@@ -103,13 +106,12 @@ class AuthNotifier extends Notifier<AuthState> {
       if (response.statusCode == 200) {
         // login flow → token returned
         if (flow == "login") {
-          final token = response.data["token"];
+          final token = response.data["tokens"]["access"];  // 🔥 FIX
 
           if (token != null) {
-            await ref
-                .read(secureStorageProvider)
-                .write(key: "auth_token", value: token);
+            await TokenService.saveToken('access_token'); // 🔥 USE SAME SERVICE
 
+            print(await TokenService.getToken());
             state = state.copyWith(status: AuthStatus.authenticated);
           }
         }
@@ -138,7 +140,7 @@ class AuthNotifier extends Notifier<AuthState> {
       final response = await ref
           .read(dioProvider)
           .post(
-            'users/register/', // your endpoint
+            'auth/register/', // your endpoint
             data: {
               'full_name':
                   name, // adjust key if your backend uses different name
@@ -176,7 +178,7 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       final response = await ref
           .read(dioProvider)
-          .post('users/forgot-password/', data: {'email': email});
+          .post('auth/forgot-password/', data: {'email': email});
 
       if (response.statusCode == 200) {
         state = state.copyWith(
@@ -246,11 +248,8 @@ class AuthNotifier extends Notifier<AuthState> {
           .read(dioProvider)
           .post('auth/google/', data: {"id_token": idToken});
 
-      final token = response.data['access'];
+      final token = response.data["tokens"]?["access"];
 
-      await ref
-          .read(secureStorageProvider)
-          .write(key: 'auth_token', value: token);
 
       state = state.copyWith(status: AuthStatus.authenticated);
     } catch (e) {

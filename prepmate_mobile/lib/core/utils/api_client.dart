@@ -1,26 +1,26 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class ApiClient {
-  static const String baseUrl = 'http://127.0.0.1:8000/api/users';
+import 'package:prepmate_mobile/core/services/storage.dart';
 
+class ApiClient {
+  static const String baseUrl = 'http://127.0.0.1:8000/api/';
 
   static Future<Map<String, dynamic>> registerUser(
-      String email,
-      String password,
-      String fullName,
-      ) async {
-
+    String email,
+    String password,
+    String fullName,
+  ) async {
     final response = await http.post(
-      Uri.parse("$baseUrl/register/"),
+      Uri.parse("$baseUrl/auth/register/"),
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
       },
       body: jsonEncode({
         "email": email,
         "password": password,
-        "full_name": fullName
+        "full_name": fullName,
       }),
     );
 
@@ -34,19 +34,16 @@ class ApiClient {
     }
   }
 
+  // verify OTP
 
-
-       // verify OTP
-
-  static Future<Map<String, dynamic>> verifyOTP(String email, String otp) async {
-
+  static Future<Map<String, dynamic>> verifyOTP(
+    String email,
+    String otp,
+  ) async {
     final response = await http.post(
-      Uri.parse("$baseUrl/verify-otp/"),
+      Uri.parse("$baseUrl/auth/verify-otp/"),
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": email,
-        "otp": otp
-      }),
+      body: jsonEncode({"email": email, "otp": otp}),
     );
 
     print("OTP RESPONSE: ${response.body}");
@@ -58,22 +55,32 @@ class ApiClient {
     }
   }
 
-
-
   //login
 
   static Future login(String email, String password) async {
-
     final response = await http.post(
-      Uri.parse("$baseUrl/login/"),
+      Uri.parse("$baseUrl/auth/login/"),
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": email,
-        "password": password
-      }),
+      body: jsonEncode({"email": email, "password": password}),
     );
 
-    return jsonDecode(response.body);
-  }
+    final data = jsonDecode(response.body);
 
+    if (response.statusCode == 200) {
+      final accessToken = data["tokens"]?["access"];
+
+      if (accessToken != null) {
+        await TokenService.saveToken(accessToken);
+      } else {
+        throw Exception("Token missing");
+      }
+
+      return data;
+
+    } else {
+      throw Exception(data["message"] ?? "Login failed");
+    }
+
+
+  }
 }
