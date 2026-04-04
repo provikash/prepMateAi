@@ -1,8 +1,7 @@
-from django.urls import path 
-from .views import ResumeCreateView, ResumeListView , ResumeDetailView
+from django.urls import path
+from .views import ResumeListCreateView, ResumeDetailView
 
-urlpatterns =[
-    path('create/',ResumeCreateView.as_view()),
-    path('',ResumeListView.as_view()),
-    path('<int:pk>/',ResumeDetailView.as_view()),
+urlpatterns = [
+    path('', ResumeListCreateView.as_view()),       # GET + POST
+    path('<int:pk>/', ResumeDetailView.as_view()),  # GET + PUT + DELETE
 ]

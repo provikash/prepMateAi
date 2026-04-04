@@ -15,4 +15,7 @@ urlpatterns = [
     path("auth/google/", GoogleLoginView.as_view(), name="google-login"), # path POST /api/users/auth/google/
     path("forgot-password/",ForgotPasswordView.as_view()),
     path("reset-password/",ResetPasswordView.as_view())
+
+   
+
 ]

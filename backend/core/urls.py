@@ -22,12 +22,18 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     #Auth 
-    path('api/users/',include('users.urls')),
+    path('api/auth/',include('users.urls')),
 
-    #JWT refresh 
+#User Profile
+    path('api/users/', include('users.profile_urls')),
+
+    #Resume
+    path('api/resumes/', include('resume.urls')),
+
+    # #JWT refresh 
     
-    path('api/token/',TokenObtainPairView.as_view(),name='token_obtain_pair'),
-    path('api/token/refresh/',TokenRefreshView.as_view(),name='token_refresh'),
-    path('api/token/verify/',TokenVerifyView.as_view(),name='token_verify',),
-    path('api/resume/',include('resume.urls'))
+    # path('api/token/',TokenObtainPairView.as_view(),name='token_obtain_pair'),
+    # path('api/token/refresh/',TokenRefreshView.as_view(),name='token_refresh'),
+    # path('api/token/verify/',TokenVerifyView.as_view(),name='token_verify',),
+    # path('api/resume/',include('resume.urls'))
 ]

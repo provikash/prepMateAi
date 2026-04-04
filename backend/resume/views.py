@@ -7,22 +7,19 @@ from .serializers import ResumeSerializer
 
 # Create your views here.
 
-class ResumeCreateView(generics.CreateAPIView):
+class ResumeListCreateView(generics.ListCreateAPIView):  # ✅ FIX
     serializer_class = ResumeSerializer
-    permission_classes =[permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Resume.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
 
-#list Resume 
 
-class ResumeListView(generics.ListAPIView):
-    serializer_class = ResumeSerializer
-    permission_classes =[permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return Resume.objects.filter(user=self.request.user)
     
 
 #Retrive + Update +Delete 
