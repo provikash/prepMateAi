@@ -35,6 +35,14 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
+
+        debugPrint("FINAL BODY: ${options.data}");
+        if (options.path.contains("auth/")){
+          debugPrint("PATH: ${options.path}");
+          debugPrint("HEADERS BEFORE: ${options.headers}");
+          return handler.next(options);
+
+        }
         final token = await ref
             .read(secureStorageProvider)
             .read(key: 'access_token');
@@ -71,9 +79,6 @@ final dioProvider = Provider<Dio>((ref) {
         if (e.response?.statusCode == 401) {
           // Token expired / invalid
           debugPrint("Unauthorized → token may be expired");
-
-          // optional:
-          // await ref.read(secureStorageProvider).delete(key: 'access_token');
         }
 
         if (kDebugMode) {
@@ -85,13 +90,8 @@ final dioProvider = Provider<Dio>((ref) {
 
         handler.next(e);
       },
-
     ),
-
   );
-
-  // Optional: add pretty logger in debug (requires dio_logger package or custom)
-  // if (kDebugMode) dio.interceptors.add(PrettyDioLogger(...));
 
   return dio;
 });
