@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
+
     'users',
 
     'django.contrib.sites',
@@ -83,6 +84,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+     'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -174,7 +176,7 @@ AUTH_USER_MODEL ='users.User'
 SIMPLE_JWT ={
   'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
   'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFREASH_TOKENS':True,
+    'ROTATE_REFRESH_TOKENS':True,
     'BLACKLIST_AFTER_ROTATION':True,
     'UPDATE_LAST_LOGIN':True,
     'AUTH_HEADER_TYPES':('Bearer',),
