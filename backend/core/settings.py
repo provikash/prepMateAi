@@ -1,6 +1,9 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 """
 Django settings for core project.
@@ -31,6 +34,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://d42766e5-fef3-4ab6-bed4-32d7ec32972c-00-2uqqnijv241bq.sisko.replit.dev',
+    'https://*.replit.dev',
+    'https://*.repl.co',
+]
+
 
 # Application definition
 
@@ -42,10 +51,28 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'users',
+
+    'django.contrib.sites',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'rest_framework.authtoken',
+
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.linkedin_oauth2',
+
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+
     'corsheaders',
-    
+    'resume',
+
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -153,9 +180,10 @@ SIMPLE_JWT ={
     'AUTH_HEADER_TYPES':('Bearer',),
 }
 
-EMAIL_BACKEND= 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST='smtp.gmail.com'
-Email_PORT=587
-EMAIL_USE_TLS=True
-Email_HOST_USER='vkchaurasiyatrade@myyahoo.com'
-EMAIL_HOST_PASSWORD='Vikash@8081'
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS") == "True"
+
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
