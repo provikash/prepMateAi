@@ -1,6 +1,6 @@
-import 'package:prepmate_mobile/features/auth/screens/resetPassword_screen.dart';
 import 'package:prepmate_mobile/features/home/screens/home_screen.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/features/resume/presentation/screens/editor_screen.dart';
 import 'package:prepmate_mobile/features/resume/presentation/screens/resume_list_screen.dart';
 import 'package:prepmate_mobile/features/resume/presentation/screens/template_screen.dart';
 
@@ -10,29 +10,14 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/passwordChanged_screen.dart';
 import '../features/auth/screens/signup_screen.dart';
 
-
-
-
 final appRouter = GoRouter(
-
+  initialLocation: '/',
   routes: [
-
-    GoRoute( path: '/home', builder: (context,state)=> const HomeScreen()),
-
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const ResumeListScreen(),
-
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-
-    ),
-
-    GoRoute(path: '/signup',
-        builder: (context,state) => const SignupScreen()),
-
+    GoRoute(path: '/', builder: (context, state) => const LoginScreen()),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
+    GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+    
     GoRoute(
       path: '/verify-otp',
       builder: (context, state) {
@@ -41,15 +26,25 @@ final appRouter = GoRouter(
       },
     ),
 
+    GoRoute(path: '/password-changed', builder: (context, state) => const PasswordChangedScreen()),
+    GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
+
     GoRoute(
-      path: '/password-changed',
-      builder: (context, state) => const PasswordChangedScreen(),
+      path: '/resumes',
+      builder: (context, state) => const ResumeListScreen(),
     ),
-    GoRoute(path: '/forgot-password',builder: (context,state)=> const ForgotPasswordScreen() )
 
+    GoRoute(
+      path: '/template',
+      builder: (context, state) => const TemplateScreen(),
+    ),
 
-
-
+    GoRoute(
+      path: '/editor/:id',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id']!);
+        return EditorScreen(resumeId: id);
+      },
+    ),
   ],
-
-   );
+);

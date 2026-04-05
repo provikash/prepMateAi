@@ -106,7 +106,7 @@ packages:
     source: hosted
     version: "0.4.1"
   dio:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: dio
       sha256: aff32c08f92787a557dd5c0145ac91536481831a01b4648136373cddb0e64f8c
@@ -191,7 +191,7 @@ packages:
     source: hosted
     version: "1.1.0"
   flutter_hooks:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: flutter_hooks
       sha256: cde36b12f7188c85286fba9b38cc5a902e7279f36dd676967106c041dc9dde70
@@ -252,7 +252,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_quill:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: flutter_quill
       sha256: b96bb8525afdeaaea52f5d02f525e05cc34acd176467ab6d6f35d434cf14fde2
@@ -268,7 +268,7 @@ packages:
     source: hosted
     version: "1.5.3"
   flutter_riverpod:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: flutter_riverpod
       sha256: "9532ee6db4a943a1ed8383072a2e3eeda041db5657cdf6d2acecf3c21ecbe7e1"
@@ -276,7 +276,7 @@ packages:
     source: hosted
     version: "2.6.1"
   flutter_secure_storage:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: flutter_secure_storage
       sha256: da922f2aab2d733db7e011a6bcc4a825b844892d4edd6df83ff156b09a9b2e40
@@ -334,7 +334,7 @@ packages:
     source: sdk
     version: "0.0.0"
   go_router:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: go_router
       sha256: "7974313e217a7771557add6ff2238acb63f635317c35fa590d348fb238f00896"
@@ -350,7 +350,7 @@ packages:
     source: hosted
     version: "0.3.3+1"
   google_sign_in:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: google_sign_in
       sha256: "521031b65853b4409b8213c0387d57edaad7e2a949ce6dea0d8b2afc9cb29763"
@@ -398,7 +398,7 @@ packages:
     source: hosted
     version: "0.15.6"
   http:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: http
       sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
@@ -414,7 +414,7 @@ packages:
     source: hosted
     version: "4.1.2"
   intl:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: intl
       sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
@@ -566,7 +566,7 @@ packages:
     source: hosted
     version: "4.5.2"
   pinput:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: pinput
       sha256: a92b55ecf9c25d1b9e100af45905385d5bc34fc9b6b04177a9e82cb88fe4d805
@@ -662,7 +662,7 @@ packages:
     source: hosted
     version: "2.6.1"
   shared_preferences:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: shared_preferences
       sha256: "2939ae520c9024cb197fc20dee269cd8cdbf564c8b5746374ec6cacdc5169e64"
@@ -718,7 +718,7 @@ packages:
     source: hosted
     version: "2.4.1"
   signin_with_linkedin:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: signin_with_linkedin
       sha256: ee720367e9d8c60506c7a56437f60d8e9388e0393ac5a57b4892ee01c48ebf2b

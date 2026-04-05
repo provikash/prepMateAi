@@ -21,21 +21,20 @@ class ResumeNotifier extends StateNotifier<List<Resume>> {
   }
 
   /// Create new resume
-  Future<Resume>createResume() async{
-    final resume = await api.createResume();
-    state = [...state,resume];
+  Future<Resume> createResume(String template ,String title, Map<String,dynamic> content) async {
+    final resume = await api.createResumeWithTemplate(template , title, content);
+    state = [...state, resume];
     return resume;
   }
-  /// Update resume
-  Future<void> updateResume(int id , Map<String, dynamic> data) async{
-    await api.updateResume(id, data);
 
+  /// Update resume
+  Future<void> updateResume(int id, Map<String, dynamic> data) async {
+    await api.updateResume(id, data);
     await fetchResumes();
   }
 
   /// Delete Resume
-
-  Future<void> deleteResume(int id) async{
+  Future<void> deleteResume(int id) async {
     await api.deleteResume(id);
     state = state.where((r) => r.id != id).toList();
   }
