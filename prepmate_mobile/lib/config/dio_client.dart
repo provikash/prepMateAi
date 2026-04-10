@@ -16,9 +16,8 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
       // Change this based on your environment
-      baseUrl: kDebugMode
-          ? 'http://10.145.242.1:8000/api/' // local dev (replace with your IP)
-          : 'https://api.prepmate.in/api/', // production URL
+      baseUrl:
+          'http://10.145.242.1:8000/api/', // local dev (replace with your IP), // production URL
       connectTimeout: const Duration(seconds: 12),
       receiveTimeout: const Duration(seconds: 12),
       headers: {
@@ -35,13 +34,11 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-
         debugPrint("FINAL BODY: ${options.data}");
-        if (options.path.contains("auth/")){
+        if (options.path.contains("auth/")) {
           debugPrint("PATH: ${options.path}");
           debugPrint("HEADERS BEFORE: ${options.headers}");
           return handler.next(options);
-
         }
         final token = await ref
             .read(secureStorageProvider)
