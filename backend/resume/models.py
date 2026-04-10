@@ -5,9 +5,9 @@ from django.conf import settings
 
 class Resume(models.Model):
     TEMPLATE_CHOICES = [
-        ('modern','Modern'),
-        ('classic','Classic'),
-        ('minimal','Minimal'),
+        ('modern','The Professional'),
+        ('classic','Tech Savvy'),
+        ('minimal','Pure Minimal'),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="resumes")
