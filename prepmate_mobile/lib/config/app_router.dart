@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/features/resume/presentation/screens/editor_screen.dart';
 import 'package:prepmate_mobile/features/resume/presentation/screens/resume_list_screen.dart';
 import 'package:prepmate_mobile/features/resume/presentation/screens/template_screen.dart';
+import 'package:prepmate_mobile/features/profile/presentation/screens/profile_screen.dart';
+import 'package:prepmate_mobile/features/profile/presentation/screens/personal_info_screen.dart';
+import 'package:prepmate_mobile/features/profile/presentation/screens/help_support_screen.dart';
 
 import '../features/auth/screens/forgetPassword_screen.dart';
 import '../features/auth/screens/otpVerification_screen.dart';
@@ -13,7 +16,7 @@ import '../features/auth/screens/signup_screen.dart';
 final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
-    GoRoute(path: '/', builder: (context, state) => const PrepMateHome()),
+    GoRoute(path: '/', builder: (context, state) => const   PrepMateHome()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
     GoRoute(path: '/home', builder: (context, state) => const PrepMateHome()),
@@ -51,6 +54,19 @@ final appRouter = GoRouter(
         final id = int.parse(state.pathParameters['id']!);
         return EditorScreen(resumeId: id);
       },
+    ),
+
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: '/personal-info',
+      builder: (context, state) => const PersonalInfoScreen(),
+    ),
+    GoRoute(
+      path: '/help-support',
+      builder: (context, state) => const HelpSupportScreen(),
     ),
   ],
 );

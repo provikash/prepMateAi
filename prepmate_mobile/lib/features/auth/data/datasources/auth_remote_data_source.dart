@@ -59,14 +59,29 @@ class AuthRemoteDataSource {
 
     return response.statusCode == 200;
   }
-  Future<User?> getProfile() async{
-    final token = await TokenService.getToken();
-    final response = await dio.get(
-      'users/me/');
-    final userData = response.data;
-    if (token != null) {
-      return UserModel.fromJson(userData);
-    }
+  Future<User?> getProfile() async {
+    final response = await dio.get('users/me/');
+    return UserModel.fromJson(response.data);
+  }
 
+  Future<User?> updateProfile(User user) async {
+    final userModel = UserModel(
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      phoneNumber: user.phoneNumber,
+      location: user.location,
+      linkedin: user.linkedin,
+      skills: user.skills,
+      bio: user.bio,
+      title: user.title,
+      profileImage: user.profileImage,
+    );
+
+    final response = await dio.patch(
+      'users/me/',
+      data: userModel.toJson(),
+    );
+    return UserModel.fromJson(response.data);
   }
 }

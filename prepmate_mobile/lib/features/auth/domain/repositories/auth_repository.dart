@@ -12,4 +12,6 @@ abstract class AuthRepository {
   Future<bool> forgotPassword(String email);
 
   Future<User?> getProfile();
+
+  Future<User?> updateProfile(User user);
 }

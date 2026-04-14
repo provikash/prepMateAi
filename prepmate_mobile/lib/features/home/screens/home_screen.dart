@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/features/home/providers/home_providers.dart';
 import 'package:prepmate_mobile/features/resume/providers/template_provider.dart';
 
@@ -17,22 +18,17 @@ class PrepMateHome extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildGreeting(dashboardAsync),
-            const SizedBox(height: 24),
-            const ProgressCard(),
-            const SizedBox(height: 32),
-            _buildTemplatesHeader(),
-            const SizedBox(height: 16),
-            _buildTemplatesList(ref),
-          ],
-        ),
+      body: IndexedStack(
+        index: bottomNavIndex,
+        children: [
+          _HomeContent(dashboardAsync: dashboardAsync),
+          const Center(child: Text('Interview Screen')),
+          const Center(child: Text('ATS Score Screen')),
+          const Center(child: Text('Courses Screen')),
+          const Center(child: Text('Profile Screen Placeholder')), // We will handle navigation for profile separately if needed or replace this
+        ],
       ),
-      bottomNavigationBar: _buildBottomNav(ref, bottomNavIndex),
+      bottomNavigationBar: _buildBottomNav(context, ref, bottomNavIndex),
     );
   }
 
@@ -50,6 +46,54 @@ class PrepMateHome extends ConsumerWidget {
           onPressed: () {},
         ),
       ],
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context, WidgetRef ref, int currentIndex) {
+    return BottomNavigationBar(
+      currentIndex: currentIndex,
+      onTap: (index) {
+        if (index == 4) {
+          context.push('/profile');
+        } else {
+          ref.read(bottomNavProvider.notifier).state = index;
+        }
+      },
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: Colors.blue,
+      unselectedItemColor: Colors.grey,
+      showUnselectedLabels: true,
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.mic), label: 'Interview'),
+        BottomNavigationBarItem(icon: Icon(Icons.score), label: 'ATS Score'),
+        BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Courses'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+      ],
+    );
+  }
+}
+
+class _HomeContent extends ConsumerWidget {
+  final AsyncValue dashboardAsync;
+  const _HomeContent({required this.dashboardAsync});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildGreeting(dashboardAsync),
+          const SizedBox(height: 24),
+          const ProgressCard(),
+          const SizedBox(height: 32),
+          _buildTemplatesHeader(),
+          const SizedBox(height: 16),
+          _buildTemplatesList(ref),
+        ],
+      ),
     );
   }
 
@@ -113,7 +157,7 @@ class PrepMateHome extends ConsumerWidget {
     final templatesAsync = ref.watch(templateListProvider);
 
     return SizedBox(
-      height: 280, // Increased height to accommodate the larger card design
+      height: 280,
       child: templatesAsync.when(
         data: (templates) => ListView.builder(
           scrollDirection: Axis.horizontal,
@@ -133,24 +177,6 @@ class PrepMateHome extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
-    );
-  }
-
-  Widget _buildBottomNav(WidgetRef ref, int currentIndex) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: (index) => ref.read(bottomNavProvider.notifier).state = index,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.blue,
-      unselectedItemColor: Colors.grey,
-      showUnselectedLabels: true,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.mic), label: 'Interview'),
-        BottomNavigationBarItem(icon: Icon(Icons.score), label: 'ATS Score'),
-        BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Courses'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-      ],
     );
   }
 }

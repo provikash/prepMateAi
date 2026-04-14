@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
+import 'personal_info_screen.dart';
+import 'help_support_screen.dart';
+
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -78,14 +81,6 @@ class ProfileScreen extends ConsumerWidget {
                 color: Color(0xFF1D2939),
               ),
             ),
-            const Text(
-              'Senior Software Engineer',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF246BFD),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
             const SizedBox(height: 30),
 
             // Profile Sections
@@ -95,56 +90,25 @@ class ProfileScreen extends ConsumerWidget {
                 _ProfileItem(
                   icon: Icons.person_outline,
                   title: 'Personal Info',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PersonalInfoScreen()),
+                    );
+                  },
                 ),
                 _ProfileItem(
                   icon: Icons.security_outlined,
-                  title: 'Security',
-                  onTap: () {},
+                  title: 'Change Password',
+                  onTap: () {
+
+                  },
                 ),
               ],
             ),
-
-            _buildSection(
-              title: 'RESUME SETTINGS',
-              items: [
-                _ProfileItem(
-                  icon: Icons.description_outlined,
-                  title: 'Default Template',
-                  onTap: () {},
-                ),
-                _ProfileItem(
-                  icon: Icons.bar_chart_outlined,
-                  title: 'ATS Preferences',
-                  onTap: () {},
-                ),
-              ],
-            ),
-
-            _buildSection(
-              title: 'LEARNING',
-              items: [
-                _ProfileItem(
-                  icon: Icons.school_outlined,
-                  title: 'My Courses',
-                  onTap: () {},
-                ),
-                _ProfileItem(
-                  icon: Icons.verified_outlined,
-                  title: 'Certificates',
-                  onTap: () {},
-                ),
-              ],
-            ),
-
             _buildSection(
               title: 'APP SETTINGS',
               items: [
-                _ProfileItem(
-                  icon: Icons.notifications_none_outlined,
-                  title: 'Notifications',
-                  onTap: () {},
-                ),
                 _ProfileItem(
                   icon: Icons.dark_mode_outlined,
                   title: 'Dark Mode',
@@ -157,7 +121,12 @@ class ProfileScreen extends ConsumerWidget {
                 _ProfileItem(
                   icon: Icons.help_outline,
                   title: 'Help & Support',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HelpSupportScreen()),
+                    );
+                  },
                 ),
               ],
             ),

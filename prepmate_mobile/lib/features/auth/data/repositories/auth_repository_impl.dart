@@ -34,6 +34,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<User?> getProfile() {
-    return remote.
+    return remote.getProfile();
+  }
+
+  @override
+  Future<User?> updateProfile(User user) {
+    return remote.updateProfile(user);
   }
 }
