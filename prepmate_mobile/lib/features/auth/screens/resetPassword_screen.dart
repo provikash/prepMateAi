@@ -4,6 +4,9 @@ import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 
+import '../presentation/state/auth_state.dart';
+import '../presentation/viewmodel/auth_viewmodel.dart';
+
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
 
@@ -47,7 +50,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authViewModelProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Reset Password"), centerTitle: true),

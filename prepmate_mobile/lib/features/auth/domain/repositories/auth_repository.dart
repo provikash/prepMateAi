@@ -8,4 +8,6 @@ abstract class AuthRepository {
   Future<bool> verifyOtp(String email, String otp, String flow);
 
   Future<void> logout();
+
+  Future<bool> forgotPassword(String email);
 }

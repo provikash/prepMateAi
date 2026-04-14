@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 
+import '../presentation/state/auth_state.dart';
+import '../presentation/viewmodel/auth_viewmodel.dart';
+
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -21,9 +24,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     final email = emailController.text.trim();
 
-    await ref.read(authNotifierProvider.notifier).forgotPassword(email);
+    await ref.read(authViewModelProvider.notifier).forgotPassword(email);
 
-    final state = ref.read(authNotifierProvider);
+    final state = ref.read(authViewModelProvider);
 
     if (state.status != AuthStatus.error) {
       if (!context.mounted) return;
@@ -34,7 +37,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authViewModelProvider);
     final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(

@@ -2,26 +2,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 
 import '../../../config/dio_client.dart';
+import '../../auth/presentation/state/auth_state.dart';
+import '../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../data/homestate.dart';
 
 class HomeDashboardNotifier extends AsyncNotifier<PrepMateHomeState> {
   @override
   Future<PrepMateHomeState> build() async {
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authViewModelProvider);
 
-    if (authState.status != AuthStatus.authenticated) {
+    if (authState.status != AuthStatus.authenticated ||
+        authState.user == null) {
       throw Exception('User is not authenticated');
     }
 
     final dio = ref.watch(dioProvider);
-    // authState.user.id is a String, but based on your resume API it might be an int in some places.
-    // Ensure this matches your backend requirements.
-    return _fetchDashboardData(dio, authState.User.id.toString());
+    return _fetchDashboardData(dio, authState.user!.id);
   }
 
   Future<PrepMateHomeState> _fetchDashboardData(Dio dio, String userId) async {
     try {
-      final response = await dio.get('/api/users/$userId/dashboard/');
+      final response = await dio.get('users/$userId/dashboard/');
       final data = response.data;
 
       return PrepMateHomeState(
@@ -50,18 +51,12 @@ final homeDashboardProvider =
 final bottomNavProvider = StateProvider<int>((ref) => 0);
 
 final userDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  // 1. Get your configured Dio client
   final dio = ref.watch(dioProvider);
 
   try {
-    // 2. Make the request to your Django backend
-    // Replace with your actual user profile endpoint
-    final response = await dio.get('/api/users/me/profile/');
-
-    // 3. Return the JSON data
+    final response = await dio.get('users/me/profile/');
     return response.data as Map<String, dynamic>;
   } on DioException catch (e) {
-    // 4. Handle errors gracefully so the UI can react
     if (e.response?.statusCode == 404) {
       throw Exception('User profile not found.');
     }

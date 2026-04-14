@@ -8,6 +8,9 @@ import 'package:prepmate_mobile/core/widgets/socialButton.dart';
 import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
 
+import '../presentation/state/auth_state.dart';
+import '../presentation/viewmodel/auth_viewmodel.dart';
+
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
@@ -32,27 +35,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     super.dispose();
   }
 
-  Future<void> _signup() async {
-    if (!_formkey.currentState!.validate()) return;
-
-    final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
-    await ref
-        .read(authNotifierProvider.notifier)
-        .signup(name: name, email: email, password: password);
-  }
-
   @override
   Widget build(BuildContext context) {
-    ref.listen(authNotifierProvider, (previous, next) {
+    ref.listen(authViewModelProvider, (previous, next) {
       if (next.status == AuthStatus.success && next.email != null) {
         context.push('/verify-otp?flow=register', extra: next.email);
       }
     });
 
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authViewModelProvider);
     final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
@@ -299,7 +290,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                 NeuButton(
                   isLoading: isLoading,
-                  onPressed: _signup,
+                  onPressed: _SignupScreenState.new,
                   text: 'Create Account',
                   icon: Icons.arrow_forward,
                 ),
@@ -345,7 +336,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       icon: Icons.g_mobiledata,
                       onTap: () {
                         ref
-                            .read(authNotifierProvider.notifier)
+                            .read(authViewModelProvider.notifier)
                             .signInWithGoogle();
                       },
                     ),

@@ -50,4 +50,13 @@ class AuthRemoteDataSource {
   Future<void> logout() async {
     await TokenService.deleteToken();
   }
+
+  Future<bool> forgotPassword(String email) async {
+    final response = await dio.post(
+      'auth/forgot-password/',
+      data: {'email': email},
+    );
+
+    return response.statusCode == 200;
+  }
 }
