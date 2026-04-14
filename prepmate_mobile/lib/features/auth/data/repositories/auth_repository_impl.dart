@@ -31,4 +31,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool> forgotPassword(String email) {
     return remote.forgotPassword(email);
   }
+
+  @override
+  Future<User?> getProfile() {
+    return remote.
+  }
 }

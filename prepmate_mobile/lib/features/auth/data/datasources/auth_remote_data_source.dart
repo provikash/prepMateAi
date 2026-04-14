@@ -59,4 +59,14 @@ class AuthRemoteDataSource {
 
     return response.statusCode == 200;
   }
+  Future<User?> getProfile() async{
+    final token = await TokenService.getToken();
+    final response = await dio.get(
+      'users/me/');
+    final userData = response.data;
+    if (token != null) {
+      return UserModel.fromJson(userData);
+    }
+
+  }
 }

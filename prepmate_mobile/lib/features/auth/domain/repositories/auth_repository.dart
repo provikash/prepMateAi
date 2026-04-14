@@ -10,4 +10,6 @@ abstract class AuthRepository {
   Future<void> logout();
 
   Future<bool> forgotPassword(String email);
+
+  Future<User?> getProfile();
 }

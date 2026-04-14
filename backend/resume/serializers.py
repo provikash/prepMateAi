@@ -4,5 +4,5 @@ from .models import Resume
 class ResumeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resume
-        fields = '__all__'
-        read_only_fields=['user', 'created_at','updated_at']
+        fields = ['id', 'user','title', 'template','canvas_data','created_at','uploaded_at']
+        read_only_fields=['id','user', 'created_at','updated_at']
