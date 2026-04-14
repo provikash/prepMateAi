@@ -1,20 +1,37 @@
 import '../../domain/entities/user.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+enum AuthStatus {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  error,
+  success,
+}
 
 class AuthState {
   final AuthStatus status;
-  final String? error;
-  final bool isLoading;
+  final String? errorMessage;
+  final String? email;
   final User? user;
 
-  AuthState({this.status = AuthStatus.initial, this.error, this.user ,this.isLoading = false, });
+  AuthState({
+    this.status = AuthStatus.initial,
+    this.errorMessage,
+    this.email,
+    this.user,
+  });
 
-  AuthState copyWith({AuthStatus? status, String? error, User? user ,bool ?isLoading}) {
+  AuthState copyWith({
+    AuthStatus? status,
+    String? errorMessage,
+    String? email,
+    User? user,
+  }) {
     return AuthState(
       status: status ?? this.status,
-      error: error,
-      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+      email: email ?? this.email,
       user: user ?? this.user,
     );
   }
