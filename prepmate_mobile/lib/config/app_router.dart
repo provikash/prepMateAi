@@ -17,7 +17,7 @@ final appRouter = GoRouter(
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
     GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-    
+
     GoRoute(
       path: '/verify-otp',
       builder: (context, state) {
@@ -26,8 +26,14 @@ final appRouter = GoRouter(
       },
     ),
 
-    GoRoute(path: '/password-changed', builder: (context, state) => const PasswordChangedScreen()),
-    GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
+    GoRoute(
+      path: '/password-changed',
+      builder: (context, state) => const PasswordChangedScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordScreen(),
+    ),
 
     GoRoute(
       path: '/resumes',
@@ -36,7 +42,7 @@ final appRouter = GoRouter(
 
     GoRoute(
       path: '/template',
-      builder: (context, state) => const TemplateScreen(),
+      builder: (context, state) => const TemplateSelectionScreen(),
     ),
 
     GoRoute(

@@ -5,7 +5,6 @@ import 'package:prepmate_mobile/core/widgets/app_input_field.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 import 'package:prepmate_mobile/core/widgets/socialButton.dart';
-import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
 import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
 

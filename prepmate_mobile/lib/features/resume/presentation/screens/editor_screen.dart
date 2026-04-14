@@ -1,138 +1,96 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_quill/flutter_quill.dart';
-
-import '../../providers/resume_providers.dart';
+import 'package:prepmate_mobile/features/resume/models/canvas_element.dart';
+import '../../providers/canvas_provider.dart';
+import '../widgets/draggable_text_box.dart';
+import '../widgets/claymorphism_toolbar.dart';
 
 class EditorScreen extends ConsumerStatefulWidget {
-  final int resumeId;
-
-  const EditorScreen({super.key, required this.resumeId});
+  const EditorScreen({Key? key, required int resumeId}) : super(key: key);
 
   @override
   ConsumerState<EditorScreen> createState() => _EditorScreenState();
 }
 
 class _EditorScreenState extends ConsumerState<EditorScreen> {
-  late QuillController controller;
-  bool isLoading = true;
-  Timer? _debounce;
+  // We initialize the controller here to prepare for Phase 4 (Auto-Zoom)
+  final TransformationController _transformationController =
+      TransformationController();
 
-  @override
-  void initState() {
-    super.initState();
-    controller = QuillController.basic();
-    loadResume();
-
-    // Listen to changes for auto-save
-    controller.addListener(_onContentChanged);
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    controller.removeListener(_onContentChanged);
-    controller.dispose();
-    super.dispose();
-  }
-
-  void _onContentChanged() {
-    if (_debounce?.isActive ?? false) _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 2000), () {
-      saveResume(silent: true);
-    });
-  }
-
-  /// 🔥 Load resume content from provider
-  Future<void> loadResume() async {
-    final resumes = ref.read(resumeProvider);
-
-    try {
-      final resume = resumes.firstWhere((r) => r.id == widget.resumeId);
-
-      if (resume.content != null && resume.content.isNotEmpty) {
-        setState(() {
-          controller = QuillController(
-            document: Document.fromJson(resume.content as List<dynamic>),
-            selection: const TextSelection.collapsed(offset: 0),
-          );
-          isLoading = false;
-        });
-      } else {
-        setState(() => isLoading = false);
-      }
-    } catch (e) {
-      // If not found in state, maybe fetch from API or handle error
-      setState(() => isLoading = false);
-    }
-  }
-
-  /// 💾 Save content
-  Future<void> saveResume({bool silent = false}) async {
-    final content = controller.document.toDelta().toJson();
-
-    await ref.read(resumeProvider.notifier).updateResume(
-      widget.resumeId,
-      {"content": content},
-    );
-
-    if (!silent && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Saved successfully"), duration: Duration(seconds: 1)),
-      );
-    }
-  }
+  // Define standard A4 proportions (Width: 794px, Height: 1123px at 96 DPI)
+  final double canvasWidth = 794.0;
+  final double canvasHeight = 1123.0;
 
   @override
   Widget build(BuildContext context) {
+    // Watch the reactive list of canvas elements
+    final canvasElements = ref.watch(canvasProvider);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF0F0F3), // Soft UI background
       appBar: AppBar(
-        title: const Text("Resume Editor"),
+        title: const Text(
+          'Design Resume',
+          style: TextStyle(color: Colors.black87),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: () {
-              // TODO: Implement Export / Download
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Export feature coming soon!")),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.save),
-            onPressed: () => saveResume(),
+            onPressed: () {
+              // Trigger Phase 5 Save Logic here
+            },
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                /// TOOLBAR
-                QuillSimpleToolbar(
-                  controller: controller,
-                  // configurations: const QuillSimpleToolbarConfigurations(),
-                ),
-
-                /// EDITOR
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: QuillEditor.basic(
-                        controller: controller,
-                        // configurations: const QuillEditorConfigurations(),
-                      ),
+      body: Stack(
+        children: [
+          // LAYER 1: The Interactive Workspace
+          InteractiveViewer(
+            transformationController: _transformationController,
+            constrained:
+                false, // Allows the canvas to be larger than the screen
+            minScale: 0.1,
+            maxScale: 4.0,
+            boundaryMargin: const EdgeInsets.all(
+              500,
+            ), // Gives room to pan around
+            child: Center(
+              child: Container(
+                width: canvasWidth,
+                height: canvasHeight,
+                decoration: BoxDecoration(
+                  color: Colors.white, // The exact A4 paper color
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      spreadRadius: 5,
                     ),
-                  ),
+                  ],
                 ),
-              ],
+                // The strictly locked Stack layout
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: canvasElements.map((element) {
+                    return DraggableTextBox(element: element);
+                  }).toList(),
+                ),
+              ),
             ),
+          ),
+
+          // LAYER 2: The Claymorphism Toolbar (Fixed to bottom)
+          Positioned(
+            bottom: 30,
+            left: 20,
+            right: 20,
+            child: ClaymorphismToolbar(),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
-import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -14,12 +13,10 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
-
   final emailController = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
   Future<void> sendOtp() async {
-
     if (!formKey.currentState!.validate()) return;
 
     final email = emailController.text.trim();
@@ -29,7 +26,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final state = ref.read(authNotifierProvider);
 
     if (state.status != AuthStatus.error) {
-
       if (!context.mounted) return;
 
       context.push("/verify-otp?flow=reset&email=$email", extra: email);
@@ -38,7 +34,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.status == AuthStatus.loading;
 
@@ -57,23 +52,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           key: formKey,
           child: Column(
             children: [
-
               const SizedBox(height: 40),
 
-              const Icon(
-                Icons.lock_reset,
-                size: 120,
-                color: Colors.blue,
-              ),
+              const Icon(Icons.lock_reset, size: 120, color: Colors.blue),
 
               const SizedBox(height: 30),
 
               const Text(
                 "Forgot Password?",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 10),
@@ -91,19 +78,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
                 prefixIcon: Icons.email,
                 validator: (value) {
-
                   if (value == null || value.isEmpty) {
                     return "Enter email";
                   }
 
                   if (!RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                      .hasMatch(value)) {
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(value)) {
                     return "Invalid email";
                   }
 
                   return null;
-                }, hint: 'Enter your Email',
+                },
+                hint: 'Enter your Email',
               ),
 
               const SizedBox(height: 30),
@@ -112,11 +99,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 width: double.infinity,
                 height: 50,
                 child: NeuButton(
-
                   onPressed: isLoading ? null : sendOtp,
 
-                   isLoading:false, text: 'Send OTP',
-
+                  isLoading: false,
+                  text: 'Send OTP',
                 ),
               ),
 

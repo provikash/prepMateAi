@@ -1,13 +1,20 @@
-class AuthViewModel extends StateNotifier<AuthState> {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// ✅ FIXED paths
+import 'package:prepmate_mobile/features/auth/domain/repositories/auth_repository.dart';
+import 'package:prepmate_mobile/features/auth/presentation/state/auth_state.dart';
+
+class ProfileViewModel extends StateNotifier<AuthState> {
   final AuthRepository repository;
 
-  AuthViewModel(this.repository) : super(AuthState());
+  ProfileViewModel(this.repository) : super(AuthState());
 
-  Future<void> login(String email, String password) async {
+  /// Load user profile
+  Future<void> loadProfile() async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final user = await repository.login(email, password);
+      final user = await repository.getProfile();
 
       state = state.copyWith(
         user: user,
@@ -21,17 +28,19 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> loadProfile() async {
-    try {
-      final user = await repository.getProfile();
-      state = state.copyWith(user: user);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
-
+  /// Logout user
   Future<void> logout() async {
-    await repository.logout();
-    state = AuthState(); // reset
+    state = state.copyWith(isLoading: true);
+
+    try {
+      await repository.logout();
+
+      state = AuthState(); // reset بالكامل
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+    }
   }
 }
