@@ -4,7 +4,8 @@ import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 
-import '../providers/auth_provider.dart';
+import '../presentation/state/auth_state.dart';
+import '../presentation/viewmodel/auth_viewmodel.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -15,7 +16,6 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
-
   final passwordController = TextEditingController();
   final confirmController = TextEditingController();
 
@@ -27,7 +27,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   bool hasUppercase = false;
 
   void checkPassword(String password) {
-
     setState(() {
       has8Char = password.length >= 8;
       hasSpecial = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
@@ -51,40 +50,28 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authViewModelProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Reset Password"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Reset Password"), centerTitle: true),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-
             const SizedBox(height: 10),
 
             CircleAvatar(
               radius: 40,
               backgroundColor: Colors.blue.withOpacity(0.1),
-              child: const Icon(
-                Icons.lock_reset,
-                size: 35,
-                color: Colors.blue,
-              ),
+              child: const Icon(Icons.lock_reset, size: 35, color: Colors.blue),
             ),
 
             const SizedBox(height: 20),
 
             const Text(
               "Set a New Password",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 8),
@@ -127,9 +114,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
             const SizedBox(height: 8),
 
-            NeuTextField(controller: confirmController, hint: 'Re-enter new password',
-            isPassword: true,),
-
+            NeuTextField(
+              controller: confirmController,
+              hint: 'Re-enter new password',
+              isPassword: true,
+            ),
 
             const SizedBox(height: 25),
 
@@ -150,8 +139,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             requirement(has8Char, "At least 8 characters"),
             const SizedBox(height: 6),
 
-            requirement(hasSpecial,
-                "Include a special character (e.g. !@#\$)"),
+            requirement(hasSpecial, "Include a special character (e.g. !@#\$)"),
             const SizedBox(height: 6),
 
             requirement(hasUppercase, "One uppercase letter"),
@@ -175,8 +163,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             //     ),
             //   ),
             // ),
-
-            NeuButton(isLoading: authState.status== AuthStatus.loading, onPressed: () {}, text: 'Update Password'),
+            NeuButton(
+              isLoading: authState.status == AuthStatus.loading,
+              onPressed: () {},
+              text: 'Update Password',
+            ),
 
             const SizedBox(height: 15),
 
@@ -185,7 +176,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 Navigator.pop(context);
               },
               child: const Text("Cancel and return to login"),
-            )
+            ),
           ],
         ),
       ),

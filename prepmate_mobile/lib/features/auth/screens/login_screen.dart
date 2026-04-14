@@ -7,7 +7,8 @@ import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 import 'package:prepmate_mobile/core/widgets/socialButton.dart';
 
-import '/features/auth/providers/auth_provider.dart';
+import '../presentation/state/auth_state.dart';
+import '../presentation/viewmodel/auth_viewmodel.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,16 +20,15 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(authNotifierProvider, (previous, next) {
+    ref.listen(authViewModelProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
         context.go("/home");
       }
     });
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authViewModelProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -125,7 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 isLoading: authState.status == AuthStatus.loading,
                 onPressed: () async {
                   await ref
-                      .read(authNotifierProvider.notifier)
+                      .read(authViewModelProvider.notifier)
                       .login(
                         _emailController.text.trim(),
                         _passwordController.text,
@@ -133,7 +133,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   if (!mounted) return;
 
-                  final state = ref.read(authNotifierProvider);
+                  final state = ref.read(authViewModelProvider);
 
                   if (state.status == AuthStatus.authenticated) {
                     context.go('/home');

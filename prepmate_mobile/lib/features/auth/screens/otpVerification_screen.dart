@@ -2,10 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinput/pinput.dart';
-import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
-import 'package:prepmate_mobile/features/auth/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+
+import '../presentation/state/auth_state.dart';
+import '../presentation/viewmodel/auth_viewmodel.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String email;
@@ -48,41 +49,24 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     super.dispose();
   }
 
-  void verifyOtp() async {
+  Future<void> verifyOtp() async {
     final otp = otpController.text.trim();
 
     if (otp.length != 6) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Enter valid OTP")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Enter valid 6-digit OTP")));
       return;
     }
 
-    try {
-      final success = await ref
-          .read(authNotifierProvider.notifier)
-          .verifyOtp(otp, widget.email, "register");
-
-      if (success) {
-        if (!context.mounted) return;
-           context.go('/login');
-
-
-
-
-      } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Invalid OTP")));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
-    }
+    await ref
+        .read(authViewModelProvider.notifier)
+        .verifyOtp(widget.email, otp, "register");
   }
 
   @override
   Widget build(BuildContext context) {
-
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authViewModelProvider);
     final defaultPinTheme = PinTheme(
       width: 50,
       height: 55,
@@ -158,7 +142,11 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
             //     child: const Text("Verify", style: TextStyle(fontSize: 18)),
             //   ),
             // )
-            NeuButton(isLoading: authState.status == AuthStatus.loading, onPressed: verifyOtp, text: "Verify", ),
+            NeuButton(
+              isLoading: authState.status == AuthStatus.loading,
+              onPressed: verifyOtp,
+              text: "Verify",
+            ),
 
             const SizedBox(height: 30),
 
@@ -174,7 +162,6 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                             secondsRemaining = 59;
                           });
                           startTimer();
-
                         },
                         child: const Text(
                           "Resend",
