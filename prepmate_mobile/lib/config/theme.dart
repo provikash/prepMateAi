@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 class AppTheme {
   /* ---------------- LIGHT COLORS ---------------- */
 
-  static const Color lightBackground = Color(0xFFEEF1F5);
+  static const Color lightBackgrounds = Color(0xFFEEF1F5);
+  static const Color lightBackground = Color(0xFFF2F4F8);
   static const Color lightSurface = Color(0xFFF3F6FA);
 
   static const Color primary = Color(0xFF4A89F3);
 
   static const Color textPrimary = Color(0xFF1F1F1F);
+  static const Color headingPrimary = Color(0xFF2C6CE0);
   static const Color textSecondary = Color(0xFF8A8A8A);
 
   /* ---------------- DARK COLORS ---------------- */
@@ -22,10 +24,7 @@ class AppTheme {
   /* ---------------- BUTTON GRADIENT ---------------- */
 
   static const LinearGradient buttonGradient = LinearGradient(
-    colors: [
-      Color(0xFF8FB8FF),
-      Color(0xFF4A89F3),
-    ],
+    colors: [Color(0xFF8FB8FF), Color(0xFF4A89F3)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -37,25 +36,14 @@ class AppTheme {
       color: Colors.white,
       offset: Offset(-6, -6),
       blurRadius: 12,
+      spreadRadius: 1,
     ),
-    BoxShadow(
-      color: Color(0xFFD1D9E6),
-      offset: Offset(6, 6),
-      blurRadius: 12,
-    ),
+    BoxShadow(color: Color(0xFFD1D9E6), offset: Offset(6, 6), blurRadius: 12),
   ];
 
   static const List<BoxShadow> darkShadow = [
-    BoxShadow(
-      color: Color(0xFF2A2F36),
-      offset: Offset(-6, -6),
-      blurRadius: 12,
-    ),
-    BoxShadow(
-      color: Colors.black54,
-      offset: Offset(6, 6),
-      blurRadius: 12,
-    ),
+    BoxShadow(color: Color(0xFF2A2F36), offset: Offset(-6, -6), blurRadius: 12),
+    BoxShadow(color: Colors.black54, offset: Offset(6, 6), blurRadius: 12),
   ];
 
   /* ---------------- LIGHT THEME ---------------- */
@@ -82,10 +70,7 @@ class AppTheme {
         fontWeight: FontWeight.w500,
         color: textPrimary,
       ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        color: textSecondary,
-      ),
+      bodyMedium: TextStyle(fontSize: 14, color: textSecondary),
     ),
 
     inputDecorationTheme: InputDecorationTheme(
@@ -96,10 +81,7 @@ class AppTheme {
       ),
       filled: true,
       fillColor: lightSurface,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
   );
 
@@ -127,10 +109,7 @@ class AppTheme {
         fontWeight: FontWeight.w500,
         color: darkTextPrimary,
       ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        color: darkTextSecondary,
-      ),
+      bodyMedium: TextStyle(fontSize: 14, color: darkTextSecondary),
     ),
 
     inputDecorationTheme: InputDecorationTheme(
@@ -141,10 +120,7 @@ class AppTheme {
       ),
       filled: true,
       fillColor: darkSurface,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
   );
 }
