@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/entities/user.dart';
 import '../providers/auth_provider.dart';
 import '../state/auth_state.dart';
 
@@ -99,6 +101,40 @@ class AuthViewModel extends Notifier<AuthState> {
   Future<void> logout() async {
     await _repository.logout();
     state = AuthState(status: AuthStatus.unauthenticated);
+  }
+
+  Future<void> getProfile() async {
+    try {
+      final user = await _repository.getProfile();
+      if (user != null) {
+        state = state.copyWith(user: user);
+      }
+    } catch (e) {
+      debugPrint("Error fetching profile: $e");
+    }
+  }
+
+  Future<void> updateProfile(User user) async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      final updatedUser = await _repository.updateProfile(user);
+      if (updatedUser != null) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          user: updatedUser,
+        );
+      } else {
+        state = state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: "Failed to update profile",
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.toString(),
+      );
+    }
   }
 
   Future<void> forgotPassword(String email) async {
