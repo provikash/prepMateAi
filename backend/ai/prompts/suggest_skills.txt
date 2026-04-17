@@ -1,0 +1,1 @@
+Suggest relevant ATS-friendly skills for the given role.

@@ -24,3 +24,17 @@ class ResumeSerializer(serializers.ModelSerializer):
     def validate_data(self, value):
         ResumeValidationService.validate_resume_data(value)
         return value
+
+    def validate(self, attrs):
+        template = attrs.get("template", getattr(self.instance, "template", None))
+        data = attrs.get("data", getattr(self.instance, "data", None))
+
+        if self.instance is None and template is None:
+            raise serializers.ValidationError(
+                {"template": "Selecting a template is required when creating a resume."}
+            )
+
+        if template is not None and data is not None:
+            ResumeValidationService.validate_data_against_template(data, template)
+
+        return attrs
