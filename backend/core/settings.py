@@ -55,25 +55,12 @@ INSTALLED_APPS = [
 
     'users',
 
-    'django.contrib.sites',
-
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'rest_framework.authtoken',
-
-    'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.linkedin_oauth2',
-
-    'dj_rest_auth',
-    'dj_rest_auth.registration',
-
     'corsheaders',
     'resume',
+    'templates',
+    'exports',
 
 ]
-
-SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -84,7 +71,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-     'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -154,6 +140,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -170,6 +158,8 @@ REST_FRAMEWORK ={
     'DEFAULT_PERMISSION_CLASSES':(
      'rest_framework.permissions.AllowAny',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'core.pagination.DefaultPagination',
+    'PAGE_SIZE': 10,
 }
 
 AUTH_USER_MODEL ='users.User'

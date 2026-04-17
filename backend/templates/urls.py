@@ -1,9 +1,9 @@
 from rest_framework.routers import DefaultRouter
 
-from .views import ResumeViewSet
+from .views import TemplateViewSet
 
 
 router = DefaultRouter()
-router.register("", ResumeViewSet, basename="resume")
+router.register("", TemplateViewSet, basename="template")
 
 urlpatterns = router.urls
