@@ -22,8 +22,9 @@ class ResumeSerializer(serializers.ModelSerializer):
         return cleaned_title
 
     def validate_data(self, value):
-        ResumeValidationService.validate_resume_data(value)
-        return value
+        normalized_value = ResumeValidationService.normalize_resume_data(value)
+        ResumeValidationService.validate_resume_data(normalized_value)
+        return normalized_value
 
     def validate(self, attrs):
         template = attrs.get("template", getattr(self.instance, "template", None))

@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/v1/resumes/', include('resume.urls')),
     path('api/v1/templates/', include('templates.urls')),
     path('api/v1/', include('exports.urls')),
+    path('api/v1/ai/', include('ai.urls')),
 ]
 
 if settings.DEBUG:

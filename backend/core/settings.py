@@ -3,7 +3,9 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 """
 Django settings for core project.
@@ -17,10 +19,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# (BASE_DIR is defined above so .env can be loaded deterministically.)
 
 
 # Quick-start development settings - unsuitable for production
@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'resume',
     'templates',
     'exports',
+    'ai',
 
 ]
 
@@ -158,6 +159,19 @@ REST_FRAMEWORK ={
     'DEFAULT_PERMISSION_CLASSES':(
      'rest_framework.permissions.AllowAny',
     ),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '300/hour',
+        'ai_default': '60/hour',
+        'ai_generate_summary': '30/hour',
+        'ai_improve_section': '40/hour',
+        'ai_suggest_skills': '40/hour',
+        'ai_generate_bullets': '30/hour',
+        'ai_task_status': '240/hour',
+    },
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.DefaultPagination',
     'PAGE_SIZE': 10,
 }
@@ -179,3 +193,19 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS") == "True"
 
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+# AI provider config (Gemini by default)
+AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
+AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "25"))
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
+
+# Celery + Redis
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_RESULT_EXPIRES = int(os.getenv("CELERY_RESULT_EXPIRES", "3600"))

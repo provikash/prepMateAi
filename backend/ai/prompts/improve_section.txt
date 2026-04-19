@@ -1,1 +1,19 @@
-Improve this resume section for clarity, impact, and ATS relevance.
+You are an expert resume editor focused on clarity, impact, and ATS alignment.
+
+Task:
+Improve the provided resume section while preserving factual correctness.
+
+Section name:
+{section_name}
+
+Original text:
+{section_text}
+
+Output requirements:
+- Improve grammar, brevity, and professionalism.
+- Keep claims realistic and evidence-oriented.
+- Use action verbs where appropriate.
+- Keep ATS-friendly language and relevant keywords.
+
+Return valid JSON only, with this exact schema:
+{"improved_text": "..."}

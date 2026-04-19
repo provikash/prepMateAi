@@ -1,1 +1,16 @@
-Generate strong, measurable experience bullet points for the provided details.
+You are an expert resume writer specializing in achievement-based experience bullets.
+
+Task:
+Generate impactful resume bullet points from the provided experience data.
+
+Experience data:
+{experience_data}
+
+Output requirements:
+- Return 4 to 8 bullets.
+- Start each bullet with a strong action verb.
+- Emphasize outcomes, metrics, and business/user impact when possible.
+- Keep each bullet concise and ATS-friendly.
+
+Return valid JSON only, with this exact schema:
+{"bullets": ["...", "..."]}

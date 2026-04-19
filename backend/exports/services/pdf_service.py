@@ -2,6 +2,7 @@ from django.template import Context, Template
 from rest_framework.exceptions import NotFound, ValidationError
 
 from resume.models import Resume
+from resume.rendering import ResumeRenderService
 
 
 class PDFExportService:
@@ -17,10 +18,11 @@ class PDFExportService:
         if not resume.template:
             raise ValidationError("Resume does not have an assigned template.")
 
+        normalized_data = ResumeRenderService.prepare_resume_context(resume.data)
         template = Template(resume.template.html_structure)
         context = Context(
             {
-                "resume": resume.data,
+                "resume": normalized_data,
                 "resume_title": resume.title,
                 "user": resume.user,
             }
