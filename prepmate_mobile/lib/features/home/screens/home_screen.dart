@@ -6,6 +6,7 @@ import 'package:prepmate_mobile/features/resume/providers/template_provider.dart
 import 'package:prepmate_mobile/features/interview/presentation/screens/interview_screen.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
 
+import 'package:prepmate_mobile/features/courses/presentation/screens/courses_screen.dart';
 import '../../resume/presentation/widgets/template_card.dart';
 import '../widgets/progressCard.dart';
 
@@ -26,8 +27,8 @@ class PrepMateHome extends ConsumerWidget {
           _HomeContent(dashboardAsync: dashboardAsync),
           const InterviewScreen(),
           const AnalyzeScreen(),
-          const Center(child: Text('Courses Screen')),
-          const Center(child: Text('Profile Screen Placeholder')), // We will handle navigation for profile separately if needed or replace this
+          const CoursesScreen(),
+          const Center(child: Text('Profile Screen Placeholder')),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(context, ref, bottomNavIndex),

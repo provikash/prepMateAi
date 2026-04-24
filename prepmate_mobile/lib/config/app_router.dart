@@ -19,6 +19,7 @@ import '../features/auth/screens/otpVerification_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/passwordChanged_screen.dart';
 import '../features/auth/screens/signup_screen.dart';
+import '../features/splash/screens/splash_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
