@@ -1,25 +1,34 @@
+import logging
 import random
-from django.core.mail import send_mail
+
 from django.conf import settings
-from .models import OTP
-def generate_otp():
-  return str(random.randint(100000,999999))
+from django.core.mail import send_mail
 
-def send_otp_email(email,otp):
-  subject='your OTP Verification Code'
-  message =f"""
-  Hello,
-  Your OTP verification code is:{otp}
-  This OTP is valid for 5 minutes.
+logger = logging.getLogger(__name__)
 
-  Thanks
-  PrepMateAi
-  """
-  send_mail(subject,message,settings.EMAIL_HOST_USER,[email],fail_silently=False)
 
-def resend_otp(email,purpose):
-  """Delete old OTP and sends a new one """
-  OTP.objects.filter(email=email,purpose=purpose).delete()
-otp_code = generate_otp()
-OTP.objects.create(email=email,otp=otp_code)
-send_otp_email(email,otp_code)
+def generate_otp() -> str:
+    return str(random.randint(100000, 999999))
+
+
+def send_otp_email(email: str, otp: str) -> int:
+    subject = "Your OTP Verification Code"
+    message = (
+        "Hello,\n\n"
+        f"Your OTP verification code is: {otp}\n"
+        "This OTP is valid for 5 minutes.\n\n"
+        "Thanks,\n"
+        "PrepMateAi"
+    )
+    from_email = settings.DEFAULT_FROM_EMAIL or settings.EMAIL_HOST_USER
+
+    # Raise SMTP/auth errors to caller so API can return a clear failure.
+    return send_mail(subject, message, from_email, [email], fail_silently=False)
+
+
+def resend_otp(email: str, purpose: str = "register") -> str:
+    """Generate and send a new OTP. Persistence must be handled by the caller."""
+    otp_code = generate_otp()
+    send_otp_email(email, otp_code)
+    logger.info("OTP email sent for purpose=%s to %s", purpose, email)
+    return otp_code

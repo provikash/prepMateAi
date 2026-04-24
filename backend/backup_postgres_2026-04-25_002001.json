@@ -1,0 +1,74 @@
+﻿[
+{
+  "model": "resume.resumetemplate",
+  "pk": "4b1175c1-b898-4f93-bc33-49b63ab4390d",
+  "fields": {
+    "created_at": "2026-04-24T18:25:20.305Z",
+    "updated_at": "2026-04-24T18:25:20.305Z",
+    "name": "Modern",
+    "preview_image": "",
+    "html_structure": "{}",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "4ba7bb19-6408-4d41-aff9-e09e1831b005",
+  "fields": {
+    "created_at": "2026-04-24T18:25:20.418Z",
+    "updated_at": "2026-04-24T18:25:20.418Z",
+    "name": "Professional Simple",
+    "preview_image": "",
+    "html_structure": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            margin: 40px;\n            color: #222;\n        }\n\n        h1 {\n            font-size: 28px;\n            margin-bottom: 2px;\n        }\n\n        h2 {\n            font-size: 18px;\n            border-bottom: 1px solid #000;\n            margin-top: 20px;\n            padding-bottom: 4px;\n        }\n\n        .subheading {\n            font-size: 14px;\n            margin-bottom: 10px;\n        }\n\n        p {\n            margin: 4px 0;\n        }\n\n        .section {\n            margin-bottom: 12px;\n        }\n\n        .item {\n            margin-bottom: 8px;\n        }\n\n        .bold {\n            font-weight: bold;\n        }\n\n        ul {\n            padding-left: 18px;\n        }\n\n        .header {\n            margin-bottom: 10px;\n        }\n    </style>\n</head>\n\n<body>\n\n    <div class=\"header\">\n        <h1>{{ resume.personal_info.name }}</h1>\n        <p class=\"subheading\">{{ resume.personal_info.role }}</p>\n        <p>{{ resume.personal_info.phone }} | {{ resume.personal_info.email }} | {{ resume.personal_info.linkedin }} | {{ resume.personal_info.github }}</p>\n    </div>\n\n    <div class=\"section\">\n        <h2>Summary</h2>\n        <p>{{ resume.personal_info.summary }}</p>\n    </div>\n\n    <div class=\"section\">\n        <h2>Skills</h2>\n        <ul>\n            {% for skill in resume.skills %}\n                <li>{{ skill }}</li>\n            {% endfor %}\n        </ul>\n    </div>\n\n    <div class=\"section\">\n        <h2>Projects</h2>\n        {% for project in resume.projects %}\n            <div class=\"item\">\n                <p class=\"bold\">{{ project.title }}</p>\n                <p>{{ project.description }}</p>\n            </div>\n        {% endfor %}\n    </div>\n\n    <div class=\"section\">\n        <h2>Certifications & Achievements</h2>\n        <ul>\n            {% for certification in resume.certifications %}\n                <li>{{ certification }}</li>\n            {% endfor %}\n        </ul>\n    </div>\n\n    <div class=\"section\">\n        <h2>Education</h2>\n        {% for edu in resume.education %}\n            <div class=\"item\">\n                <p class=\"bold\">{{ edu.degree }}</p>\n                <p>{{ edu.institution }}{% if edu.year %} | {{ edu.year }}{% endif %}</p>\n            </div>\n        {% endfor %}\n    </div>\n\n</body>\n</html>\n",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "6e9adb87-6f64-45a8-99ef-5f68a736992b",
+  "fields": {
+    "created_at": "2026-04-24T18:25:20.309Z",
+    "updated_at": "2026-04-24T18:25:20.309Z",
+    "name": "Minimal",
+    "preview_image": "",
+    "html_structure": "{}",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "819db497-b6ba-4c59-86b3-07e687233813",
+  "fields": {
+    "created_at": "2026-04-24T18:25:20.308Z",
+    "updated_at": "2026-04-24T18:25:20.308Z",
+    "name": "Classic",
+    "preview_image": "",
+    "html_structure": "{}",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "a495da38-f490-42c5-9692-f843ce768516",
+  "fields": {
+    "created_at": "2026-04-24T18:25:20.311Z",
+    "updated_at": "2026-04-24T18:25:20.311Z",
+    "name": "Default",
+    "preview_image": "",
+    "html_structure": "{}",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "daf8eecc-5413-48aa-b3a1-1fc6af803197",
+  "fields": {
+    "created_at": "2026-04-24T18:25:20.436Z",
+    "updated_at": "2026-04-24T18:25:20.436Z",
+    "name": "Vikash Flutter Professional",
+    "preview_image": "",
+    "html_structure": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\" />\n    <style>\n        @page {\n            size: A4;\n            margin: 24px 30px;\n        }\n\n        body {\n            font-family: \"Times New Roman\", Times, serif;\n            color: #111;\n            line-height: 1.35;\n            font-size: 13px;\n        }\n\n        .header {\n            text-align: center;\n            margin-bottom: 12px;\n        }\n\n        .name {\n            margin: 0;\n            font-size: 34px;\n            line-height: 1;\n            letter-spacing: 1px;\n            text-transform: uppercase;\n            font-weight: 700;\n        }\n\n        .role {\n            margin: 4px 0 8px;\n            font-size: 18px;\n            line-height: 1;\n            font-weight: 600;\n        }\n\n        .contact-line {\n            margin: 0;\n            font-size: 12px;\n            line-height: 1.4;\n            word-break: break-word;\n        }\n\n        .contact-line a {\n            color: #111;\n            text-decoration: underline;\n        }\n\n        .section {\n            margin-top: 12px;\n        }\n\n        .section-title {\n            margin: 0;\n            font-size: 20px;\n            line-height: 1.1;\n            font-weight: 700;\n        }\n\n        .section-rule {\n            border: none;\n            border-top: 1px solid #555;\n            margin: 2px 0 6px;\n        }\n\n        .summary-text {\n            margin: 0;\n            text-align: justify;\n        }\n\n        .skill-list {\n            margin: 0;\n            padding-left: 18px;\n        }\n\n        .skill-list li {\n            margin: 1px 0;\n        }\n\n        .project-item {\n            margin-bottom: 10px;\n        }\n\n        .project-head {\n            display: table;\n            width: 100%;\n        }\n\n        .project-title-wrap,\n        .project-date {\n            display: table-cell;\n            vertical-align: top;\n        }\n\n        .project-title-wrap {\n            width: 72%;\n            padding-right: 10px;\n        }\n\n        .project-title {\n            font-weight: 700;\n        }\n\n        .project-stack {\n            font-style: italic;\n            color: #222;\n        }\n\n        .project-date {\n            width: 28%;\n            text-align: right;\n            font-weight: 700;\n        }\n\n        .project-bullets {\n            margin: 2px 0 0 18px;\n            padding: 0;\n            list-style: none;\n        }\n\n        .project-bullets li {\n            margin: 1px 0;\n            position: relative;\n            padding-left: 12px;\n            text-align: justify;\n        }\n\n        .project-bullets li:before {\n            content: \"-\";\n            position: absolute;\n            left: 0;\n        }\n\n        .project-description {\n            margin: 3px 0 0 18px;\n            text-align: justify;\n        }\n\n        .source-line {\n            margin: 2px 0 0 18px;\n        }\n\n        .source-line a {\n            color: #111;\n            text-decoration: underline;\n        }\n\n        .cert-list {\n            margin: 0;\n            padding-left: 18px;\n        }\n\n        .cert-list li {\n            margin: 2px 0;\n            text-align: justify;\n        }\n\n        .cert-title {\n            font-weight: 700;\n        }\n\n        .edu-item {\n            margin-bottom: 6px;\n        }\n\n        .edu-head {\n            display: table;\n            width: 100%;\n        }\n\n        .edu-degree,\n        .edu-year {\n            display: table-cell;\n            vertical-align: top;\n        }\n\n        .edu-degree {\n            width: 70%;\n            font-weight: 700;\n        }\n\n        .edu-year {\n            width: 30%;\n            text-align: right;\n            font-weight: 700;\n        }\n\n        .edu-subhead {\n            display: table;\n            width: 100%;\n            font-style: italic;\n            color: #222;\n        }\n\n        .edu-school,\n        .edu-location {\n            display: table-cell;\n            vertical-align: top;\n        }\n\n        .edu-school {\n            width: 70%;\n        }\n\n        .edu-location {\n            width: 30%;\n            text-align: right;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"header\">\n        <h1 class=\"name\">{{ resume.personal_info.name }}</h1>\n        {% if resume.personal_info.role %}<p class=\"role\">{{ resume.personal_info.role }}</p>{% endif %}\n        <p class=\"contact-line\">\n            {% if resume.personal_info.phone %}<span>{{ resume.personal_info.phone }}</span>{% endif %}\n            {% if resume.personal_info.email %}<span> | <a href=\"mailto:{{ resume.personal_info.email }}\">{{ resume.personal_info.email }}</a></span>{% endif %}\n            {% if resume.personal_info.linkedin_url %}<span> | LinkedIn: <a href=\"{{ resume.personal_info.linkedin_url }}\">{{ resume.personal_info.linkedin|default:resume.personal_info.linkedin_url }}</a></span>{% endif %}\n            {% if resume.personal_info.github_url %}<span> | GitHub: <a href=\"{{ resume.personal_info.github_url }}\">{{ resume.personal_info.github|default:resume.personal_info.github_url }}</a></span>{% endif %}\n        </p>\n    </div>\n\n    {% if resume.has_summary %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Summary</h2>\n            <hr class=\"section-rule\" />\n            <p class=\"summary-text\">{{ resume.personal_info.summary }}</p>\n        </div>\n    {% endif %}\n\n    {% if resume.has_skills %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Skills</h2>\n            <hr class=\"section-rule\" />\n            <ul class=\"skill-list\">\n                {% if resume.skill_groups.programming_languages %}<li><strong>Programming Languages:</strong> {{ resume.skill_groups.programming_languages }}</li>{% endif %}\n                {% if resume.skill_groups.mobile_framework %}<li><strong>Mobile Framework:</strong> {{ resume.skill_groups.mobile_framework }}</li>{% endif %}\n                {% if resume.skill_groups.architecture %}<li><strong>State Management & Architecture:</strong> {{ resume.skill_groups.architecture }}</li>{% endif %}\n                {% if resume.skill_groups.ui_ux %}<li><strong>UI/UX & Frontend Capabilities:</strong> {{ resume.skill_groups.ui_ux }}</li>{% endif %}\n                {% if resume.skill_groups.tools %}<li><strong>Tools & Infrastructure:</strong> {{ resume.skill_groups.tools }}</li>{% endif %}\n                {% if resume.skills and not resume.skill_groups.programming_languages and not resume.skill_groups.mobile_framework and not resume.skill_groups.architecture and not resume.skill_groups.ui_ux and not resume.skill_groups.tools %}\n                    <li>{{ resume.skills|join:\", \" }}</li>\n                {% endif %}\n            </ul>\n        </div>\n    {% endif %}\n\n    {% if resume.has_projects %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Projects</h2>\n            <hr class=\"section-rule\" />\n            {% for project in resume.projects %}\n                <div class=\"project-item\">\n                    <div class=\"project-head\">\n                        <div class=\"project-title-wrap\">\n                            {% if project.title %}<span class=\"project-title\">{{ project.title }}</span>{% endif %}\n                            {% if project.stack %}<span> | </span><span class=\"project-stack\">{{ project.stack }}</span>{% endif %}\n                        </div>\n                        {% if project.date_range %}<div class=\"project-date\">{{ project.date_range }}</div>{% endif %}\n                    </div>\n\n                    {% if project.bullets %}\n                        <ul class=\"project-bullets\">\n                            {% for bullet in project.bullets %}\n                                <li>{{ bullet }}</li>\n                            {% endfor %}\n                        </ul>\n                    {% elif project.description %}\n                        <p class=\"project-description\">{{ project.description }}</p>\n                    {% endif %}\n\n                    {% if project.source_code %}\n                        <p class=\"source-line\">Source Code: <a href=\"{{ project.source_code }}\">{{ project.source_code }}</a></p>\n                    {% endif %}\n                </div>\n            {% endfor %}\n        </div>\n    {% endif %}\n\n    {% if resume.has_certifications %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Certifications & Achievements</h2>\n            <hr class=\"section-rule\" />\n            <ul class=\"cert-list\">\n                {% for cert in resume.certifications %}\n                    <li>\n                        <span class=\"cert-title\">{{ cert.title }}</span>\n                        {% if cert.description %}: {{ cert.description }}{% endif %}\n                    </li>\n                {% endfor %}\n            </ul>\n        </div>\n    {% endif %}\n\n    {% if resume.has_education %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Education</h2>\n            <hr class=\"section-rule\" />\n            {% for edu in resume.education %}\n                <div class=\"edu-item\">\n                    <div class=\"edu-head\">\n                        <div class=\"edu-degree\">{{ edu.degree }}</div>\n                        <div class=\"edu-year\">{{ edu.year }}</div>\n                    </div>\n                    {% if edu.institution or edu.location %}\n                        <div class=\"edu-subhead\">\n                            <div class=\"edu-school\">{{ edu.institution }}</div>\n                            <div class=\"edu-location\">{{ edu.location }}</div>\n                        </div>\n                    {% endif %}\n                </div>\n            {% endfor %}\n        </div>\n    {% endif %}\n</body>\n</html>\n",
+    "is_active": true
+  }
+}
+]
