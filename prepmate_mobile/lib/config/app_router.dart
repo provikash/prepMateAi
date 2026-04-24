@@ -21,8 +21,9 @@ import '../features/auth/screens/passwordChanged_screen.dart';
 import '../features/auth/screens/signup_screen.dart';
 
 final appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
     GoRoute(path: '/', builder: (context, state) => const PrepMateHome()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
