@@ -9,6 +9,7 @@ class AuthRemoteDataSource {
   AuthRemoteDataSource(this.dio);
 
   Future<User?> login(String email, String password) async {
+    // URL will be BASE_URL + auth/login/ -> http://.../api/auth/login/
     final response = await dio.post(
       'auth/login/',
       data: {'email': email, 'password': password},
@@ -35,9 +36,10 @@ class AuthRemoteDataSource {
   }
 
   Future<bool> verifyOtp(String email, String otp, String flow) async {
+    // Both verify-otp and register are under the 'auth/' prefix in core/urls.py
     final endpoint = flow == 'login'
         ? 'auth/verify-login-otp/'
-        : 'users/verify-otp/';
+        : 'auth/verify-otp/';
 
     final response = await dio.post(
       endpoint,

@@ -54,7 +54,7 @@ final userDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final dio = ref.watch(dioProvider);
 
   try {
-    final response = await dio.get('users/me/profile/');
+    final response = await dio.get('users/me/');
     return response.data as Map<String, dynamic>;
   } on DioException catch (e) {
     if (e.response?.statusCode == 404) {

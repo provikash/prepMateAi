@@ -5,11 +5,12 @@ import '../providers/home_providers.dart';
 
 // --- PROGRESS CARD WIDGET ---
 class ProgressCard extends ConsumerWidget {
-  const ProgressCard({Key? key}) : super(key: key);
+  const ProgressCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userDataAsync = ref.watch(userDataProvider);
+    // Corrected to use homeDashboardProvider which returns PrepMateHomeState
+    final dashboardAsync = ref.watch(homeDashboardProvider);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -24,18 +25,18 @@ class ProgressCard extends ConsumerWidget {
           ),
         ],
       ),
-      child: userDataAsync.when(
+      child: dashboardAsync.when(
         data: (data) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
+                const Row(
                   children: [
-                    const Icon(Icons.trending_up, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    const Text(
+                    Icon(Icons.trending_up, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text(
                       'Current Progress',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
@@ -53,9 +54,9 @@ class ProgressCard extends ConsumerWidget {
                     color: const Color(0xFFE3F2FD), // Light blue
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
-                    'Draft',
-                    style: TextStyle(
+                  child: Text(
+                    data.progressStatus,
+                    style: const TextStyle(
                       color: Colors.blue,
                       fontWeight: FontWeight.bold,
                     ),
@@ -68,14 +69,14 @@ class ProgressCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  data['role'],
+                  data.role,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  '${(data['progress'] * 100).toInt()}%',
+                  '${(data.progress * 100).toInt()}%',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -88,7 +89,7 @@ class ProgressCard extends ConsumerWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
-                value: data['progress'],
+                value: data.progress,
                 minHeight: 10,
                 backgroundColor: const Color(0xFFEEEEEE),
                 color: Colors.blue,
@@ -107,7 +108,7 @@ class ProgressCard extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      data['suggestion'],
+                      data.aiSuggestion,
                       style: const TextStyle(color: Colors.black87),
                     ),
                   ),
@@ -118,7 +119,7 @@ class ProgressCard extends ConsumerWidget {
           ],
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => const Text('Failed to load progress'),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
