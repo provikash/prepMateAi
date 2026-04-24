@@ -14,12 +14,14 @@ class AuthState {
   final String? errorMessage;
   final String? email;
   final User? user;
+  final bool isLoading;
 
   AuthState({
     this.status = AuthStatus.initial,
     this.errorMessage,
     this.email,
     this.user,
+    this.isLoading = false,
   });
 
   AuthState copyWith({
@@ -27,12 +29,15 @@ class AuthState {
     String? errorMessage,
     String? email,
     User? user,
+    bool? isLoading,
+    bool clearError = false,
   }) {
     return AuthState(
       status: status ?? this.status,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       email: email ?? this.email,
       user: user ?? this.user,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 }

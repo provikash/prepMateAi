@@ -15,25 +15,21 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path,include
-from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,TokenVerifyView)
+from django.urls import include, path
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    #Auth 
-    path('api/auth/',include('users.urls')),
+    path('api/v1/', include('users.urls')),
 
-#User Profile
-    path('api/users/', include('users.profile_urls')),
-
-    #Resume
-    path('api/resumes/', include('resume.urls')),
-
-    # #JWT refresh 
-    
-    # path('api/token/',TokenObtainPairView.as_view(),name='token_obtain_pair'),
-    # path('api/token/refresh/',TokenRefreshView.as_view(),name='token_refresh'),
-    # path('api/token/verify/',TokenVerifyView.as_view(),name='token_verify',),
-    # path('api/resume/',include('resume.urls'))
+    path('api/v1/resumes/', include('resume.urls')),
+    path('api/v1/templates/', include('templates.urls')),
+    path('api/v1/', include('exports.urls')),
+    path('api/v1/ai/', include('ai.urls')),
+    path('api/v1/', include('resume_analyzer.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
