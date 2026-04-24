@@ -1,0 +1,1164 @@
+[
+{
+  "model": "users.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$lfBHeuTsm0R6HAoe42Kc8C$TZumYBkaJOd25trVxgQB57aPV74BfXawIsFt+exZA3A=",
+    "last_login": "2026-04-03T19:51:27.945Z",
+    "is_superuser": true,
+    "username": "vikash",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-04-01T21:26:58.764Z",
+    "email": "vkchaurasiyatrade@gmail.com",
+    "name": "vikash",
+    "avatar_url": null,
+    "is_verified": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$m8a1PqbEkdX9GGt47tsVd8$N8g6QEzl51JNiRqRQ+EV4kvUujpKfp0CNCHvG9V3iIk=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-01T21:32:26.820Z",
+    "email": "test@gmail.com",
+    "name": "",
+    "avatar_url": null,
+    "is_verified": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$mqYi0RTiBi4x4vSHiYManj$RN2pH+6UBC/ehmjo1o5nxJaIhYPXCmcVgBOyZ94eB/Q=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "test2@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-18T21:21:13.145Z",
+    "email": "test2@gmail.com",
+    "name": "Test User",
+    "avatar_url": null,
+    "is_verified": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "276ce552-d04f-4dc7-bc0f-94ebc48354d4",
+  "fields": {
+    "created_at": "2026-04-17T05:29:48.337Z",
+    "updated_at": "2026-04-17T05:29:48.337Z",
+    "name": "Vikash Flutter Professional",
+    "preview_image": "",
+    "html_structure": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\" />\n    <style>\n        @page {\n            size: A4;\n            margin: 24px 30px;\n        }\n\n        body {\n            font-family: \"Times New Roman\", Times, serif;\n            color: #111;\n            line-height: 1.35;\n            font-size: 13px;\n        }\n\n        .header {\n            text-align: center;\n            margin-bottom: 12px;\n        }\n\n        .name {\n            margin: 0;\n            font-size: 34px;\n            line-height: 1;\n            letter-spacing: 1px;\n            text-transform: uppercase;\n            font-weight: 700;\n        }\n\n        .role {\n            margin: 4px 0 8px;\n            font-size: 18px;\n            line-height: 1;\n            font-weight: 600;\n        }\n\n        .contact-line {\n            margin: 0;\n            font-size: 12px;\n            line-height: 1.4;\n            word-break: break-word;\n        }\n\n        .contact-line a {\n            color: #111;\n            text-decoration: underline;\n        }\n\n        .section {\n            margin-top: 12px;\n        }\n\n        .section-title {\n            margin: 0;\n            font-size: 20px;\n            line-height: 1.1;\n            font-weight: 700;\n        }\n\n        .section-rule {\n            border: none;\n            border-top: 1px solid #555;\n            margin: 2px 0 6px;\n        }\n\n        .summary-text {\n            margin: 0;\n            text-align: justify;\n        }\n\n        .skill-list {\n            margin: 0;\n            padding-left: 18px;\n        }\n\n        .skill-list li {\n            margin: 1px 0;\n        }\n\n        .project-item {\n            margin-bottom: 10px;\n        }\n\n        .project-head {\n            display: table;\n            width: 100%;\n        }\n\n        .project-title-wrap,\n        .project-date {\n            display: table-cell;\n            vertical-align: top;\n        }\n\n        .project-title-wrap {\n            width: 72%;\n            padding-right: 10px;\n        }\n\n        .project-title {\n            font-weight: 700;\n        }\n\n        .project-stack {\n            font-style: italic;\n            color: #222;\n        }\n\n        .project-date {\n            width: 28%;\n            text-align: right;\n            font-weight: 700;\n        }\n\n        .project-bullets {\n            margin: 2px 0 0 18px;\n            padding: 0;\n            list-style: none;\n        }\n\n        .project-bullets li {\n            margin: 1px 0;\n            position: relative;\n            padding-left: 12px;\n            text-align: justify;\n        }\n\n        .project-bullets li:before {\n            content: \"-\";\n            position: absolute;\n            left: 0;\n        }\n\n        .project-description {\n            margin: 3px 0 0 18px;\n            text-align: justify;\n        }\n\n        .source-line {\n            margin: 2px 0 0 18px;\n        }\n\n        .source-line a {\n            color: #111;\n            text-decoration: underline;\n        }\n\n        .cert-list {\n            margin: 0;\n            padding-left: 18px;\n        }\n\n        .cert-list li {\n            margin: 2px 0;\n            text-align: justify;\n        }\n\n        .cert-title {\n            font-weight: 700;\n        }\n\n        .edu-item {\n            margin-bottom: 6px;\n        }\n\n        .edu-head {\n            display: table;\n            width: 100%;\n        }\n\n        .edu-degree,\n        .edu-year {\n            display: table-cell;\n            vertical-align: top;\n        }\n\n        .edu-degree {\n            width: 70%;\n            font-weight: 700;\n        }\n\n        .edu-year {\n            width: 30%;\n            text-align: right;\n            font-weight: 700;\n        }\n\n        .edu-subhead {\n            display: table;\n            width: 100%;\n            font-style: italic;\n            color: #222;\n        }\n\n        .edu-school,\n        .edu-location {\n            display: table-cell;\n            vertical-align: top;\n        }\n\n        .edu-school {\n            width: 70%;\n        }\n\n        .edu-location {\n            width: 30%;\n            text-align: right;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"header\">\n        <h1 class=\"name\">{{ resume.personal_info.name }}</h1>\n        {% if resume.personal_info.role %}<p class=\"role\">{{ resume.personal_info.role }}</p>{% endif %}\n        <p class=\"contact-line\">\n            {% if resume.personal_info.phone %}<span>{{ resume.personal_info.phone }}</span>{% endif %}\n            {% if resume.personal_info.email %}<span> | <a href=\"mailto:{{ resume.personal_info.email }}\">{{ resume.personal_info.email }}</a></span>{% endif %}\n            {% if resume.personal_info.linkedin_url %}<span> | LinkedIn: <a href=\"{{ resume.personal_info.linkedin_url }}\">{{ resume.personal_info.linkedin|default:resume.personal_info.linkedin_url }}</a></span>{% endif %}\n            {% if resume.personal_info.github_url %}<span> | GitHub: <a href=\"{{ resume.personal_info.github_url }}\">{{ resume.personal_info.github|default:resume.personal_info.github_url }}</a></span>{% endif %}\n        </p>\n    </div>\n\n    {% if resume.has_summary %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Summary</h2>\n            <hr class=\"section-rule\" />\n            <p class=\"summary-text\">{{ resume.personal_info.summary }}</p>\n        </div>\n    {% endif %}\n\n    {% if resume.has_skills %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Skills</h2>\n            <hr class=\"section-rule\" />\n            <ul class=\"skill-list\">\n                {% if resume.skill_groups.programming_languages %}<li><strong>Programming Languages:</strong> {{ resume.skill_groups.programming_languages }}</li>{% endif %}\n                {% if resume.skill_groups.mobile_framework %}<li><strong>Mobile Framework:</strong> {{ resume.skill_groups.mobile_framework }}</li>{% endif %}\n                {% if resume.skill_groups.architecture %}<li><strong>State Management & Architecture:</strong> {{ resume.skill_groups.architecture }}</li>{% endif %}\n                {% if resume.skill_groups.ui_ux %}<li><strong>UI/UX & Frontend Capabilities:</strong> {{ resume.skill_groups.ui_ux }}</li>{% endif %}\n                {% if resume.skill_groups.tools %}<li><strong>Tools & Infrastructure:</strong> {{ resume.skill_groups.tools }}</li>{% endif %}\n                {% if resume.skills and not resume.skill_groups.programming_languages and not resume.skill_groups.mobile_framework and not resume.skill_groups.architecture and not resume.skill_groups.ui_ux and not resume.skill_groups.tools %}\n                    <li>{{ resume.skills|join:\", \" }}</li>\n                {% endif %}\n            </ul>\n        </div>\n    {% endif %}\n\n    {% if resume.has_projects %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Projects</h2>\n            <hr class=\"section-rule\" />\n            {% for project in resume.projects %}\n                <div class=\"project-item\">\n                    <div class=\"project-head\">\n                        <div class=\"project-title-wrap\">\n                            {% if project.title %}<span class=\"project-title\">{{ project.title }}</span>{% endif %}\n                            {% if project.stack %}<span> | </span><span class=\"project-stack\">{{ project.stack }}</span>{% endif %}\n                        </div>\n                        {% if project.date_range %}<div class=\"project-date\">{{ project.date_range }}</div>{% endif %}\n                    </div>\n\n                    {% if project.bullets %}\n                        <ul class=\"project-bullets\">\n                            {% for bullet in project.bullets %}\n                                <li>{{ bullet }}</li>\n                            {% endfor %}\n                        </ul>\n                    {% elif project.description %}\n                        <p class=\"project-description\">{{ project.description }}</p>\n                    {% endif %}\n\n                    {% if project.source_code %}\n                        <p class=\"source-line\">Source Code: <a href=\"{{ project.source_code }}\">{{ project.source_code }}</a></p>\n                    {% endif %}\n                </div>\n            {% endfor %}\n        </div>\n    {% endif %}\n\n    {% if resume.has_certifications %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Certifications & Achievements</h2>\n            <hr class=\"section-rule\" />\n            <ul class=\"cert-list\">\n                {% for cert in resume.certifications %}\n                    <li>\n                        <span class=\"cert-title\">{{ cert.title }}</span>\n                        {% if cert.description %}: {{ cert.description }}{% endif %}\n                    </li>\n                {% endfor %}\n            </ul>\n        </div>\n    {% endif %}\n\n    {% if resume.has_education %}\n        <div class=\"section\">\n            <h2 class=\"section-title\">Education</h2>\n            <hr class=\"section-rule\" />\n            {% for edu in resume.education %}\n                <div class=\"edu-item\">\n                    <div class=\"edu-head\">\n                        <div class=\"edu-degree\">{{ edu.degree }}</div>\n                        <div class=\"edu-year\">{{ edu.year }}</div>\n                    </div>\n                    {% if edu.institution or edu.location %}\n                        <div class=\"edu-subhead\">\n                            <div class=\"edu-school\">{{ edu.institution }}</div>\n                            <div class=\"edu-location\">{{ edu.location }}</div>\n                        </div>\n                    {% endif %}\n                </div>\n            {% endfor %}\n        </div>\n    {% endif %}\n</body>\n</html>\n",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "4b09c186-9c7a-44a0-a026-13331462ecd5",
+  "fields": {
+    "created_at": "2026-04-16T23:06:38.483Z",
+    "updated_at": "2026-04-16T23:06:38.483Z",
+    "name": "Modern",
+    "preview_image": "",
+    "html_structure": "{}",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "63fd5bc4-1861-4987-b68b-7fc72b6c7c6f",
+  "fields": {
+    "created_at": "2026-04-17T04:20:18.566Z",
+    "updated_at": "2026-04-17T04:20:18.566Z",
+    "name": "Professional Simple",
+    "preview_image": "",
+    "html_structure": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            margin: 40px;\n            color: #222;\n        }\n\n        h1 {\n            font-size: 28px;\n            margin-bottom: 2px;\n        }\n\n        h2 {\n            font-size: 18px;\n            border-bottom: 1px solid #000;\n            margin-top: 20px;\n            padding-bottom: 4px;\n        }\n\n        .subheading {\n            font-size: 14px;\n            margin-bottom: 10px;\n        }\n\n        p {\n            margin: 4px 0;\n        }\n\n        .section {\n            margin-bottom: 12px;\n        }\n\n        .item {\n            margin-bottom: 8px;\n        }\n\n        .bold {\n            font-weight: bold;\n        }\n\n        ul {\n            padding-left: 18px;\n        }\n\n        .header {\n            margin-bottom: 10px;\n        }\n    </style>\n</head>\n\n<body>\n\n    <div class=\"header\">\n        <h1>{{ resume.personal_info.name }}</h1>\n        <p class=\"subheading\">{{ resume.personal_info.role }}</p>\n        <p>{{ resume.personal_info.phone }} | {{ resume.personal_info.email }} | {{ resume.personal_info.linkedin }} | {{ resume.personal_info.github }}</p>\n    </div>\n\n    <div class=\"section\">\n        <h2>Summary</h2>\n        <p>{{ resume.personal_info.summary }}</p>\n    </div>\n\n    <div class=\"section\">\n        <h2>Skills</h2>\n        <ul>\n            {% for skill in resume.skills %}\n                <li>{{ skill }}</li>\n            {% endfor %}\n        </ul>\n    </div>\n\n    <div class=\"section\">\n        <h2>Projects</h2>\n        {% for project in resume.projects %}\n            <div class=\"item\">\n                <p class=\"bold\">{{ project.title }}</p>\n                <p>{{ project.description }}</p>\n            </div>\n        {% endfor %}\n    </div>\n\n    <div class=\"section\">\n        <h2>Certifications & Achievements</h2>\n        <ul>\n            {% for certification in resume.certifications %}\n                <li>{{ certification }}</li>\n            {% endfor %}\n        </ul>\n    </div>\n\n    <div class=\"section\">\n        <h2>Education</h2>\n        {% for edu in resume.education %}\n            <div class=\"item\">\n                <p class=\"bold\">{{ edu.degree }}</p>\n                <p>{{ edu.institution }}{% if edu.year %} | {{ edu.year }}{% endif %}</p>\n            </div>\n        {% endfor %}\n    </div>\n\n</body>\n</html>\n",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+  "fields": {
+    "created_at": "2026-04-16T23:06:38.483Z",
+    "updated_at": "2026-04-16T23:06:38.483Z",
+    "name": "Classic",
+    "preview_image": "",
+    "html_structure": "{}",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "e744a42a-c43d-4bc7-b1d5-19c748d752fd",
+  "fields": {
+    "created_at": "2026-04-16T23:06:38.483Z",
+    "updated_at": "2026-04-16T23:06:38.483Z",
+    "name": "Default",
+    "preview_image": "",
+    "html_structure": "{}",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resumetemplate",
+  "pk": "ffddfa94-3308-427c-8555-8286b633b99a",
+  "fields": {
+    "created_at": "2026-04-16T23:06:38.483Z",
+    "updated_at": "2026-04-16T23:06:38.483Z",
+    "name": "Minimal",
+    "preview_image": "",
+    "html_structure": "{}",
+    "is_active": true
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "0b0d812b-683f-41c0-b297-7550adcd1407",
+  "fields": {
+    "created_at": "2026-04-05T13:53:27.517Z",
+    "updated_at": "2026-04-05T13:53:27.517Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "0b7755a7-dbeb-45bc-9b54-327d2b62eeb5",
+  "fields": {
+    "created_at": "2026-04-05T13:52:32.265Z",
+    "updated_at": "2026-04-05T13:52:32.266Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "143fae9a-0d26-4da4-9224-88cfed1d9ea6",
+  "fields": {
+    "created_at": "2026-04-17T07:05:04.144Z",
+    "updated_at": "2026-04-17T07:05:04.144Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Test@ Resume",
+    "template": "276ce552-d04f-4dc7-bc0f-94ebc48354d4",
+    "data": {
+      "personal_info": {
+        "name": "Vikash Chaurasiya",
+        "role": "",
+        "phone": "+91-8188801329",
+        "email": "vikash_chaurasiya@yahoo.com",
+        "linkedin": "https://linkedin.com/in/vikash-chaurasiya",
+        "linkedin_url": "https://linkedin.com/in/vikash-chaurasiya",
+        "github": "https://github.com/provikash",
+        "github_url": "https://github.com/provikash",
+        "summary": "Flutter Developer with strong experience in Dart, Flutter SDK, and scalable mobile architectures."
+      },
+      "skill_groups": {
+        "programming_languages": "Dart, Java",
+        "mobile_framework": "Flutter",
+        "architecture": "Clean Architecture, MVVM",
+        "ui_ux": "Responsive Design, Custom Widgets",
+        "tools": "Git, Docker, Postman"
+      },
+      "projects": [
+        {
+          "title": "PrepMateAI",
+          "stack": "",
+          "date_range": "2026",
+          "bullets": [],
+          "source_code": "",
+          "description": ""
+        }
+      ],
+      "education": [
+        {
+          "degree": "B.Tech",
+          "institution": "",
+          "year": "2026",
+          "location": ""
+        }
+      ],
+      "certifications": [
+        {
+          "title": "AI Internship – Edunet",
+          "description": ""
+        }
+      ],
+      "experience": [],
+      "skills": [
+        "Dart",
+        "Java",
+        "Flutter",
+        "Clean Architecture",
+        "MVVM",
+        "Git",
+        "Docker",
+        "Postman",
+        "Responsive Design",
+        "Custom Widgets"
+      ]
+    }
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "1988ad65-2714-489e-affb-b4121e9d0a47",
+  "fields": {
+    "created_at": "2026-04-16T23:50:07.653Z",
+    "updated_at": "2026-04-16T23:50:07.653Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "My Resume Updated",
+    "template": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+    "data": {
+      "personal_info": {
+        "name": "Vk",
+        "email": "vk@email.com",
+        "phone": "1234567890"
+      },
+      "education": [],
+      "experience": [],
+      "skills": [
+        "Flutter",
+        "Django"
+      ],
+      "projects": []
+    }
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "2ab785b4-6fc7-42d0-886f-ccd03c94e8d0",
+  "fields": {
+    "created_at": "2026-04-05T13:40:40.504Z",
+    "updated_at": "2026-04-05T13:40:40.504Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "3096ea1f-238f-408b-924e-7ef7cfa09590",
+  "fields": {
+    "created_at": "2026-04-05T13:52:32.574Z",
+    "updated_at": "2026-04-05T13:52:32.574Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "3936ce9e-9e9b-4732-a148-854ba03cb8c0",
+  "fields": {
+    "created_at": "2026-04-05T13:39:37.010Z",
+    "updated_at": "2026-04-05T13:39:37.010Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "3daa264c-b46d-45f0-9cf9-793a067deaf9",
+  "fields": {
+    "created_at": "2026-04-05T13:39:38.241Z",
+    "updated_at": "2026-04-05T13:39:38.242Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "567190b7-97ae-48ab-852e-c5fbce360de4",
+  "fields": {
+    "created_at": "2026-04-05T13:40:24.861Z",
+    "updated_at": "2026-04-05T13:40:24.861Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "63551eeb-10cf-4ed5-b5a4-42774fca7367",
+  "fields": {
+    "created_at": "2026-04-17T07:09:36.462Z",
+    "updated_at": "2026-04-17T07:09:36.462Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Test Resume 4",
+    "template": "276ce552-d04f-4dc7-bc0f-94ebc48354d4",
+    "data": {
+      "personal_info": {
+        "name": "Vikash Chaurasiya",
+        "role": "",
+        "phone": "+91-8188801329",
+        "email": "vikash_chaurasiya@yahoo.com",
+        "linkedin": "https://linkedin.com/in/vikash-chaurasiya",
+        "linkedin_url": "https://linkedin.com/in/vikash-chaurasiya",
+        "github": "https://github.com/provikash",
+        "github_url": "https://github.com/provikash",
+        "summary": "Flutter Developer with strong expertise in Dart, Flutter SDK, and scalable mobile architectures. Experienced in building high-performance cross-platform applications using clean architecture and Riverpod. Passionate about integrating AI-powered features and delivering intuitive user experiences."
+      },
+      "skill_groups": {
+        "programming_languages": "Dart, Java, Python",
+        "mobile_framework": "Flutter",
+        "architecture": "Clean Architecture, MVVM, Layered Architecture",
+        "ui_ux": "Responsive Design, Custom Widgets, Neumorphism, Material UI",
+        "tools": "Git, GitHub, Docker, Postman, Android Studio, VS Code"
+      },
+      "projects": [
+        {
+          "title": "PrepMateAI - AI Career Platform",
+          "stack": "",
+          "date_range": "Feb 2026 – Present",
+          "bullets": [],
+          "source_code": "https://github.com/provikash/prepMateAi",
+          "description": ""
+        },
+        {
+          "title": "Vibely - Real-Time Chat Application",
+          "stack": "",
+          "date_range": "Feb 2025 – Mar 2025",
+          "bullets": [],
+          "source_code": "",
+          "description": ""
+        },
+        {
+          "title": "TaskFlow - Productivity App",
+          "stack": "",
+          "date_range": "2024",
+          "bullets": [],
+          "source_code": "",
+          "description": ""
+        }
+      ],
+      "education": [
+        {
+          "degree": "Bachelor of Technology (B.Tech)",
+          "institution": "",
+          "year": "Expected: 2026",
+          "location": ""
+        },
+        {
+          "degree": "Intermediate (Class XII)",
+          "institution": "",
+          "year": "2022",
+          "location": ""
+        },
+        {
+          "degree": "Matriculation (Class X)",
+          "institution": "",
+          "year": "2020",
+          "location": ""
+        }
+      ],
+      "certifications": [
+        {
+          "title": "AI Internship Certification – Edunet Foundation (AICTE & Shell)",
+          "description": ""
+        },
+        {
+          "title": "Google Developer Groups (GDG) Solution Challenge Participant",
+          "description": ""
+        },
+        {
+          "title": "AKTU AI Tech Confluence Participant",
+          "description": ""
+        },
+        {
+          "title": "Flutter Development Bootcamp Certification – Udemy",
+          "description": ""
+        }
+      ],
+      "skills": [
+        "Dart",
+        "Java",
+        "Python",
+        "Flutter",
+        "Clean Architecture",
+        "MVVM",
+        "Layered Architecture",
+        "Git",
+        "GitHub",
+        "Docker",
+        "Postman",
+        "Android Studio",
+        "VS Code",
+        "Responsive Design",
+        "Custom Widgets",
+        "Neumorphism",
+        "Material UI"
+      ],
+      "experience": []
+    }
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "69ba3673-49cc-4704-bb18-27df890454ca",
+  "fields": {
+    "created_at": "2026-04-05T13:52:33.222Z",
+    "updated_at": "2026-04-05T13:52:33.222Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "6fb7f3fa-38bf-4c94-8acb-58a81b4cc83a",
+  "fields": {
+    "created_at": "2026-04-05T13:40:46.022Z",
+    "updated_at": "2026-04-05T13:40:46.022Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "72922885-eb32-4292-ba51-67862dcbbcd3",
+  "fields": {
+    "created_at": "2026-04-16T23:32:35.699Z",
+    "updated_at": "2026-04-16T23:41:40.507Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "My Resume Updated",
+    "template": null,
+    "data": {
+      "personal_info": {
+        "name": "Vk",
+        "email": "vk@email.com",
+        "phone": "1234567890"
+      },
+      "education": [],
+      "experience": [],
+      "skills": [
+        "Flutter",
+        "Django"
+      ],
+      "projects": []
+    }
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "7a02c47f-6aee-4a3b-ab18-1dfe387ad671",
+  "fields": {
+    "created_at": "2026-04-17T04:29:24.557Z",
+    "updated_at": "2026-04-17T04:29:24.558Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "My Professional Resume",
+    "template": "63fd5bc4-1861-4987-b68b-7fc72b6c7c6f",
+    "data": {
+      "personal_info": {
+        "name": "V K",
+        "email": "vk@example.com",
+        "phone": "+91-9999999999",
+        "role": "Flutter Developer",
+        "linkedin": "linkedin.com/in/vk",
+        "github": "github.com/vk",
+        "summary": "Builds clean mobile apps and backend integrations."
+      },
+      "skills": [
+        "Flutter",
+        "Dart",
+        "Django",
+        "REST API"
+      ],
+      "projects": [
+        {
+          "title": "PrepMate AI",
+          "description": "Resume builder and career assistant app."
+        }
+      ],
+      "certifications": [
+        "Google Flutter Certification"
+      ],
+      "education": [
+        {
+          "degree": "B.Tech CSE",
+          "institution": "ABC University",
+          "year": "2026"
+        }
+      ],
+      "experience": []
+    }
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "855998c7-527d-4704-9142-ffe2f6ce4041",
+  "fields": {
+    "created_at": "2026-04-05T13:44:06.774Z",
+    "updated_at": "2026-04-05T13:44:06.774Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "8e3341d2-0c50-4a61-b65e-fd75f84c657b",
+  "fields": {
+    "created_at": "2026-04-05T13:43:32.194Z",
+    "updated_at": "2026-04-05T13:43:32.194Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "8eeed681-7776-4a69-bafd-43a10223784a",
+  "fields": {
+    "created_at": "2026-04-05T13:43:41.365Z",
+    "updated_at": "2026-04-05T13:43:41.365Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "972873a1-7f30-4971-a2b2-2b1a52357f96",
+  "fields": {
+    "created_at": "2026-04-05T13:44:22.975Z",
+    "updated_at": "2026-04-05T13:44:22.975Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "9f922923-f1b1-4b75-b1e5-b62ee54b04b9",
+  "fields": {
+    "created_at": "2026-04-17T07:30:03.917Z",
+    "updated_at": "2026-04-17T07:30:03.917Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Test Resume 6",
+    "template": "276ce552-d04f-4dc7-bc0f-94ebc48354d4",
+    "data": {
+      "personal_info": {
+        "name": "Vikash Chaurasiya",
+        "role": "",
+        "phone": "+91-8188801329",
+        "email": "vikash_chaurasiya@yahoo.com",
+        "linkedin": "https://linkedin.com/in/vikash-chaurasiya",
+        "linkedin_url": "https://linkedin.com/in/vikash-chaurasiya",
+        "github": "https://github.com/provikash",
+        "github_url": "https://github.com/provikash",
+        "summary": "Flutter Developer with strong expertise in Dart, Flutter SDK, and scalable mobile architectures. Experienced in building high-performance cross-platform applications using clean architecture and Riverpod. Passionate about integrating AI-powered features and delivering intuitive user experiences."
+      },
+      "skill_groups": {
+        "programming_languages": "Dart, Java, Python",
+        "mobile_framework": "Flutter",
+        "architecture": "Clean Architecture, MVVM, Layered Architecture",
+        "ui_ux": "Responsive Design, Custom Widgets, Neumorphism, Material UI",
+        "tools": "Git, GitHub, Docker, Postman, Android Studio, VS Code"
+      },
+      "projects": [
+        {
+          "title": "PrepMateAI - AI Career Platform",
+          "stack": "",
+          "date_range": "Feb 2026 – Present",
+          "bullets": [],
+          "source_code": "https://github.com/provikash/prepMateAi",
+          "description": ""
+        },
+        {
+          "title": "Vibely - Real-Time Chat Application",
+          "stack": "",
+          "date_range": "Feb 2025 – Mar 2025",
+          "bullets": [],
+          "source_code": "",
+          "description": ""
+        },
+        {
+          "title": "TaskFlow - Productivity App",
+          "stack": "",
+          "date_range": "2024",
+          "bullets": [],
+          "source_code": "",
+          "description": ""
+        }
+      ],
+      "education": [
+        {
+          "degree": "Bachelor of Technology (B.Tech)",
+          "institution": "",
+          "year": "Expected: 2026",
+          "location": ""
+        },
+        {
+          "degree": "Intermediate (Class XII)",
+          "institution": "",
+          "year": "2022",
+          "location": ""
+        },
+        {
+          "degree": "Matriculation (Class X)",
+          "institution": "",
+          "year": "2020",
+          "location": ""
+        }
+      ],
+      "certifications": [
+        {
+          "title": "AI Internship Certification – Edunet Foundation (AICTE & Shell)",
+          "description": ""
+        },
+        {
+          "title": "Google Developer Groups (GDG) Solution Challenge Participant",
+          "description": ""
+        },
+        {
+          "title": "AKTU AI Tech Confluence Participant",
+          "description": ""
+        },
+        {
+          "title": "Flutter Development Bootcamp Certification – Udemy",
+          "description": ""
+        }
+      ],
+      "skills": [
+        "Dart",
+        "Java",
+        "Python",
+        "Flutter",
+        "Clean Architecture",
+        "MVVM",
+        "Layered Architecture",
+        "Git",
+        "GitHub",
+        "Docker",
+        "Postman",
+        "Android Studio",
+        "VS Code",
+        "Responsive Design",
+        "Custom Widgets",
+        "Neumorphism",
+        "Material UI"
+      ],
+      "experience": []
+    }
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "a5e4c260-22df-476e-95b0-3ac455155b9b",
+  "fields": {
+    "created_at": "2026-04-17T06:26:51.516Z",
+    "updated_at": "2026-04-17T06:26:51.516Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Test Resume",
+    "template": "276ce552-d04f-4dc7-bc0f-94ebc48354d4",
+    "data": {
+      "personal_info": {
+        "name": "Vikash Chaurasiya",
+        "role": "",
+        "phone": "+91-8188801329",
+        "email": "vikash_chaurasiya@yahoo.com",
+        "linkedin": "https://linkedin.com/in/vikash-chaurasiya",
+        "linkedin_url": "",
+        "github": "https://github.com/provikash",
+        "github_url": "",
+        "summary": "Flutter Developer with strong experience in Dart, Flutter SDK, and scalable mobile architectures."
+      },
+      "skill_groups": {
+        "programming_languages": [
+          "Dart",
+          "Java"
+        ],
+        "mobile_framework": [
+          "Flutter"
+        ],
+        "architecture": [
+          "Clean Architecture",
+          "MVVM"
+        ],
+        "ui_ux": [
+          "Responsive Design",
+          "Custom Widgets"
+        ],
+        "tools": [
+          "Git",
+          "Docker",
+          "Postman"
+        ]
+      },
+      "projects": [
+        {
+          "title": "PrepMateAI",
+          "stack": "",
+          "date_range": "2026",
+          "bullets": [],
+          "source_code": "",
+          "description": ""
+        }
+      ],
+      "education": [
+        {
+          "degree": "B.Tech",
+          "institution": "",
+          "year": "2026",
+          "location": ""
+        }
+      ],
+      "certifications": [
+        {
+          "title": "AI Internship – Edunet",
+          "description": ""
+        }
+      ],
+      "experience": [],
+      "skills": [
+        "Dart",
+        "Java",
+        "Flutter",
+        "Clean Architecture",
+        "MVVM",
+        "Git",
+        "Docker",
+        "Postman",
+        "Responsive Design",
+        "Custom Widgets"
+      ]
+    }
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "a7a98dc1-7fc8-45d4-87a8-23f290da2336",
+  "fields": {
+    "created_at": "2026-04-05T13:39:28.321Z",
+    "updated_at": "2026-04-05T13:39:28.321Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "bb2529f2-5131-49c2-a29a-59f1372f7737",
+  "fields": {
+    "created_at": "2026-04-05T13:53:25.438Z",
+    "updated_at": "2026-04-05T13:53:25.438Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "e0238683-c3ed-432d-8bb9-cda6ef9f11c6",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "c91d451a-cf83-4ca9-8e4f-c345d0610a9a",
+  "fields": {
+    "created_at": "2026-04-05T13:39:34.759Z",
+    "updated_at": "2026-04-05T13:39:34.759Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "4b09c186-9c7a-44a0-a026-13331462ecd5",
+    "data": {}
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "cdfbb9d8-46fc-40b1-9c67-5eca2e229ec3",
+  "fields": {
+    "created_at": "2026-04-17T07:28:02.310Z",
+    "updated_at": "2026-04-17T07:28:02.310Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Test Resume 5",
+    "template": "276ce552-d04f-4dc7-bc0f-94ebc48354d4",
+    "data": {
+      "personal_info": {
+        "name": "Vikash Chaurasiya",
+        "role": "",
+        "phone": "+91-8188801329",
+        "email": "vikash_chaurasiya@yahoo.com",
+        "linkedin": "https://linkedin.com/in/vikash-chaurasiya",
+        "linkedin_url": "https://linkedin.com/in/vikash-chaurasiya",
+        "github": "https://github.com/provikash",
+        "github_url": "https://github.com/provikash",
+        "summary": "Flutter Developer with strong expertise in Dart, Flutter SDK, and scalable mobile architectures. Experienced in building high-performance cross-platform applications using clean architecture and Riverpod. Passionate about integrating AI-powered features and delivering intuitive user experiences."
+      },
+      "skill_groups": {
+        "programming_languages": "Dart, Java, Python",
+        "mobile_framework": "Flutter",
+        "architecture": "Clean Architecture, MVVM, Layered Architecture",
+        "ui_ux": "Responsive Design, Custom Widgets, Neumorphism, Material UI",
+        "tools": "Git, GitHub, Docker, Postman, Android Studio, VS Code"
+      },
+      "projects": [
+        {
+          "title": "PrepMateAI - AI Career Platform",
+          "stack": "",
+          "date_range": "Feb 2026 – Present",
+          "bullets": [],
+          "source_code": "https://github.com/provikash/prepMateAi",
+          "description": ""
+        },
+        {
+          "title": "Vibely - Real-Time Chat Application",
+          "stack": "",
+          "date_range": "Feb 2025 – Mar 2025",
+          "bullets": [],
+          "source_code": "",
+          "description": ""
+        },
+        {
+          "title": "TaskFlow - Productivity App",
+          "stack": "",
+          "date_range": "2024",
+          "bullets": [],
+          "source_code": "",
+          "description": ""
+        }
+      ],
+      "education": [
+        {
+          "degree": "Bachelor of Technology (B.Tech)",
+          "institution": "",
+          "year": "Expected: 2026",
+          "location": ""
+        },
+        {
+          "degree": "Intermediate (Class XII)",
+          "institution": "",
+          "year": "2022",
+          "location": ""
+        },
+        {
+          "degree": "Matriculation (Class X)",
+          "institution": "",
+          "year": "2020",
+          "location": ""
+        }
+      ],
+      "certifications": [
+        {
+          "title": "AI Internship Certification – Edunet Foundation (AICTE & Shell)",
+          "description": ""
+        },
+        {
+          "title": "Google Developer Groups (GDG) Solution Challenge Participant",
+          "description": ""
+        },
+        {
+          "title": "AKTU AI Tech Confluence Participant",
+          "description": ""
+        },
+        {
+          "title": "Flutter Development Bootcamp Certification – Udemy",
+          "description": ""
+        }
+      ],
+      "skills": [
+        "Dart",
+        "Java",
+        "Python",
+        "Flutter",
+        "Clean Architecture",
+        "MVVM",
+        "Layered Architecture",
+        "Git",
+        "GitHub",
+        "Docker",
+        "Postman",
+        "Android Studio",
+        "VS Code",
+        "Responsive Design",
+        "Custom Widgets",
+        "Neumorphism",
+        "Material UI"
+      ],
+      "experience": []
+    }
+  }
+},
+{
+  "model": "resume.resume",
+  "pk": "f10c4cc7-a695-4479-834c-b60e755fcf71",
+  "fields": {
+    "created_at": "2026-04-05T13:43:14.958Z",
+    "updated_at": "2026-04-05T13:43:14.958Z",
+    "user": [
+      "test@gmail.com"
+    ],
+    "title": "Untitled Resume",
+    "template": "ffddfa94-3308-427c-8555-8286b633b99a",
+    "data": {}
+  }
+},
+{
+  "model": "resume_analyzer.resumeanalysis",
+  "pk": "8d460fdb-adbf-4f96-a593-070ef06a1585",
+  "fields": {
+    "user": [
+      "test@gmail.com"
+    ],
+    "resume": "9f922923-f1b1-4b75-b1e5-b62ee54b04b9",
+    "uploaded_file": "",
+    "job_role": "Flutter Developer",
+    "ats_score": 66,
+    "skill_score": 40,
+    "analysis_data": {
+      "missing_sections": [
+        "experience"
+      ],
+      "missing_skills": {
+        "core": [
+          "widgets",
+          "state management"
+        ],
+        "backend": [
+          "rest api",
+          "firebase",
+          "authentication"
+        ],
+        "architecture": [
+          "repository pattern"
+        ]
+      },
+      "matched_skills": {
+        "core": [
+          "flutter",
+          "dart"
+        ],
+        "backend": [],
+        "architecture": [
+          "clean architecture",
+          "mvvm"
+        ]
+      },
+      "format_issues": [
+        "No bullet points detected; use bullets for achievements and responsibilities."
+      ],
+      "contact_issues": [],
+      "keyword_analysis": {
+        "matched_keywords": [
+          "flutter",
+          "dart",
+          "android",
+          "clean architecture",
+          "widgets",
+          "mvvm"
+        ],
+        "missing_keywords": [
+          "ios",
+          "firebase",
+          "state management",
+          "rest api",
+          "authentication",
+          "repository pattern"
+        ],
+        "match_percentage": 50
+      },
+      "suggestions": [
+        "Rewrite summary with role-focused impact and measurable outcomes.",
+        "Add missing role keywords naturally in experience and project bullets.",
+        "Use action verbs and quantifiable achievements for each experience entry.",
+        "Add missing technical skills required for the target role."
+      ],
+      "ats_breakdown": {
+        "keyword_match": 50,
+        "section_completeness": 75,
+        "formatting": 80,
+        "content_quality": 60,
+        "contact_info": 100
+      },
+      "parsed_resume": {
+        "personal_info": {
+          "name": "Vikash Chaurasiya",
+          "role": "",
+          "phone": "+91-8188801329",
+          "email": "vikash_chaurasiya@yahoo.com",
+          "linkedin": "https://linkedin.com/in/vikash-chaurasiya",
+          "linkedin_url": "https://linkedin.com/in/vikash-chaurasiya",
+          "github": "https://github.com/provikash",
+          "github_url": "https://github.com/provikash",
+          "summary": "Flutter Developer with strong expertise in Dart, Flutter SDK, and scalable mobile architectures. Experienced in building high-performance cross-platform applications using clean architecture and Riverpod. Passionate about integrating AI-powered features and delivering intuitive user experiences."
+        },
+        "skill_groups": {
+          "programming_languages": "Dart, Java, Python",
+          "mobile_framework": "Flutter",
+          "architecture": "Clean Architecture, MVVM, Layered Architecture",
+          "ui_ux": "Responsive Design, Custom Widgets, Neumorphism, Material UI",
+          "tools": "Git, GitHub, Docker, Postman, Android Studio, VS Code"
+        },
+        "projects": [
+          {
+            "title": "PrepMateAI - AI Career Platform",
+            "stack": "",
+            "date_range": "Feb 2026 – Present",
+            "bullets": [],
+            "source_code": "https://github.com/provikash/prepMateAi",
+            "description": ""
+          },
+          {
+            "title": "Vibely - Real-Time Chat Application",
+            "stack": "",
+            "date_range": "Feb 2025 – Mar 2025",
+            "bullets": [],
+            "source_code": "",
+            "description": ""
+          },
+          {
+            "title": "TaskFlow - Productivity App",
+            "stack": "",
+            "date_range": "2024",
+            "bullets": [],
+            "source_code": "",
+            "description": ""
+          }
+        ],
+        "education": [
+          {
+            "degree": "Bachelor of Technology (B.Tech)",
+            "institution": "",
+            "year": "Expected: 2026",
+            "location": ""
+          },
+          {
+            "degree": "Intermediate (Class XII)",
+            "institution": "",
+            "year": "2022",
+            "location": ""
+          },
+          {
+            "degree": "Matriculation (Class X)",
+            "institution": "",
+            "year": "2020",
+            "location": ""
+          }
+        ],
+        "certifications": [
+          {
+            "title": "AI Internship Certification – Edunet Foundation (AICTE & Shell)",
+            "description": ""
+          },
+          {
+            "title": "Google Developer Groups (GDG) Solution Challenge Participant",
+            "description": ""
+          },
+          {
+            "title": "AKTU AI Tech Confluence Participant",
+            "description": ""
+          },
+          {
+            "title": "Flutter Development Bootcamp Certification – Udemy",
+            "description": ""
+          }
+        ],
+        "skills": [
+          "Dart",
+          "Java",
+          "Python",
+          "Flutter",
+          "Clean Architecture",
+          "MVVM",
+          "Layered Architecture",
+          "Git",
+          "GitHub",
+          "Docker",
+          "Postman",
+          "Android Studio",
+          "VS Code",
+          "Responsive Design",
+          "Custom Widgets",
+          "Neumorphism",
+          "Material UI"
+        ],
+        "experience": []
+      }
+    },
+    "created_at": "2026-04-23T17:04:25.597Z"
+  }
+}
+]
