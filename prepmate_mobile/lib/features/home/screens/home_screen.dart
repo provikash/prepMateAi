@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/features/home/providers/home_providers.dart';
 import 'package:prepmate_mobile/features/resume/providers/template_provider.dart';
+import 'package:prepmate_mobile/features/interview/presentation/screens/interview_screen.dart';
+import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
 
 import '../../resume/presentation/widgets/template_card.dart';
 import '../widgets/progressCard.dart';
@@ -22,8 +24,8 @@ class PrepMateHome extends ConsumerWidget {
         index: bottomNavIndex,
         children: [
           _HomeContent(dashboardAsync: dashboardAsync),
-          const Center(child: Text('Interview Screen')),
-          const Center(child: Text('ATS Score Screen')),
+          const InterviewScreen(),
+          const AnalyzeScreen(),
           const Center(child: Text('Courses Screen')),
           const Center(child: Text('Profile Screen Placeholder')), // We will handle navigation for profile separately if needed or replace this
         ],
