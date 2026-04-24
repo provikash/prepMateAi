@@ -103,14 +103,21 @@ class AuthViewModel extends Notifier<AuthState> {
     state = AuthState(status: AuthStatus.unauthenticated);
   }
 
-  Future<void> getProfile() async {
+  /// Fetches profile and validates token.
+  /// Returns true if token is valid and profile is fetched.
+  Future<bool> getProfile() async {
     try {
       final user = await _repository.getProfile();
       if (user != null) {
-        state = state.copyWith(user: user);
+        state = state.copyWith(status: AuthStatus.authenticated, user: user);
+        return true;
       }
+      state = state.copyWith(status: AuthStatus.unauthenticated);
+      return false;
     } catch (e) {
       debugPrint("Error fetching profile: $e");
+      state = state.copyWith(status: AuthStatus.unauthenticated);
+      return false;
     }
   }
 
@@ -144,9 +151,7 @@ class AuthViewModel extends Notifier<AuthState> {
       final success = await _repository.forgotPassword(email);
 
       if (success) {
-        state = state.copyWith(
-          status: AuthStatus.success, // or otpSent if you have it
-        );
+        state = state.copyWith(status: AuthStatus.success);
       } else {
         state = state.copyWith(
           status: AuthStatus.error,

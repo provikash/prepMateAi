@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
-
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 import 'package:prepmate_mobile/core/widgets/socialButton.dart';
-
 import '../presentation/state/auth_state.dart';
 import '../presentation/viewmodel/auth_viewmodel.dart';
 
@@ -44,17 +42,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.description, size: 80, color: Colors.blue),
+              // Hero Animation Integration
+              Hero(
+                tag: 'app_logo',
+                child: Image.asset(
+                  'assets/logos/app_icon_1024.png',
+                  height: 100,
+                  width: 100,
+                ),
+              ),
               const SizedBox(height: 24),
-              Center(
-                child: const Text(
+              const Center(
+                child: Text(
                   'Welcome Back',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
               ),
-
-              Center(
-                child: const Text('Sign in to continue building your future.'),
+              const Center(
+                child: Text('Sign in to continue building your future.'),
               ),
               const SizedBox(height: 40),
               Padding(
@@ -64,28 +69,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
-              SizedBox(height: 8.0),
-
+              const SizedBox(height: 8.0),
               NeuTextField(
                 controller: _emailController,
                 prefixIcon: Icons.email,
                 hint: 'Email Address',
                 keyboardType: TextInputType.emailAddress,
-
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExp(
-                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                  ).hasMatch(value)) {
-                    return 'Please enter a valid email ';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
-
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
@@ -93,21 +84,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
-              SizedBox(height: 8.0),
-
+              const SizedBox(height: 8.0),
               NeuTextField(
                 controller: _passwordController,
                 prefixIcon: Icons.password,
                 hint: 'Password',
                 isPassword: true,
-
-                validator: (value) {
-                  if (value == null || value.isEmpty)
-                    return 'Please enter a password';
-                  if (value.length < 6)
-                    return 'Password must be at least 6 Characters';
-                  return null;
-                },
               ),
               Align(
                 alignment: Alignment.centerRight,
@@ -120,7 +102,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
               NeuButton(
                 isLoading: authState.status == AuthStatus.loading,
                 onPressed: () async {
@@ -130,44 +111,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         _emailController.text.trim(),
                         _passwordController.text,
                       );
-
-                  if (!mounted) return;
-
-                  final state = ref.read(authViewModelProvider);
-
-                  if (state.status == AuthStatus.authenticated) {
-                    context.go('/home');
-                  } else if (state.status == AuthStatus.error) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.errorMessage ?? "Login failed"),
-                      ),
-                    );
-                  }
                 },
                 text: 'Sign In',
                 icon: Icons.login,
               ),
-              SizedBox(child: ErrorText(message: authState.errorMessage)),
-
+              if (authState.errorMessage != null)
+                ErrorText(message: authState.errorMessage!),
               const SizedBox(height: 32),
               const Center(child: Text('OR CONTINUE WITH')),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(width: 16),
                   SocialButton(
                     text: 'Linkedin',
                     icon: Icons.cases,
                     onTap: () {},
                   ),
-
-                  // OutlinedButton.icon(
-                  //   icon: const Icon(Icons.business),
-                  //   label: const Text('LinkedIn'),
-                  //   onPressed: () {},
-                  // ),
+                  const SizedBox(width: 16),
                   SocialButton(
                     text: 'Google',
                     icon: Icons.g_mobiledata,
@@ -182,7 +143,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Text("Don't have an account? "),
                   TextButton(
                     onPressed: () => context.push('/signup'),
-
                     child: const Text('Sign Up'),
                   ),
                 ],
