@@ -16,13 +16,16 @@ final courseRepositoryProvider = Provider<CourseRepository>((ref) {
   return CourseRepositoryImpl(dio);
 });
 
-final sharedPreferencesProvider = FutureProvider<SharedPreferences>((ref) async {
+final sharedPreferencesProvider = FutureProvider<SharedPreferences>((
+  ref,
+) async {
   return await SharedPreferences.getInstance();
 });
 
-final openedCoursesProvider = StateNotifierProvider<OpenedCoursesNotifier, Map<String, int>>((ref) {
-  return OpenedCoursesNotifier(ref);
-});
+final openedCoursesProvider =
+    StateNotifierProvider<OpenedCoursesNotifier, Map<String, int>>((ref) {
+      return OpenedCoursesNotifier(ref);
+    });
 
 class OpenedCoursesNotifier extends StateNotifier<Map<String, int>> {
   final Ref _ref;
@@ -62,9 +65,10 @@ class OpenedCoursesNotifier extends StateNotifier<Map<String, int>> {
   }
 }
 
-final courseListProvider = AsyncNotifierProvider<CourseListNotifier, CourseCategoryResponse>(() {
-  return CourseListNotifier();
-});
+final courseListProvider =
+    AsyncNotifierProvider<CourseListNotifier, CourseCategoryResponse>(() {
+      return CourseListNotifier();
+    });
 
 class CourseListNotifier extends AsyncNotifier<CourseCategoryResponse> {
   @override
@@ -81,13 +85,13 @@ class CourseListNotifier extends AsyncNotifier<CourseCategoryResponse> {
     );
   }
 
-  List<Course> _mapProgress(List<Course> courses, Map<String, int> progressMap) {
+  List<Course> _mapProgress(
+    List<Course> courses,
+    Map<String, int> progressMap,
+  ) {
     return courses.map((c) {
       final progress = progressMap[c.id];
-      return c.copyWith(
-        isOpened: progress != null,
-        progressPercentage: progress ?? c.progressPercentage,
-      );
+      return c.copyWith(progress: progress ?? 0);
     }).toList();
   }
 
@@ -104,7 +108,8 @@ class CourseActionHandler {
   CourseActionHandler(this._ref);
 
   Future<void> openCourse(BuildContext context, Course course) async {
-    if (course.type == CourseType.youtubeVideo || course.type == CourseType.playlist) {
+    if (course.type == CourseType.youtubeVideo ||
+        course.type == CourseType.playlist) {
       // Option A: Open embedded player for both videos and playlists
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -125,7 +130,9 @@ class CourseActionHandler {
       try {
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
-          await _ref.read(openedCoursesProvider.notifier).markAsOpened(course.id);
+          await _ref
+              .read(openedCoursesProvider.notifier)
+              .markAsOpened(course.id);
         } else {
           throw 'Could not launch $url';
         }

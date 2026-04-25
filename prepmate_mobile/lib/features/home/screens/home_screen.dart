@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/features/home/providers/home_providers.dart';
-import 'package:prepmate_mobile/features/resume/providers/template_provider.dart';
+import 'package:prepmate_mobile/features/resume/providers/template_provider.dart' hide templateListProvider;
 import 'package:prepmate_mobile/features/interview/presentation/screens/interview_screen.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
 
+import '../../resume/data/models/resume_template.dart';
 import '../../resume/presentation/widgets/template_card.dart';
 import '../widgets/progressCard.dart';
 
@@ -15,7 +16,7 @@ class PrepMateHome extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bottomNavIndex = ref.watch(bottomNavProvider);
-    final dashboardAsync = ref.watch(homeDashboardProvider);
+    final dashboardAsync = ref.watch(dashboardProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
@@ -174,7 +175,7 @@ class _HomeContent extends ConsumerWidget {
             return SizedBox(
               width: 200,
               child: TemplateCard(
-                template: templates[index],
+                template:  ,
                 onSelect: () {
                   // Handle template selection
                 },

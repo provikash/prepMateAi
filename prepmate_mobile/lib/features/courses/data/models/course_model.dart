@@ -72,7 +72,7 @@ class Course {
     );
   }
 
-  Course copyWith({bool? isOpened}) {
+  Course copyWith({bool? isOpened, required int progress}) {
     return Course(
       id: id,
       title: title,
@@ -106,19 +106,23 @@ class CourseCategoryResponse {
 
   factory CourseCategoryResponse.fromJson(Map<String, dynamic> json) {
     return CourseCategoryResponse(
-      continueLearning: (json['continue_learning'] as List?)
+      continueLearning:
+          (json['continue_learning'] as List?)
               ?.map((e) => Course.fromJson(e))
               .toList() ??
           [],
-      careerGrowth: (json['career_growth'] as List?)
+      careerGrowth:
+          (json['career_growth'] as List?)
               ?.map((e) => Course.fromJson(e))
               .toList() ??
           [],
-      technicalSkills: (json['technical_skills'] as List?)
+      technicalSkills:
+          (json['technical_skills'] as List?)
               ?.map((e) => Course.fromJson(e))
               .toList() ??
           [],
-      softSkills: (json['soft_skills'] as List?)
+      softSkills:
+          (json['soft_skills'] as List?)
               ?.map((e) => Course.fromJson(e))
               .toList() ??
           [],
