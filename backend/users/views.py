@@ -2,11 +2,22 @@ import random
 
 
 from rest_framework import status, viewsets
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
-from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer
+from resume.models import Resume
+from resume_analyzer.models import ResumeAnalysis
+
+from .serializers import (
+    DashboardSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    UserProfileSerializer,
+    UserSummarySerializer,
+)
 from .services import AuthService
 
 
@@ -23,7 +34,7 @@ class AuthViewSet(viewsets.ViewSet):
         return Response(
             {
                 "message": "User registered successfully.",
-                "user": UserProfileSerializer(user).data,
+                "user": UserSummarySerializer(user).data,
                 "tokens": tokens,
             },
             status=status.HTTP_201_CREATED,
@@ -49,7 +60,7 @@ class AuthViewSet(viewsets.ViewSet):
         return Response(
             {
                 "message": "Login successful.",
-                "user": UserProfileSerializer(user).data,
+                "user": UserSummarySerializer(user).data,
                 "tokens": tokens,
             },
             status=status.HTTP_200_OK,
@@ -66,13 +77,135 @@ class ProfileViewSet(viewsets.ViewSet):
 
     def me(self, request):
         if request.method == "GET":
-            return Response(UserProfileSerializer(request.user).data, status=status.HTTP_200_OK)
+            return Response(UserSummarySerializer(request.user).data, status=status.HTTP_200_OK)
 
-        serializer = UserProfileSerializer(
+        serializer = UserSummarySerializer(
             request.user,
             data=request.data,
             partial=request.method == "PATCH",
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserProfileRetrieveUpdateView(RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        return self.request.user.profile
+
+
+class DashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def _abs_file_url(request, file_field):
+        if not file_field:
+            return None
+        return request.build_absolute_uri(file_field.url)
+
+    @staticmethod
+    def _flatten_skill_dict(skill_dict):
+        if not isinstance(skill_dict, dict):
+            return []
+
+        flattened = []
+        for values in skill_dict.values():
+            if isinstance(values, list):
+                flattened.extend(item for item in values if isinstance(item, str) and item.strip())
+
+        unique = []
+        seen = set()
+        for item in flattened:
+            key = item.strip().lower()
+            if key and key not in seen:
+                seen.add(key)
+                unique.append(item.strip())
+
+        return unique
+
+    def get(self, request):
+        latest_resume = (
+            Resume.objects.select_related("template")
+            .filter(user=request.user)
+            .only("id", "title", "thumbnail", "pdf_file", "template__preview_image", "created_at")
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not latest_resume:
+            payload = {
+                "latest_resume": None,
+                "message": "No resume found. Create your first resume.",
+            }
+            return Response(payload, status=status.HTTP_200_OK)
+
+        thumbnail_url = self._abs_file_url(request, latest_resume.thumbnail)
+        if thumbnail_url is None and latest_resume.template and latest_resume.template.preview_image:
+            thumbnail_url = self._abs_file_url(request, latest_resume.template.preview_image)
+
+        base_resume_payload = {
+            "id": latest_resume.id,
+            "title": latest_resume.title,
+            "thumbnail_url": thumbnail_url,
+            "pdf_url": self._abs_file_url(request, latest_resume.pdf_file),
+        }
+
+        latest_analysis = (
+            ResumeAnalysis.objects.filter(user=request.user, resume=latest_resume)
+            .only("id", "ats_score", "skill_score", "analysis_data", "created_at")
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not latest_analysis:
+            payload = {
+                "latest_resume": base_resume_payload,
+                "analysis_available": False,
+                "message": "Analyze your resume to get insights.",
+            }
+            serializer = DashboardSerializer(payload)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        ats_score = int(latest_analysis.ats_score or 0)
+        skill_score = int(latest_analysis.skill_score or 0)
+        skill_gap_percentage = max(0, min(100, 100 - skill_score))
+        improvement_impact = max(0, min(100, 100 - ats_score))
+
+        analysis_data = latest_analysis.analysis_data or {}
+        missing_skills = self._flatten_skill_dict(analysis_data.get("missing_skills", {}))
+
+        suggested_skills = analysis_data.get("suggested_skills", [])
+        if not isinstance(suggested_skills, list) or not suggested_skills:
+            keyword_analysis = analysis_data.get("keyword_analysis", {})
+            suggested_skills = keyword_analysis.get("missing_keywords", [])
+
+        if not isinstance(suggested_skills, list) or not suggested_skills:
+            suggested_skills = missing_skills
+
+        unique_suggested = []
+        seen = set()
+        for item in suggested_skills:
+            if not isinstance(item, str):
+                continue
+            cleaned = item.strip()
+            key = cleaned.lower()
+            if cleaned and key not in seen:
+                seen.add(key)
+                unique_suggested.append(cleaned)
+
+        payload = {
+            "latest_resume": {
+                **base_resume_payload,
+                "ats_score": ats_score,
+                "skill_gap_percentage": skill_gap_percentage,
+                "improvement_impact": improvement_impact,
+            },
+            "missing_skills": missing_skills,
+            "suggested_skills": unique_suggested,
+        }
+
+        serializer = DashboardSerializer(payload)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -62,3 +62,19 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    full_name = models.CharField(max_length=255, blank=True, default="")
+    phone = models.CharField(max_length=30, blank=True, default="")
+    location = models.CharField(max_length=255, blank=True, default="")
+    job_title = models.CharField(max_length=120, blank=True, default="")
+    bio = models.TextField(blank=True, default="")
+    linkedin = models.URLField(max_length=1024, blank=True, default="")
+    github = models.URLField(max_length=1024, blank=True, default="")
+    profile_image = models.ImageField(upload_to="users/profile_images/", blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Profile<{self.user.email}>"

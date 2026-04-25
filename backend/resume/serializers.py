@@ -3,6 +3,73 @@ from rest_framework import serializers
 from .models import Resume, ResumeTemplate
 from .services import ResumeValidationService
 
+
+class ResumeListSerializer(serializers.ModelSerializer):
+    thumbnail_url = serializers.SerializerMethodField()
+    pdf_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Resume
+        fields = ["id", "title", "thumbnail_url", "pdf_url", "created_at"]
+        read_only_fields = fields
+
+    def _build_absolute_file_url(self, file_field):
+        if not file_field:
+            return None
+        url = file_field.url
+        request = self.context.get("request")
+        return request.build_absolute_uri(url) if request else url
+
+    def get_thumbnail_url(self, obj):
+        if obj.thumbnail:
+            return self._build_absolute_file_url(obj.thumbnail)
+        if obj.template and obj.template.preview_image:
+            return self._build_absolute_file_url(obj.template.preview_image)
+        return None
+
+    def get_pdf_url(self, obj):
+        return self._build_absolute_file_url(obj.pdf_file)
+
+
+class ResumeDetailSerializer(serializers.ModelSerializer):
+    thumbnail_url = serializers.SerializerMethodField()
+    pdf_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Resume
+        fields = [
+            "id",
+            "user",
+            "title",
+            "template",
+            "data",
+            "metadata",
+            "thumbnail",
+            "pdf_file",
+            "thumbnail_url",
+            "pdf_url",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user", "created_at", "updated_at", "thumbnail_url", "pdf_url"]
+
+    def _build_absolute_file_url(self, file_field):
+        if not file_field:
+            return None
+        url = file_field.url
+        request = self.context.get("request")
+        return request.build_absolute_uri(url) if request else url
+
+    def get_thumbnail_url(self, obj):
+        if obj.thumbnail:
+            return self._build_absolute_file_url(obj.thumbnail)
+        if obj.template and obj.template.preview_image:
+            return self._build_absolute_file_url(obj.template.preview_image)
+        return None
+
+    def get_pdf_url(self, obj):
+        return self._build_absolute_file_url(obj.pdf_file)
+
 class ResumeSerializer(serializers.ModelSerializer):
     template = serializers.PrimaryKeyRelatedField(
         queryset=ResumeTemplate.objects.filter(is_active=True),
@@ -12,7 +79,18 @@ class ResumeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resume
-        fields = ["id", "user", "title", "template", "data", "created_at", "updated_at"]
+        fields = [
+            "id",
+            "user",
+            "title",
+            "template",
+            "data",
+            "metadata",
+            "thumbnail",
+            "pdf_file",
+            "created_at",
+            "updated_at",
+        ]
         read_only_fields = ["id", "user", "created_at", "updated_at"]
 
     def validate_title(self, value):
