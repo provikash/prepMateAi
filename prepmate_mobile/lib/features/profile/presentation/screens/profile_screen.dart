@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import 'personal_info_screen.dart';
 import 'help_support_screen.dart';
@@ -106,6 +107,34 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ],
             ),
+
+            _buildSection(
+              title: 'RESUME & LEARNING',
+              items: [
+                _ProfileItem(
+                  icon: Icons.description,
+                  title: 'My Resumes',
+                  onTap: () {
+                    // Navigate to resume management
+                  },
+                ),
+                _ProfileItem(
+                  icon: Icons.history,
+                  title: 'Analysis History',
+                  onTap: () {
+                    context.push('/ats-history');
+                  },
+                ),
+                _ProfileItem(
+                  icon: Icons.school_outlined,
+                  title: 'Learning Progress',
+                  onTap: () {
+                    // Navigate to courses/learning
+                  },
+                ),
+              ],
+            ),
+
             _buildSection(
               title: 'APP SETTINGS',
               items: [

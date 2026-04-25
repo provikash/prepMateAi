@@ -14,4 +14,5 @@ abstract class AuthRepository {
   Future<User?> getProfile();
 
   Future<User?> updateProfile(User user);
+  Future<User?> uploadProfileImage(String filePath);
 }

@@ -1,65 +1,81 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
-
+import '../data/datasources/home_remote_data_source.dart';
+import '../data/models/dashboard_model.dart';
+import '../data/models/resume_model.dart';
+import '../data/models/template_model.dart';
 import '../../../config/dio_client.dart';
-import '../../auth/presentation/state/auth_state.dart';
 import '../../auth/presentation/viewmodel/auth_viewmodel.dart';
-import '../data/homestate.dart';
+import '../../auth/presentation/state/auth_state.dart';
 
-class HomeDashboardNotifier extends AsyncNotifier<PrepMateHomeState> {
+final homeRemoteDataSourceProvider = Provider<HomeRemoteDataSource>((ref) {
+  final dio = ref.watch(dioProvider);
+  return HomeRemoteDataSource(dio);
+});
+
+final dashboardProvider =
+    AsyncNotifierProvider<DashboardNotifier, DashboardModel>(() {
+      return DashboardNotifier();
+    });
+
+class DashboardNotifier extends AsyncNotifier<DashboardModel> {
   @override
-  Future<PrepMateHomeState> build() async {
+  Future<DashboardModel> build() async {
+    // Ensure authenticated
     final authState = ref.watch(authViewModelProvider);
-
-    if (authState.status != AuthStatus.authenticated ||
-        authState.user == null) {
-      throw Exception('User is not authenticated');
+    if (authState.status != AuthStatus.authenticated) {
+      throw Exception('User not authenticated');
     }
-
-    final dio = ref.watch(dioProvider);
-    return _fetchDashboardData(dio, authState.user!.id);
+    return ref.watch(homeRemoteDataSourceProvider).getDashboard();
   }
 
-  Future<PrepMateHomeState> _fetchDashboardData(Dio dio, String userId) async {
-    try {
-      final response = await dio.get('users/$userId/dashboard/');
-      final data = response.data;
-
-      return PrepMateHomeState(
-        userName: data['user_name'] ?? 'User',
-        role: data['role'] ?? 'Designer',
-        progress: data['progress_value']?.toDouble() ?? 0.0,
-        aiSuggestion: data['ai_suggestion'] ?? 'Keep learning!',
-        progressStatus: data['status'] ?? 'Draft',
-      );
-    } on DioException catch (e) {
-      throw Exception('Failed to load dashboard: ${e.message}');
-    }
-  }
-
-  Future<void> refreshDashboard() async {
-    state = const AsyncLoading();
-    ref.invalidateSelf();
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () => ref.read(homeRemoteDataSourceProvider).getDashboard(),
+    );
   }
 }
 
-final homeDashboardProvider =
-    AsyncNotifierProvider<HomeDashboardNotifier, PrepMateHomeState>(
-      HomeDashboardNotifier.new,
+final resumeListProvider =
+    AsyncNotifierProvider<ResumeListNotifier, List<ResumeModel>>(() {
+      return ResumeListNotifier();
+    });
+
+class ResumeListNotifier extends AsyncNotifier<List<ResumeModel>> {
+  @override
+  Future<List<ResumeModel>> build() async {
+    final authState = ref.watch(authViewModelProvider);
+    if (authState.status != AuthStatus.authenticated) {
+      throw Exception('User not authenticated');
+    }
+    return ref.watch(homeRemoteDataSourceProvider).getResumes();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () => ref.read(homeRemoteDataSourceProvider).getResumes(),
     );
+  }
+}
+
+final templateListProvider =
+    AsyncNotifierProvider<TemplateListNotifier, List<TemplateModel>>(() {
+      return TemplateListNotifier();
+    });
+
+class TemplateListNotifier extends AsyncNotifier<List<TemplateModel>> {
+  @override
+  Future<List<TemplateModel>> build() async {
+    return ref.watch(homeRemoteDataSourceProvider).getTemplates();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () => ref.read(homeRemoteDataSourceProvider).getTemplates(),
+    );
+  }
+}
 
 final bottomNavProvider = StateProvider<int>((ref) => 0);
-
-final userDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  final dio = ref.watch(dioProvider);
-
-  try {
-    final response = await dio.get('users/me/profile/');
-    return response.data as Map<String, dynamic>;
-  } on DioException catch (e) {
-    if (e.response?.statusCode == 404) {
-      throw Exception('User profile not found.');
-    }
-    throw Exception('Failed to load user data: ${e.message}');
-  }
-});

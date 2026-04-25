@@ -59,6 +59,7 @@ class AuthRemoteDataSource {
 
     return response.statusCode == 200;
   }
+
   Future<User?> getProfile() async {
     final response = await dio.get('users/me/');
     return UserModel.fromJson(response.data);
@@ -78,10 +79,19 @@ class AuthRemoteDataSource {
       profileImage: user.profileImage,
     );
 
-    final response = await dio.patch(
-      'users/me/',
-      data: userModel.toJson(),
-    );
+    final response = await dio.patch('users/me/', data: userModel.toJson());
+    return UserModel.fromJson(response.data);
+  }
+
+  Future<User?> uploadProfileImage(String filePath) async {
+    final formData = FormData.fromMap({
+      'profile_image': await MultipartFile.fromFile(
+        filePath,
+        filename: 'profile_image.jpg',
+      ),
+    });
+
+    final response = await dio.patch('users/me/', data: formData);
     return UserModel.fromJson(response.data);
   }
 }
