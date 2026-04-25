@@ -1,5 +1,5 @@
 class Resume {
-  final int id; // Using int based on your deleteResume(int id) method
+  final int id;
   final String title;
   final List<dynamic> canvasData;
   final DateTime? createdAt;
@@ -13,23 +13,27 @@ class Resume {
     this.updatedAt,
   });
 
-  // Factory method to parse the JSON coming from your Django API
   factory Resume.fromJson(Map<String, dynamic> json) {
+    // Safely parse ID which could come as String or Int from backend
+    final dynamic rawId = json['id'];
+    final int parsedId = rawId is int
+        ? rawId
+        : int.tryParse(rawId?.toString() ?? '0') ?? 0;
+
     return Resume(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      // Default to empty list if canvas_data is null from backend
-      canvasData: json['canvas_data'] as List<dynamic>? ?? [],
+      id: parsedId,
+      title: json['title'] as String? ?? 'Untitled Resume',
+      // The backend field might be 'canvas_data' or 'data' based on your models.py
+      canvasData: (json['canvas_data'] ?? json['data']) as List<dynamic>? ?? [],
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+          ? DateTime.tryParse(json['created_at'].toString())
           : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
+          ? DateTime.tryParse(json['updated_at'].toString())
           : null,
     );
   }
 
-  // Method to send data back to Django
   Map<String, dynamic> toJson() {
     return {'id': id, 'title': title, 'canvas_data': canvasData};
   }

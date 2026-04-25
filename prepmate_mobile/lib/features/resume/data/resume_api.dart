@@ -6,11 +6,7 @@ import 'models/resume.dart';
 // ==========================================
 // 1. THE API PROVIDER
 // ==========================================
-// Assume you have a global dioProvider setup in your core network folder.
-// If not, you can replace `ref.read(dioProvider)` with your standard Dio setup.
 final resumeApiProvider = Provider<ResumeApi>((ref) {
-  // We inject the configured Dio instance (which should already have your
-  // base URL and Auth tokens) into the API class.
   final dio = ref.watch(dioProvider);
   return ResumeApi(dio);
 });
@@ -28,15 +24,29 @@ class ResumeApi {
     try {
       final response = await _dio.get('/resumes/');
 
-      // Transform the raw JSON list into a list of Dart 'Resume' objects
-      final List<dynamic> data = response.data;
-      return data.map((json) => Resume.fromJson(json)).toList();
+      // Handle both direct list response and paginated response (results key)
+      final dynamic rawData = response.data;
+      List<dynamic> listData;
+
+      if (rawData is List) {
+        listData = rawData;
+      } else if (rawData is Map && rawData.containsKey('results')) {
+        listData = rawData['results'];
+      } else {
+        // Fallback for unexpected data formats
+        return [];
+      }
+
+      return listData.map((json) => Resume.fromJson(json)).toList();
     } on DioException catch (e) {
       throw _handleError(e, "Failed to fetch resumes");
+    } catch (e) {
+      // Catch type errors or other unexpected issues
+      throw Exception("Unexpected error: $e");
     }
   }
 
-  // --- FETCH SINGLE RESUME (Optional, if needed for deep linking) ---
+  // --- FETCH SINGLE RESUME ---
   Future<Resume> getResumeById(int id) async {
     try {
       final response = await _dio.get('/resumes/$id/');
@@ -69,7 +79,6 @@ class ResumeApi {
     List<Map<String, dynamic>>? canvasData,
   }) async {
     try {
-      // Build payload dynamically so we only send what needs updating
       final Map<String, dynamic> payload = {};
       if (title != null) payload['title'] = title;
       if (canvasData != null) payload['canvas_data'] = canvasData;
@@ -93,11 +102,8 @@ class ResumeApi {
   // ==========================================
   // 3. CENTRALIZED ERROR HANDLING
   // ==========================================
-  // This ensures your UI gets clean, readable error messages instead of
-  // massive stack traces from Dio.
   Exception _handleError(DioException e, String fallbackMessage) {
     if (e.response != null) {
-      // The server received the request and returned an error (e.g., 400, 401, 500)
       final statusCode = e.response?.statusCode;
       final serverMessage =
           e.response?.data?['detail'] ?? e.response?.data?['error'];
@@ -113,7 +119,6 @@ class ResumeApi {
         e.type == DioExceptionType.receiveTimeout) {
       return Exception("Connection timed out. Check your internet.");
     } else {
-      // Something happened in setting up or sending the request
       return Exception("Network error. Please check your connection.");
     }
   }

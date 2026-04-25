@@ -41,4 +41,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<User?> updateProfile(User user) {
     return remote.updateProfile(user);
   }
+
+  @override
+  Future<User?> uploadProfileImage(String filePath) {
+    return remote.uploadProfileImage(filePath);
+  }
 }
