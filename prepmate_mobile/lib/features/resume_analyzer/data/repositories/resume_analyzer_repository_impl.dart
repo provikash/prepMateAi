@@ -14,21 +14,24 @@ class ResumeAnalyzerRepositoryImpl implements ResumeAnalyzerRepository {
     File? file,
     required String jobRole,
   }) async {
-    FormData formData = FormData.fromMap({
-      'job_role': jobRole,
-    });
+    FormData formData = FormData.fromMap({'job_role': jobRole});
 
     if (file != null) {
-      formData.files.add(MapEntry(
-        'file',
-        await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
-      ));
+      formData.files.add(
+        MapEntry(
+          'file',
+          await MultipartFile.fromFile(
+            file.path,
+            filename: file.path.split('/').last,
+          ),
+        ),
+      );
     } else if (resumeId != null) {
       formData.fields.add(MapEntry('resume_id', resumeId));
     }
 
     final response = await _dio.post(
-      'v1/resume-analyzer/analyze/',
+      'resume-analyzer/analyze/',
       data: formData,
     );
 
@@ -37,7 +40,7 @@ class ResumeAnalyzerRepositoryImpl implements ResumeAnalyzerRepository {
 
   @override
   Future<List<ResumeAnalysisModel>> getHistory() async {
-    final response = await _dio.get('v1/resume-analyzer/history/');
+    final response = await _dio.get('resume-analyzer/history/');
     return (response.data as List)
         .map((json) => ResumeAnalysisModel.fromJson(json))
         .toList();
@@ -45,7 +48,7 @@ class ResumeAnalyzerRepositoryImpl implements ResumeAnalyzerRepository {
 
   @override
   Future<ResumeAnalysisModel> getAnalysisDetail(String analysisId) async {
-    final response = await _dio.get('v1/resume-analyzer/$analysisId/');
+    final response = await _dio.get('resume-analyzer/$analysisId/');
     return ResumeAnalysisModel.fromJson(response.data);
   }
 
@@ -55,7 +58,7 @@ class ResumeAnalyzerRepositoryImpl implements ResumeAnalyzerRepository {
     String? jobRole,
   }) async {
     final response = await _dio.post(
-      'v1/resume-analyzer/$analysisId/reanalyze/',
+      'resume-analyzer/$analysisId/reanalyze/',
       data: jobRole != null ? {'job_role': jobRole} : null,
     );
     return ResumeAnalysisModel.fromJson(response.data);

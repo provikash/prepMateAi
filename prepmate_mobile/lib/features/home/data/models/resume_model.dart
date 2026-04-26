@@ -1,5 +1,5 @@
 class ResumeModel {
-  final int id;
+  final String id;
   final String title;
   final String thumbnailUrl;
   final String pdfUrl;
@@ -13,10 +13,13 @@ class ResumeModel {
 
   factory ResumeModel.fromJson(Map<String, dynamic> json) {
     return ResumeModel(
-      id: json['id'] as int,
+      id: json['id'].toString(),
       title: json['title'] as String? ?? 'Untitled Resume',
-      thumbnailUrl: json['thumbnail_url'] as String? ?? '',
-      pdfUrl: json['pdf_url'] as String? ?? '',
+      thumbnailUrl:
+          json['thumbnail_url'] as String? ??
+          json['thumbnailUrl'] as String? ??
+          '',
+      pdfUrl: json['pdf_url'] as String? ?? json['pdfUrl'] as String? ?? '',
     );
   }
 }

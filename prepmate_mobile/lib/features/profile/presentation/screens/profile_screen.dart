@@ -1,32 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/config/theme.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import 'personal_info_screen.dart';
 import 'help_support_screen.dart';
 
-
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _requestedProfile = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_requestedProfile) {
+      _requestedProfile = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(authViewModelProvider.notifier).getProfile();
+      });
+    }
+
     final authState = ref.watch(authViewModelProvider);
     final user = authState.user;
+    final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.screenBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.screenBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Profile Settings',
           style: TextStyle(
-            color: Color(0xFF1D2939),
+            color: colors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -47,10 +62,17 @@ class ProfileScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.grey.shade200, width: 4),
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/profile_placeholder.png'), // Replace with actual user image
-                        fit: BoxFit.cover,
-                      ),
+                      image: user?.profileImage != null
+                          ? DecorationImage(
+                              image: NetworkImage(user!.profileImage!),
+                              fit: BoxFit.cover,
+                            )
+                          : const DecorationImage(
+                              image: AssetImage(
+                                'assets/images/profile_placeholder.png',
+                              ),
+                              fit: BoxFit.cover,
+                            ),
                     ),
                   ),
                   Positioned(
@@ -59,7 +81,7 @@ class ProfileScreen extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF246BFD),
+                        color: colors.primary,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
@@ -75,11 +97,11 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              user?.fullName ?? 'Johnathan Smith',
-              style: const TextStyle(
+              user?.fullName ?? 'Loading profile...',
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1D2939),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 30),
@@ -94,16 +116,16 @@ class ProfileScreen extends ConsumerWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const PersonalInfoScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const PersonalInfoScreen(),
+                      ),
                     );
                   },
                 ),
                 _ProfileItem(
                   icon: Icons.security_outlined,
                   title: 'Change Password',
-                  onTap: () {
-
-                  },
+                  onTap: () {},
                 ),
               ],
             ),
@@ -144,7 +166,7 @@ class ProfileScreen extends ConsumerWidget {
                   trailing: Switch(
                     value: false,
                     onChanged: (val) {},
-                    activeColor: const Color(0xFF246BFD),
+                    activeThumbColor: colors.primary,
                   ),
                 ),
                 _ProfileItem(
@@ -153,7 +175,9 @@ class ProfileScreen extends ConsumerWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const HelpSupportScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const HelpSupportScreen(),
+                      ),
                     );
                   },
                 ),
@@ -201,6 +225,8 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildSection({required String title, required List<Widget> items}) {
+    final colors = AppColors.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -219,7 +245,7 @@ class ProfileScreen extends ConsumerWidget {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 24),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
+            color: colors.cardBackground,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(children: items),
@@ -244,21 +270,23 @@ class _ProfileItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFFE0E7FF),
+          color: colors.primarySoft,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: const Color(0xFF246BFD), size: 20),
+        child: Icon(icon, color: colors.primary, size: 20),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF1D2939),
+          color: colors.textPrimary,
         ),
       ),
       trailing: trailing ?? const Icon(Icons.chevron_right, color: Colors.grey),

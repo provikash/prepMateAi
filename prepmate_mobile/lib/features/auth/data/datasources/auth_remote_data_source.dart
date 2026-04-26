@@ -61,26 +61,36 @@ class AuthRemoteDataSource {
   }
 
   Future<User?> getProfile() async {
-    final response = await dio.get('users/me/');
-    return UserModel.fromJson(response.data);
+    final summaryResponse = await dio.get('users/me/');
+    final profileResponse = await dio.get('profile/');
+
+    final merged = <String, dynamic>{
+      ...(summaryResponse.data as Map<String, dynamic>),
+      ...(profileResponse.data as Map<String, dynamic>),
+    };
+    return UserModel.fromJson(merged);
   }
 
   Future<User?> updateProfile(User user) async {
-    final userModel = UserModel(
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      phoneNumber: user.phoneNumber,
-      location: user.location,
-      linkedin: user.linkedin,
-      skills: user.skills,
-      bio: user.bio,
-      title: user.title,
-      profileImage: user.profileImage,
+    final response = await dio.patch(
+      'profile/',
+      data: {
+        'full_name': user.fullName ?? '',
+        'phone': user.phoneNumber ?? '',
+        'location': user.location ?? '',
+        'job_title': user.title ?? '',
+        'bio': user.bio ?? '',
+        'linkedin': user.linkedin ?? '',
+      },
     );
 
-    final response = await dio.patch('users/me/', data: userModel.toJson());
-    return UserModel.fromJson(response.data);
+    final summaryResponse = await dio.get('users/me/');
+    final merged = <String, dynamic>{
+      ...(summaryResponse.data as Map<String, dynamic>),
+      ...(response.data as Map<String, dynamic>),
+    };
+
+    return UserModel.fromJson(merged);
   }
 
   Future<User?> uploadProfileImage(String filePath) async {
@@ -91,7 +101,13 @@ class AuthRemoteDataSource {
       ),
     });
 
-    final response = await dio.patch('users/me/', data: formData);
-    return UserModel.fromJson(response.data);
+    final response = await dio.patch('profile/', data: formData);
+    final summaryResponse = await dio.get('users/me/');
+    final merged = <String, dynamic>{
+      ...(summaryResponse.data as Map<String, dynamic>),
+      ...(response.data as Map<String, dynamic>),
+    };
+
+    return UserModel.fromJson(merged);
   }
 }

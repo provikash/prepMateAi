@@ -1,6 +1,9 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/config/theme.dart';
 import '../../providers/home_providers.dart';
 import '../../data/models/template_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -11,6 +14,7 @@ class TemplateHorizontalList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
     final templatesAsync = ref.watch(templateListProvider);
 
     return Column(
@@ -19,20 +23,17 @@ class TemplateHorizontalList extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Fresh Template',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: colors.textPrimary,
               ),
             ),
             TextButton(
               onPressed: () => context.push('/template'),
-              child: const Text(
-                'See all',
-                style: TextStyle(color: Colors.blue),
-              ),
+              child: Text('See all', style: TextStyle(color: colors.primary)),
             ),
           ],
         ),
@@ -84,15 +85,17 @@ class TemplateItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return GestureDetector(
       onTap: () => context.push('/template-detail', extra: template.id),
       child: Container(
         width: 150,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: colors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,15 +127,16 @@ class TemplateItemWidget extends StatelessWidget {
                     template.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     template.category,
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                 ],
               ),

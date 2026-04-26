@@ -18,14 +18,17 @@ class UserModel extends User {
     return UserModel(
       id: json['id'].toString(),
       email: json['email'] ?? '',
-      fullName: json['full_name'] ?? json['username'],
-      phoneNumber: json['phone_number'],
+      fullName: json['full_name'] ?? json['name'] ?? json['username'],
+      phoneNumber: json['phone'] ?? json['phone_number'],
       location: json['location'],
       linkedin: json['linkedin'],
       skills: json['skills'] != null ? List<String>.from(json['skills']) : null,
       bio: json['bio'],
-      title: json['title'],
-      profileImage: json['profile_image'],
+      title: json['job_title'] ?? json['title'],
+      profileImage:
+          json['profile_image_url'] ??
+          json['profile_image'] ??
+          json['avatar_url'],
     );
   }
 
@@ -34,12 +37,12 @@ class UserModel extends User {
       'id': id,
       'email': email,
       'full_name': fullName,
-      'phone_number': phoneNumber,
+      'phone': phoneNumber,
       'location': location,
       'linkedin': linkedin,
       'skills': skills,
       'bio': bio,
-      'title': title,
+      'job_title': title,
       'profile_image': profileImage,
     };
   }

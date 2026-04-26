@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/theme.dart';
+import '../../../home/providers/home_providers.dart';
 import '../providers/resume_analyzer_providers.dart';
 
 class AnalyzeScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,8 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _roleController = TextEditingController();
   File? _selectedFile;
+  bool _useSavedResume = true;
+  String? _selectedResumeId;
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -27,7 +30,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
       final size = await file.length();
-      
+
       if (size > 10 * 1024 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -36,7 +39,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
         }
         return;
       }
-      
+
       setState(() {
         _selectedFile = file;
       });
@@ -44,17 +47,40 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
   }
 
   void _submit() {
-    if (_formKey.currentState!.validate() && _selectedFile != null) {
-      ref.read(analyzeProvider.notifier).analyze(
-        file: _selectedFile,
-        jobRole: _roleController.text,
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_useSavedResume &&
+        (_selectedResumeId == null || _selectedResumeId!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a saved resume.')),
       );
+      return;
+    }
+
+    if (!_useSavedResume && _selectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload a PDF resume.')),
+      );
+      return;
+    }
+
+    if (_formKey.currentState!.validate()) {
+      ref
+          .read(analyzeProvider.notifier)
+          .analyze(
+            resumeId: _useSavedResume ? _selectedResumeId : null,
+            file: _useSavedResume ? null : _selectedFile,
+            jobRole: _roleController.text,
+          );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(analyzeProvider);
+    final resumesAsync = ref.watch(resumeListProvider);
 
     ref.listen(analyzeProvider, (previous, next) {
       if (next.data != null) {
@@ -62,16 +88,19 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
         context.push('/ats-result', extra: next.data);
       }
       if (next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
     });
 
     return Scaffold(
       backgroundColor: AppTheme.lightBackground,
       appBar: AppBar(
-        title: const Text('Analyze Resume', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Analyze Resume',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -101,7 +130,10 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
                 decoration: InputDecoration(
                   labelText: 'Target Job Role',
                   hintText: 'e.g. Senior Product Designer',
-                  prefixIcon: const Icon(Icons.work_outline, color: AppTheme.primary),
+                  prefixIcon: const Icon(
+                    Icons.work_outline,
+                    color: AppTheme.primary,
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -116,35 +148,124 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
                 validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 24),
-              InkWell(
-                onTap: _pickFile,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.primary.withOpacity(0.3), width: 2, style: BorderStyle.solid),
-                    borderRadius: BorderRadius.circular(16),
-                    color: Colors.white,
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<bool>(
+                      value: true,
+                      groupValue: _useSavedResume,
+                      title: const Text('Use Saved Resume'),
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _useSavedResume = value;
+                        });
+                      },
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.cloud_upload_outlined, size: 48, color: AppTheme.primary),
-                      const SizedBox(height: 12),
-                      Text(
-                        _selectedFile == null 
-                          ? 'Upload PDF Resume (Max 10MB)' 
-                          : _selectedFile!.path.split('/').last,
-                        style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
-                      ),
-                      if (_selectedFile == null)
-                        const Text(
-                          'Only PDF files are supported',
-                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                  Expanded(
+                    child: RadioListTile<bool>(
+                      value: false,
+                      groupValue: _useSavedResume,
+                      title: const Text('Upload PDF'),
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _useSavedResume = value;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (_useSavedResume)
+                resumesAsync.when(
+                  loading: () => const LinearProgressIndicator(minHeight: 2),
+                  error: (error, _) => Text('Failed to load resumes: $error'),
+                  data: (resumes) {
+                    if (resumes.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'No saved resumes found. Switch to Upload PDF.',
                         ),
-                    ],
+                      );
+                    }
+
+                    _selectedResumeId ??= resumes.first.id;
+                    return DropdownButtonFormField<String>(
+                      value:
+                          resumes.any(
+                            (resume) => resume.id == _selectedResumeId,
+                          )
+                          ? _selectedResumeId
+                          : resumes.first.id,
+                      items: resumes
+                          .map(
+                            (resume) => DropdownMenuItem(
+                              value: resume.id,
+                              child: Text(resume.title),
+                            ),
+                          )
+                          .toList(),
+                      decoration: const InputDecoration(
+                        labelText: 'Select Resume',
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedResumeId = value;
+                        });
+                      },
+                    );
+                  },
+                )
+              else
+                InkWell(
+                  onTap: _pickFile,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.3),
+                        width: 2,
+                        style: BorderStyle.solid,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white,
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.cloud_upload_outlined,
+                          size: 48,
+                          color: AppTheme.primary,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _selectedFile == null
+                              ? 'Upload PDF Resume (Max 10MB)'
+                              : _selectedFile!.path.split('/').last,
+                          style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (_selectedFile == null)
+                          const Text(
+                            'Only PDF files are supported',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               const Spacer(),
               Container(
                 decoration: BoxDecoration(
@@ -164,11 +285,20 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                  child: state.isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Analyze Now', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: state.isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Analyze Now',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ],

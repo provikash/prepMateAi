@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prepmate_mobile/config/theme.dart';
 
 import '../providers/home_providers.dart';
 
@@ -11,19 +12,22 @@ class ProgressCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Corrected to use homeDashboardProvider which returns PrepMateHomeState
     final dashboardAsync = ref.watch(dashboardProvider);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: isDark ? Colors.black54 : Colors.black12,
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -36,7 +40,7 @@ class ProgressCard extends ConsumerWidget {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.trending_up, color: Colors.blue),
+                    Icon(Icons.trending_up),
                     SizedBox(width: 8),
                     Text(
                       'Current Progress',
@@ -53,13 +57,13 @@ class ProgressCard extends ConsumerWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD), // Light blue
+                    color: colors.primarySoft,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     data.progressStatus,
-                    style: const TextStyle(
-                      color: Colors.blue,
+                    style: TextStyle(
+                      color: colors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -79,10 +83,10 @@ class ProgressCard extends ConsumerWidget {
                 ),
                 Text(
                   '${(data.progress * 100).toInt()}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: colors.primary,
                   ),
                 ),
               ],
@@ -93,28 +97,28 @@ class ProgressCard extends ConsumerWidget {
               child: LinearProgressIndicator(
                 value: data.progress,
                 minHeight: 10,
-                backgroundColor: const Color(0xFFEEEEEE),
-                color: Colors.blue,
+                backgroundColor: colors.border,
+                color: colors.primary,
               ),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F8FF),
+                color: colors.mutedBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.account_tree, color: Colors.blue),
+                  Icon(Icons.account_tree, color: colors.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       data.aiSuggestion,
-                      style: const TextStyle(color: Colors.black87),
+                      style: TextStyle(color: colors.textPrimary),
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: Colors.grey),
+                  Icon(Icons.chevron_right, color: colors.textSecondary),
                 ],
               ),
             ),

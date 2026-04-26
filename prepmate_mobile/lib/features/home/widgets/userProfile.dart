@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prepmate_mobile/config/theme.dart';
 import '../../../features/home/providers/home_providers.dart';
 
 class UserProfileWidget extends ConsumerWidget {
@@ -9,6 +10,8 @@ class UserProfileWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
+
     // Watching homeDashboardProvider to get user information
     final dashboardAsync = ref.watch(dashboardProvider);
 
@@ -17,13 +20,17 @@ class UserProfileWidget extends ConsumerWidget {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundColor: Colors.blue.shade100,
-            child: const Icon(Icons.person, color: Colors.blue, size: 40),
+            backgroundColor: colors.primarySoft,
+            child: Icon(Icons.person, color: colors.primary, size: 40),
           ),
           const SizedBox(height: 12),
           Text(
             data.userName,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: colors.textPrimary,
+            ),
           ),
         ],
       ),

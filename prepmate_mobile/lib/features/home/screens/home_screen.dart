@@ -3,22 +3,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/config/theme.dart';
 import 'package:prepmate_mobile/features/home/providers/home_providers.dart';
 import 'package:prepmate_mobile/features/interview/presentation/screens/interview_screen.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
 import '../widgets/progressCard.dart';
+import '../presentation/widgets/resume_horizontal_list.dart';
+import '../presentation/widgets/template_horizontal_list.dart';
 
 class PrepMateHome extends ConsumerWidget {
   const PrepMateHome({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
     final bottomNavIndex = ref.watch(bottomNavProvider);
     final dashboardAsync = ref.watch(dashboardProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
-      appBar: _buildAppBar(),
+      backgroundColor: colors.screenBackground,
+      appBar: _buildAppBar(context),
       body: IndexedStack(
         index: bottomNavIndex,
         children: [
@@ -35,17 +39,22 @@ class PrepMateHome extends ConsumerWidget {
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      title: const Text(
+      title: Text(
         'Prep Mate',
-        style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: colors.textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+          icon: Icon(Icons.add_circle_outline, color: colors.primary),
           onPressed: () {},
         ),
       ],
@@ -57,6 +66,8 @@ class PrepMateHome extends ConsumerWidget {
     WidgetRef ref,
     int currentIndex,
   ) {
+    final colors = AppColors.of(context);
+
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: (index) {
@@ -67,8 +78,8 @@ class PrepMateHome extends ConsumerWidget {
         }
       },
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.blue,
-      unselectedItemColor: Colors.grey,
+      selectedItemColor: colors.primary,
+      unselectedItemColor: colors.textSecondary,
       showUnselectedLabels: true,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
@@ -87,103 +98,47 @@ class _HomeContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildGreeting(dashboardAsync),
+          const ResumeHorizontalList(),
+          const SizedBox(height: 20),
+          _buildGreeting(dashboardAsync, colors),
           const SizedBox(height: 24),
           const ProgressCard(),
           const SizedBox(height: 32),
-          _buildTemplatesHeader(),
-          const SizedBox(height: 16),
-          _buildTemplatesList(ref),
+          const TemplateHorizontalList(),
         ],
       ),
     );
   }
 
-  Widget _buildGreeting(AsyncValue dashboardAsync) {
+  Widget _buildGreeting(AsyncValue dashboardAsync, AppColors colors) {
     return dashboardAsync.when(
       data: (data) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const CircleAvatar(
-                backgroundColor: Color(0xFFE3F2FD),
-                child: Icon(Icons.add, color: Colors.blue),
-              ),
-              const SizedBox(width: 12),
-              ActionChip(
-                label: const Text('Add Resume'),
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: const BorderSide(color: Colors.black12),
-                ),
-                onPressed: () {},
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
           Text(
             'Hello, ${data.userName}!',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: colors.textPrimary,
+            ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Your career journey continues.',
-            style: TextStyle(color: Colors.grey, fontSize: 16),
+            style: TextStyle(color: colors.textSecondary, fontSize: 16),
           ),
         ],
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Text('Error: $err'),
-    );
-  }
-
-  Widget _buildTemplatesHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Fresh Template',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        TextButton(
-          onPressed: () {},
-          child: const Text('See all', style: TextStyle(color: Colors.blue)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTemplatesList(WidgetRef ref) {
-    final templatesAsync = ref.watch(templateListProvider);
-
-    return SizedBox(
-      height: 280,
-      child: templatesAsync.when(
-        data: (templates) => ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: templates.length,
-          itemBuilder: (context, index) {
-            return SizedBox(
-              width: 200,
-              // child: TemplateCard(
-              //   // template: templates<List> ,
-              //   // onSelect: () {
-              //   //   // Handle template selection
-              //   // },
-              // ),
-            );
-          },
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
     );
   }
 }

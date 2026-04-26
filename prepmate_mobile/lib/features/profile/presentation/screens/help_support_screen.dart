@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
+import 'package:prepmate_mobile/config/theme.dart';
 import '../../../../config/dio_client.dart';
 
 class HelpSupportScreen extends ConsumerStatefulWidget {
@@ -42,11 +42,11 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
 
     try {
       final dio = ref.read(dioProvider);
-      // Assuming you have a support endpoint. If not, this is where you'd send to your backend 
-      // which then sends the email. Directly sending emails from a mobile app usually requires 
+      // Assuming you have a support endpoint. If not, this is where you'd send to your backend
+      // which then sends the email. Directly sending emails from a mobile app usually requires
       // a backend or a service like EmailJS / SendGrid.
-      
-      final response = await dio.post(
+
+      await dio.post(
         'support/tickets/',
         data: {
           'category': _selectedCategory,
@@ -56,14 +56,20 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Support ticket submitted successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Support ticket submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed to submit: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -73,18 +79,23 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: colors.screenBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: colors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Help & Support',
-          style: TextStyle(color: Color(0xFF1D2939), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
@@ -123,7 +134,7 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                         Text(
                           'Describe the issue and our support team will get back to you soon.',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -131,7 +142,11 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Icon(Icons.headset_mic_outlined, size: 60, color: Colors.white),
+                  const Icon(
+                    Icons.headset_mic_outlined,
+                    size: 60,
+                    color: Colors.white,
+                  ),
                 ],
               ),
             ),
@@ -145,7 +160,7 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -156,7 +171,11 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                 children: [
                   const Text(
                     'Category',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1D2939)),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Color(0xFF1D2939),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -186,7 +205,11 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                   const SizedBox(height: 24),
                   const Text(
                     'Describe your problem',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1D2939)),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Color(0xFF1D2939),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -215,7 +238,10 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                             children: [
                               Text(
                                 '${_messageController.text.length} / 1000',
-                                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
@@ -230,15 +256,21 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submitSupportTicket,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF246BFD),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: colors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Submit',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                     ),
                   ),
