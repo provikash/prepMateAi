@@ -1,13 +1,11 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/features/home/providers/home_providers.dart';
-import 'package:prepmate_mobile/features/resume/providers/template_provider.dart' hide templateListProvider;
 import 'package:prepmate_mobile/features/interview/presentation/screens/interview_screen.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
-
-import '../../resume/data/models/resume_template.dart';
-import '../../resume/presentation/widgets/template_card.dart';
 import '../widgets/progressCard.dart';
 
 class PrepMateHome extends ConsumerWidget {
@@ -174,12 +172,12 @@ class _HomeContent extends ConsumerWidget {
           itemBuilder: (context, index) {
             return SizedBox(
               width: 200,
-              child: TemplateCard(
-                template:  ,
-                onSelect: () {
-                  // Handle template selection
-                },
-              ),
+              // child: TemplateCard(
+              //   // template: templates<List> ,
+              //   // onSelect: () {
+              //   //   // Handle template selection
+              //   // },
+              // ),
             );
           },
         ),

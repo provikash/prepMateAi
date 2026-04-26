@@ -74,7 +74,7 @@ class CourseRepositoryImpl implements CourseRepository {
           type: CourseType.youtubeVideo,
           url: 'https://www.youtube.com',
         ),
-        pythonCourse.copyWith(),
+      
       ],
       softSkills: [
         Course(

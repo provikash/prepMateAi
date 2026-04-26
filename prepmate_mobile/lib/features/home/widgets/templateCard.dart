@@ -1,11 +1,12 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 
 class TemplateCard extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const TemplateCard({Key? key, required this.title, required this.subtitle})
-    : super(key: key);
+  const TemplateCard({super.key, required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {

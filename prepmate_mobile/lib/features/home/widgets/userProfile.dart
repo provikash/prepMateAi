@@ -1,7 +1,8 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../features/home/providers/home_providers.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class UserProfileWidget extends ConsumerWidget {
   const UserProfileWidget({super.key});
