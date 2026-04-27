@@ -206,10 +206,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   isPassword: true,
                   hint: 'Create a Text',
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Please enter a password';
-                    if (value.length < 6)
+                    }
+                    if (value.length < 6) {
                       return 'Password must be at least 6 Characters';
+                    }
                     return null;
                   },
                 ),
@@ -253,10 +255,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   hint: 'Repeat Password',
                   isPassword: true,
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Please Enter Confirm Password';
-                    if (value != _passwordController.text)
+                    }
+                    if (value != _passwordController.text) {
                       return 'Passwords do not match';
+                    return null;
+                    }
                   },
                 ),
                 const SizedBox(height: 32.0),

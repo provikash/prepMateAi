@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../domain/entities/user.dart';
 import '../models/user_model.dart';
 import '../../../../core/services/storage.dart';
 
 class AuthRemoteDataSource {
   final Dio dio;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   AuthRemoteDataSource(this.dio);
 
@@ -23,6 +25,36 @@ class AuthRemoteDataSource {
     }
 
     return null;
+  }
+
+  Future<User?> signInWithGoogle() async {
+    await _googleSignIn.initialize();
+    final GoogleSignInAccount account = await _googleSignIn.authenticate();
+    final auth = account.authentication;
+    final idToken = auth.idToken;
+
+    if (idToken == null || idToken.isEmpty) {
+      throw Exception('Google sign-in failed: missing id token');
+    }
+
+    final response = await dio.post(
+      'auth/google/',
+      data: {
+        'token': idToken,
+        'id_token': idToken,
+      },
+    );
+
+    final data = response.data as Map<String, dynamic>;
+    final token =
+        data['tokens']?['access'] ?? data['access'] ?? data['access_token'];
+    final userData = (data['user'] ?? data) as Map<String, dynamic>;
+
+    if (token != null) {
+      await TokenService.saveToken(token.toString());
+    }
+
+    return UserModel.fromJson(userData);
   }
 
   Future<bool> signup(String name, String email, String password) async {
@@ -48,6 +80,7 @@ class AuthRemoteDataSource {
   }
 
   Future<void> logout() async {
+    await _googleSignIn.signOut();
     await TokenService.deleteToken();
   }
 
@@ -81,6 +114,7 @@ class AuthRemoteDataSource {
         'job_title': user.title ?? '',
         'bio': user.bio ?? '',
         'linkedin': user.linkedin ?? '',
+        'github': user.github ?? '',
       },
     );
 

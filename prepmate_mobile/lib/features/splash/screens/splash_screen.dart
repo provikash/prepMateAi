@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:prepmate_mobile/core/services/storage.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:prepmate_mobile/features/auth/presentation/viewmodel/auth_viewmodel.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -43,37 +43,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _startFlow() async {
     final startTime = DateTime.now();
-
-    bool isAuthenticated = false;
-
-    try {
-      final token = await TokenService.getToken();
-
-      if (token != null && token.isNotEmpty) {
-        // Optional: Skip API call for faster UX
-        isAuthenticated = await ref
-            .read(authViewModelProvider.notifier)
-            .getProfile();
-      }
-    } catch (e) {
-      // 🔥 Prevent crash + better UX
-      isAuthenticated = false;
-    }
+    await ref.read(authProvider.notifier).bootstrapSession();
 
     final elapsed = DateTime.now().difference(startTime);
     final remaining = const Duration(seconds: 2) - elapsed;
-
     if (remaining > Duration.zero) {
       await Future.delayed(remaining);
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
-    // 🔥 Smooth navigation after animation
-    if (isAuthenticated) {
-      context.go('/home');
-    } else {
-      context.go('/login');
+    final authState = ref.read(authProvider);
+    if (authState.infoMessage != null && authState.infoMessage!.isNotEmpty) {
+      await Fluttertoast.showToast(msg: authState.infoMessage!);
+      ref.read(authProvider.notifier).clearMessages();
     }
   }
 
@@ -94,7 +79,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             scale: _scaleAnimation,
             child: Hero(
               tag: 'app_logo',
-              child: Image.asset('assets/logos/app_icon_1024.png', width: 160),
+              child: SvgPicture.asset(
+                'assets/logos/app_icon_1024.svg',
+                width: 160,
+              ),
             ),
           ),
         ),

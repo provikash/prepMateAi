@@ -53,6 +53,9 @@ dependencies:
   shimmer: ^3.0.0
   youtube_player_flutter: ^9.1.1
   syncfusion_flutter_pdfviewer: ^28.1.33
+  path_provider: ^2.1.5
+  share_plus: ^10.0.2
+  fluttertoast: ^8.2.8
 
 dev_dependencies:
   flutter_test:
@@ -64,14 +67,17 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logos/app_icon_1024.png"
   min_sdk_android: 21
+  remove_alpha_ios: true
+  image_path: "assets/logos/light_transparent.png"
+  adaptive_icon_background: "#0B0F1A"
+  adaptive_icon_foreground: "assets/logos/light_transparent.png"
 
 flutter_native_splash:
   color: "#ffffff"
-  image: "assets/logos/app_icon_1024.png"
+  image: "assets/logos/app_icon_1024.svg"
   android_12:
-    image: "assets/logos/app_icon_1024.png"
+    image: "assets/logos/app_icon_1024.svg"
     color: "#ffffff"
   fullscreen: true
 

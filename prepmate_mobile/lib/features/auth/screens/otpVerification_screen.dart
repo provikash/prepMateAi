@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinput/pinput.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
-import 'package:go_router/go_router.dart';
 
 import '../presentation/state/auth_state.dart';
 import '../presentation/viewmodel/auth_viewmodel.dart';

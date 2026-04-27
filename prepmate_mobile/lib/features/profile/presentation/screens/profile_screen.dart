@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/config/theme.dart';
+import 'package:prepmate_mobile/features/profile/presentation/providers/profile_provider.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import 'personal_info_screen.dart';
 import 'help_support_screen.dart';
@@ -21,12 +22,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!_requestedProfile) {
       _requestedProfile = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(authViewModelProvider.notifier).getProfile();
+        ref.read(profileProvider.notifier).loadProfile();
       });
     }
 
-    final authState = ref.watch(authViewModelProvider);
-    final user = authState.user;
+    final profileState = ref.watch(profileProvider);
+    final user = profileState.user;
     final colors = AppColors.of(context);
 
     return Scaffold(
@@ -191,7 +192,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 width: double.infinity,
                 child: TextButton(
                   onPressed: () {
-                    ref.read(authViewModelProvider.notifier).logout();
+                    ref.read(authProvider.notifier).logout();
+                    context.go('/login');
                   },
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFFFF5F5),

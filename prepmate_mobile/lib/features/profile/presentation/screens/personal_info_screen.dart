@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:prepmate_mobile/config/theme.dart';
-import '../../../auth/domain/entities/user.dart';
-import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
-import '../../../auth/presentation/state/auth_state.dart';
+import 'package:prepmate_mobile/features/auth/data/models/user_model.dart';
+import '../providers/profile_provider.dart';
 
 class PersonalInfoScreen extends ConsumerStatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -21,6 +21,8 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _locationController;
   late TextEditingController _linkedinController;
+  late TextEditingController _githubController;
+  late TextEditingController _jobTitleController;
   late TextEditingController _bioController;
   late List<String> _skills;
 
@@ -32,15 +34,15 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     _phoneController = TextEditingController();
     _locationController = TextEditingController();
     _linkedinController = TextEditingController();
+    _githubController = TextEditingController();
+    _jobTitleController = TextEditingController();
     _bioController = TextEditingController();
     _skills = [];
 
-    Future.microtask(
-      () => ref.read(authViewModelProvider.notifier).getProfile(),
-    );
+    Future.microtask(() => ref.read(profileProvider.notifier).loadProfile());
   }
 
-  void _hydrateControllers(User? user) {
+  void _hydrateControllers(UserModel? user) {
     if (user == null || _hydratedFromProfile) {
       return;
     }
@@ -50,6 +52,8 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     _phoneController.text = user.phoneNumber ?? '';
     _locationController.text = user.location ?? '';
     _linkedinController.text = user.linkedin ?? '';
+    _githubController.text = user.github ?? '';
+    _jobTitleController.text = user.title ?? '';
     _bioController.text = user.bio ?? '';
     _skills = List.from(user.skills ?? []);
     _hydratedFromProfile = true;
@@ -62,29 +66,27 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     _phoneController.dispose();
     _locationController.dispose();
     _linkedinController.dispose();
+    _githubController.dispose();
+    _jobTitleController.dispose();
     _bioController.dispose();
     super.dispose();
   }
 
   void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
-      final currentUser = ref.read(authViewModelProvider).user;
-      if (currentUser == null) return;
-
-      final updatedUser = currentUser.copyWith(
-        fullName: _nameController.text,
-        phoneNumber: _phoneController.text,
-        location: _locationController.text,
-        linkedin: _linkedinController.text,
-        bio: _bioController.text,
-        skills: _skills,
-      );
-
-      await ref.read(authViewModelProvider.notifier).updateProfile(updatedUser);
+      final success = await ref.read(profileProvider.notifier).updateProfile({
+        'full_name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'location': _locationController.text.trim(),
+        'linkedin': _linkedinController.text.trim(),
+        'github': _githubController.text.trim(),
+        'job_title': _jobTitleController.text.trim(),
+        'bio': _bioController.text.trim(),
+        'skills': _skills,
+      });
 
       if (mounted) {
-        final state = ref.read(authViewModelProvider);
-        if (state.status != AuthStatus.error) {
+        if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Profile updated successfully'),
@@ -92,9 +94,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
             ),
           );
         } else {
+          final state = ref.read(profileProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.errorMessage ?? 'Update failed'),
+              content: Text(state.error ?? 'Update failed'),
               backgroundColor: Colors.red,
             ),
           );
@@ -103,11 +106,34 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     }
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final picked = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (picked == null || picked.files.isEmpty) {
+      return;
+    }
+
+    final path = picked.files.single.path;
+    if (path == null || path.isEmpty) {
+      return;
+    }
+
+    final success = await ref.read(profileProvider.notifier).uploadProfileImage(path);
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? 'Profile image updated' : 'Failed to upload image'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authViewModelProvider);
-    final user = authState.user;
-    final isLoading = authState.status == AuthStatus.loading;
+    final profileState = ref.watch(profileProvider);
+    final user = profileState.user;
+    final isLoading = profileState.isLoading;
     final colors = AppColors.of(context);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -165,20 +191,24 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                             Positioned(
                               bottom: 0,
                               right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: colors.primary,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
+                              child: InkWell(
+                                onTap: _pickAndUploadImage,
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
                                   ),
-                                ),
-                                child: const Icon(
-                                  Icons.edit,
-                                  color: Colors.white,
-                                  size: 14,
+                                  child: const Icon(
+                                    Icons.edit,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
                                 ),
                               ),
                             ),
@@ -250,6 +280,18 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                   _buildTextField(
                     controller: _linkedinController,
                     hint: 'linkedin.com/in/username',
+                  ),
+
+                  _buildLabel('GitHub'),
+                  _buildTextField(
+                    controller: _githubController,
+                    hint: 'github.com/username',
+                  ),
+
+                  _buildLabel('Job Title'),
+                  _buildTextField(
+                    controller: _jobTitleController,
+                    hint: 'Software Engineer',
                   ),
 
                   const SizedBox(height: 12),

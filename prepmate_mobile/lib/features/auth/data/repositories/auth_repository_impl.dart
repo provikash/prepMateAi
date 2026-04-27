@@ -13,6 +13,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<User?> signInWithGoogle() {
+    return remote.signInWithGoogle();
+  }
+
+  @override
   Future<bool> signup(String name, String email, String password) {
     return remote.signup(name, email, password);
   }

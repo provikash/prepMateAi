@@ -5,20 +5,61 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/config/theme.dart';
 import 'package:prepmate_mobile/features/home/providers/home_providers.dart';
+import 'package:prepmate_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:prepmate_mobile/features/interview/presentation/screens/interview_screen.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
 import '../widgets/progressCard.dart';
 import '../presentation/widgets/resume_horizontal_list.dart';
 import '../presentation/widgets/template_horizontal_list.dart';
 
-class PrepMateHome extends ConsumerWidget {
+class PrepMateHome extends ConsumerStatefulWidget {
   const PrepMateHome({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PrepMateHome> createState() => _PrepMateHomeState();
+}
+
+class _PrepMateHomeState extends ConsumerState<PrepMateHome> {
+  bool _profileDialogShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(profileProvider.notifier).loadProfile());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(isProfileIncompleteProvider, (previous, isIncomplete) {
+      if (!isIncomplete || _profileDialogShown || !mounted) {
+        return;
+      }
+
+      _profileDialogShown = true;
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Complete your profile'),
+          content: const Text('Please add your full name and phone number.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Later'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push('/profile');
+              },
+              child: const Text('Complete now'),
+            ),
+          ],
+        ),
+      );
+    });
+
     final colors = AppColors.of(context);
     final bottomNavIndex = ref.watch(bottomNavProvider);
-    final dashboardAsync = ref.watch(dashboardProvider);
 
     return Scaffold(
       backgroundColor: colors.screenBackground,
@@ -26,7 +67,7 @@ class PrepMateHome extends ConsumerWidget {
       body: IndexedStack(
         index: bottomNavIndex,
         children: [
-          _HomeContent(dashboardAsync: dashboardAsync),
+          const _HomeContent(),
           const InterviewScreen(),
           const AnalyzeScreen(),
           const Center(child: Text('Courses Screen')),
@@ -93,26 +134,37 @@ class PrepMateHome extends ConsumerWidget {
 }
 
 class _HomeContent extends ConsumerWidget {
-  final AsyncValue dashboardAsync;
-  const _HomeContent({required this.dashboardAsync});
+  const _HomeContent();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = AppColors.of(context);
+    final dashboardAsync = ref.watch(dashboardProvider);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const ResumeHorizontalList(),
-          const SizedBox(height: 20),
-          _buildGreeting(dashboardAsync, colors),
-          const SizedBox(height: 24),
-          const ProgressCard(),
-          const SizedBox(height: 32),
-          const TemplateHorizontalList(),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([
+          ref.read(dashboardProvider.notifier).refresh(),
+          ref.read(resumeListProvider.notifier).refresh(),
+          ref.read(templateListProvider.notifier).refresh(),
+          ref.read(profileProvider.notifier).refresh(),
+        ]);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ResumeHorizontalList(),
+            const SizedBox(height: 20),
+            _buildGreeting(dashboardAsync, colors),
+            const SizedBox(height: 24),
+            const ProgressCard(),
+            const SizedBox(height: 32),
+            const TemplateHorizontalList(),
+          ],
+        ),
       ),
     );
   }

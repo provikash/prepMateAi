@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/theme.dart';
-import '../../../home/providers/home_providers.dart';
+import '../../../resume/presentation/providers/resume_providers.dart';
 import '../providers/resume_analyzer_providers.dart';
 
 class AnalyzeScreen extends ConsumerStatefulWidget {
@@ -80,7 +80,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(analyzeProvider);
-    final resumesAsync = ref.watch(resumeListProvider);
+    final resumesAsync = ref.watch(storedResumesProvider);
 
     ref.listen(analyzeProvider, (previous, next) {
       if (next.data != null) {
@@ -148,37 +148,25 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
                 validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      value: true,
-                      groupValue: _useSavedResume,
-                      title: const Text('Use Saved Resume'),
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() {
-                          _useSavedResume = value;
-                        });
-                      },
-                    ),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment<bool>(
+                    value: true,
+                    label: Text('Use Saved Resume'),
+                    icon: Icon(Icons.description_outlined),
                   ),
-                  Expanded(
-                    child: RadioListTile<bool>(
-                      value: false,
-                      groupValue: _useSavedResume,
-                      title: const Text('Upload PDF'),
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() {
-                          _useSavedResume = value;
-                        });
-                      },
-                    ),
+                  ButtonSegment<bool>(
+                    value: false,
+                    label: Text('Upload PDF'),
+                    icon: Icon(Icons.upload_file_outlined),
                   ),
                 ],
+                selected: {_useSavedResume},
+                onSelectionChanged: (selection) {
+                  setState(() {
+                    _useSavedResume = selection.first;
+                  });
+                },
               ),
               const SizedBox(height: 10),
               if (_useSavedResume)
@@ -197,7 +185,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
 
                     _selectedResumeId ??= resumes.first.id;
                     return DropdownButtonFormField<String>(
-                      value:
+                      initialValue:
                           resumes.any(
                             (resume) => resume.id == _selectedResumeId,
                           )
@@ -273,7 +261,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primary.withOpacity(0.3),
+                      color: AppTheme.primary.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
