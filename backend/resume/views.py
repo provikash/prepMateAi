@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from core.permissions import IsOwner
 
 from .models import Resume
-from .serializers import ResumeDetailSerializer, ResumeListSerializer
+from .serializers import ResumeDetailSerializer, ResumeListSerializer, ResumeSerializer
 
 
 class ResumeViewSet(viewsets.ModelViewSet):
@@ -14,6 +14,8 @@ class ResumeViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return ResumeListSerializer
+        if self.action in {"create", "update", "partial_update"}:
+            return ResumeSerializer
         return ResumeDetailSerializer
 
     def get_queryset(self):

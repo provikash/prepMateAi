@@ -19,6 +19,7 @@ from .serializers import (
     UserSummarySerializer,
 )
 from .services import AuthService
+from .models import UserProfile
 
 
 class AuthViewSet(viewsets.ViewSet):
@@ -94,7 +95,13 @@ class UserProfileRetrieveUpdateView(RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
 
     def get_object(self):
-        return self.request.user.profile
+        # Ensure profile always exists to avoid RelatedObjectDoesNotExist errors.
+        # Use get_or_create so this view never crashes even if the profile was missing.
+        profile, _created = UserProfile.objects.get_or_create(
+            user=self.request.user,
+            defaults={"full_name": getattr(self.request.user, "name", "") or ""},
+        )
+        return profile
 
 
 class DashboardView(APIView):

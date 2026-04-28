@@ -94,7 +94,7 @@ class AuthRemoteDataSource {
   }
 
   Future<User?> getProfile() async {
-    final summaryResponse = await dio.get('users/me/');
+    final summaryResponse = await dio.get('profile/');
     final profileResponse = await dio.get('profile/');
 
     final merged = <String, dynamic>{
@@ -118,7 +118,7 @@ class AuthRemoteDataSource {
       },
     );
 
-    final summaryResponse = await dio.get('users/me/');
+    final summaryResponse = await dio.get('profile');
     final merged = <String, dynamic>{
       ...(summaryResponse.data as Map<String, dynamic>),
       ...(response.data as Map<String, dynamic>),
@@ -136,7 +136,7 @@ class AuthRemoteDataSource {
     });
 
     final response = await dio.patch('profile/', data: formData);
-    final summaryResponse = await dio.get('users/me/');
+    final summaryResponse = await dio.get('profile/');
     final merged = <String, dynamic>{
       ...(summaryResponse.data as Map<String, dynamic>),
       ...(response.data as Map<String, dynamic>),

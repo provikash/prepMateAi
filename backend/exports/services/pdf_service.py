@@ -19,10 +19,13 @@ class PDFExportService:
             raise ValidationError("Resume does not have an assigned template.")
 
         normalized_data = ResumeRenderService.prepare_resume_context(resume.data)
+        personal_info = normalized_data.get("personal_info", {})
         template = Template(resume.template.html_structure)
         context = Context(
             {
                 "resume": normalized_data,
+                **normalized_data,
+                "name": personal_info.get("name", ""),
                 "resume_title": resume.title,
                 "user": resume.user,
             }

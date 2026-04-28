@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:prepmate_mobile/core/services/storage.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://192.168.1.71:8000/api/v1/';
+  static const String baseUrl = 'http://10.176.105.1:8000/api/v1/';
 
   static Future<Map<String, dynamic>> registerUser(
     String email,

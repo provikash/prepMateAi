@@ -22,10 +22,16 @@ class ResumeRenderService:
             normalized.get("certifications", [])
         )
         education = ResumeRenderService._prepare_education(normalized.get("education", []))
+        experience = ResumeRenderService._prepare_experience(normalized.get("experience", []))
+        languages = ResumeRenderService._prepare_languages(normalized.get("languages", []))
+        awards = ResumeRenderService._prepare_awards(normalized.get("awards", []))
 
         normalized["projects"] = projects
         normalized["certifications"] = certifications
         normalized["education"] = education
+        normalized["experience"] = experience
+        normalized["languages"] = languages
+        normalized["awards"] = awards
 
         skill_groups = normalized.get("skill_groups", {})
         has_grouped_skills = any(str(value).strip() for value in skill_groups.values())
@@ -35,6 +41,9 @@ class ResumeRenderService:
         normalized["has_projects"] = bool(projects)
         normalized["has_certifications"] = bool(certifications)
         normalized["has_education"] = bool(education)
+        normalized["has_experience"] = bool(experience)
+        normalized["has_languages"] = bool(languages)
+        normalized["has_awards"] = bool(awards)
 
         return normalized
 
@@ -104,10 +113,17 @@ class ResumeRenderService:
 
             degree = str(entry.get("degree", "")).strip()
             institution = str(entry.get("institution", "")).strip()
-            year = str(entry.get("year", "")).strip()
+            duration = str(entry.get("duration", entry.get("year", ""))).strip()
+            year = str(entry.get("year", entry.get("duration", ""))).strip()
             location = str(entry.get("location", "")).strip()
+            details = entry.get("details") or []
+            if isinstance(details, str):
+                details = [details]
+            if not isinstance(details, list):
+                details = []
+            cleaned_details = [detail.strip() for detail in details if isinstance(detail, str) and detail.strip()]
 
-            if not (degree or institution or year or location):
+            if not (degree or institution or year or duration or location or cleaned_details):
                 continue
 
             prepared.append(
@@ -115,10 +131,77 @@ class ResumeRenderService:
                     "degree": degree,
                     "institution": institution,
                     "year": year,
+                    "duration": duration,
                     "location": location,
+                    "details": cleaned_details,
                 }
             )
 
+        return prepared
+
+    @staticmethod
+    def _prepare_experience(experience):
+        prepared = []
+        for entry in experience:
+            if not isinstance(entry, dict):
+                continue
+
+            role = str(entry.get("role", entry.get("job_title", entry.get("title", "")))).strip()
+            company = str(entry.get("company", "")).strip()
+            duration = str(entry.get("duration", "")).strip()
+            location = str(entry.get("location", "")).strip()
+
+            details = entry.get("details") or entry.get("responsibilities") or entry.get("bullets") or []
+            if isinstance(details, str):
+                details = [details]
+            if not isinstance(details, list):
+                details = []
+            cleaned_details = [detail.strip() for detail in details if isinstance(detail, str) and detail.strip()]
+
+            if not (role or company or duration or location or cleaned_details):
+                continue
+
+            prepared.append(
+                {
+                    "role": role,
+                    "job_title": role,
+                    "company": company,
+                    "duration": duration,
+                    "location": location,
+                    "details": cleaned_details,
+                    "responsibilities": cleaned_details,
+                }
+            )
+
+        return prepared
+
+    @staticmethod
+    def _prepare_languages(languages):
+        prepared = []
+        for item in languages:
+            if not isinstance(item, dict):
+                continue
+
+            name = str(item.get("name", "")).strip()
+            level = str(item.get("level", "")).strip()
+            if not (name or level):
+                continue
+            prepared.append({"name": name, "level": level})
+        return prepared
+
+    @staticmethod
+    def _prepare_awards(awards):
+        prepared = []
+        for item in awards:
+            if isinstance(item, str):
+                award = item.strip()
+            elif isinstance(item, dict):
+                award = str(item.get("title", "")).strip()
+            else:
+                continue
+
+            if award:
+                prepared.append(award)
         return prepared
 
     @staticmethod

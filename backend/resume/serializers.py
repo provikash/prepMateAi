@@ -71,11 +71,20 @@ class ResumeDetailSerializer(serializers.ModelSerializer):
         return self._build_absolute_file_url(obj.pdf_file)
 
 class ResumeSerializer(serializers.ModelSerializer):
+    template_id = serializers.PrimaryKeyRelatedField(
+        queryset=ResumeTemplate.objects.filter(is_active=True),
+        source="template",
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
     template = serializers.PrimaryKeyRelatedField(
         queryset=ResumeTemplate.objects.filter(is_active=True),
         required=False,
         allow_null=True,
     )
+    thumbnail_url = serializers.SerializerMethodField(read_only=True)
+    pdf_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Resume
@@ -84,14 +93,34 @@ class ResumeSerializer(serializers.ModelSerializer):
             "user",
             "title",
             "template",
+            "template_id",
             "data",
             "metadata",
             "thumbnail",
             "pdf_file",
+            "thumbnail_url",
+            "pdf_url",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "created_at", "updated_at"]
+        read_only_fields = ["id", "user", "created_at", "updated_at", "thumbnail_url", "pdf_url"]
+
+    def _build_absolute_file_url(self, file_field):
+        if not file_field:
+            return None
+        url = file_field.url
+        request = self.context.get("request")
+        return request.build_absolute_uri(url) if request else url
+
+    def get_thumbnail_url(self, obj):
+        if obj.thumbnail:
+            return self._build_absolute_file_url(obj.thumbnail)
+        if obj.template and obj.template.preview_image:
+            return self._build_absolute_file_url(obj.template.preview_image)
+        return None
+
+    def get_pdf_url(self, obj):
+        return self._build_absolute_file_url(obj.pdf_file)
 
     def validate_title(self, value):
         cleaned_title = value.strip()

@@ -5,11 +5,12 @@ from .models import ResumeTemplate
 
 class TemplateListSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="name", read_only=True)
+    thumbnail = serializers.ImageField(source="preview_image", read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ResumeTemplate
-        fields = ["id", "title", "category", "thumbnail_url"]
+        fields = ["id", "title", "category", "thumbnail", "thumbnail_url"]
         read_only_fields = fields
 
     def get_thumbnail_url(self, obj):
@@ -21,7 +22,9 @@ class TemplateListSerializer(serializers.ModelSerializer):
 
 class TemplateDetailSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="name", read_only=True)
+    thumbnail = serializers.ImageField(source="preview_image", read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
+    form_schema = serializers.SerializerMethodField()
 
     class Meta:
         model = ResumeTemplate
@@ -29,7 +32,9 @@ class TemplateDetailSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "category",
+            "thumbnail",
             "thumbnail_url",
+            "form_schema",
             "preview_image",
             "html_structure",
             "css",
@@ -44,3 +49,10 @@ class TemplateDetailSerializer(serializers.ModelSerializer):
             return None
         request = self.context.get("request")
         return request.build_absolute_uri(obj.preview_image.url) if request else obj.preview_image.url
+
+    def get_form_schema(self, obj):
+        metadata = obj.metadata or {}
+        if not isinstance(metadata, dict):
+            return {}
+        form_schema = metadata.get("form_schema")
+        return form_schema if isinstance(form_schema, dict) else {}

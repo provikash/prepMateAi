@@ -4,6 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/config/theme.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
+import 'package:prepmate_mobile/core/widgets/top_circle_button.dart';
 
 import '../presentation/state/auth_state.dart';
 import '../presentation/viewmodel/auth_viewmodel.dart';
@@ -95,15 +96,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   Row(
                     children: [
-                      _topCircleButton(
-                        context: context,
-                        icon: Icons.arrow_back_ios_new,
-                        onTap: () {
+                      topCircleButton(context: context, icon: Icons.arrow_back_ios_new, onTap: () {
                           if (context.canPop()) {
                             context.pop();
                           }
-                        },
-                      ),
+                        }),
                       const Spacer(),
                       Center(
                         child: RichText(
@@ -210,10 +207,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 10),
                         _authField(
                           context: context,
+                         
                           controller: _emailController,
                           hint: 'name@company.com',
                           prefixIcon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
+
+                          validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    final email = value.trim();
+                    if (!RegExp(r'^[\w\-.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(email)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
                         ),
                         const SizedBox(height: 18),
                         Row(
@@ -329,75 +338,70 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _topCircleButton({
-    required BuildContext context,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final colors = AppColors.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: colors.cardBackground,
-            border: Border.all(color: colors.border),
-          ),
-          child: Icon(icon, size: 20, color: colors.primary),
-        ),
-      ),
-    );
-  }
-
   Widget _authField({
     required BuildContext context,
     required TextEditingController controller,
     required String hint,
     required IconData prefixIcon,
+    FormFieldValidator<String>? validator,
     TextInputType? keyboardType,
     bool isPassword = false,
   }) {
     final colors = AppColors.of(context);
 
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: isPassword ? _obscurePassword : false,
-      style: TextStyle(fontFamily: 'Poppins', color: colors.textPrimary),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(
-          fontFamily: 'Poppins',
-          color: colors.textSecondary,
-        ),
-        prefixIcon: Icon(prefixIcon, color: colors.primary),
-        suffixIcon: isPassword
-            ? IconButton(
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: colors.textSecondary,
-                ),
-              )
-            : null,
-        filled: true,
-        fillColor: colors.mutedBackground,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: colors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: colors.primary, width: 1.4),
+    return Container(
+
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          )
+        ],
+        border: Border.all(color: colors.border, width: 0.6),
+      ),
+
+
+
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        validator: validator,
+    
+        obscureText: isPassword ? _obscurePassword : false,
+        style: TextStyle(fontFamily: 'Poppins', color: colors.textPrimary),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            fontFamily: 'Poppins',
+            color: colors.textSecondary,
+          ),
+          prefixIcon: Icon(prefixIcon, color: colors.primary),
+          suffixIcon: isPassword
+              ? IconButton(
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: colors.textSecondary,
+                  ),
+                )
+              : null,
+          filled: true,
+          fillColor: colors.mutedBackground,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: colors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: colors.primary, width: 1.4),
+          ),
         ),
       ),
     );
@@ -509,3 +513,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 }
+

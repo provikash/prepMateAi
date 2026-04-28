@@ -1,8 +1,8 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prepmate_mobile/features/home/screens/home_screen.dart';
+import 'package:prepmate_mobile/features/home/presentation/screens/home_screen.dart';
 import 'package:prepmate_mobile/features/auth/screens/login_screen.dart';
-import 'package:prepmate_mobile/features/auth/screens/signup_screen.dart';
+import 'package:prepmate_mobile/features/auth/presentation/screens/signup_screen.dart';
 import 'package:prepmate_mobile/features/auth/screens/forgetPassword_screen.dart';
 import 'package:prepmate_mobile/features/auth/screens/otpVerification_screen.dart';
 import 'package:prepmate_mobile/features/auth/screens/passwordChanged_screen.dart';
@@ -66,11 +66,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
-      GoRoute(path: '/', builder: (context, state) => const PrepMateHome()),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
-      GoRoute(path: '/home', builder: (context, state) => const PrepMateHome()),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),

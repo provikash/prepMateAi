@@ -9,5 +9,5 @@ urlpatterns = [
     path("auth/refresh/", AuthViewSet.as_view({"post": "refresh"}), name="auth-refresh"),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("profile/", UserProfileRetrieveUpdateView.as_view(), name="profile"),
-    path("users/me/", ProfileViewSet.as_view({"get": "me", "put": "me", "patch": "me"}), name="user-profile"),
+    path("profile", ProfileViewSet.as_view({"get": "me", "put": "me", "patch": "me"}), name="user-profile"),
 ]

@@ -7,6 +7,8 @@ from rest_framework import serializers
 class ResumeValidationService:
     REQUIRED_LIST_FIELDS = ["education", "experience", "skills", "projects"]
     TEMPLATE_DATA_PATH_PATTERN = re.compile(r"{{\s*resume\.([a-zA-Z0-9_\.]+)")
+    TEMPLATE_IF_BLOCK_PATTERN = re.compile(r"{%\s*if\b.*?%}(.*?){%\s*endif\s*%}", re.DOTALL)
+    TEMPLATE_ANY_PATH_PATTERN = re.compile(r"(?:resume\.)?([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)+)")
 
     @staticmethod
     def normalize_resume_data(data):
@@ -88,6 +90,8 @@ class ResumeValidationService:
         normalized["projects"] = ResumeValidationService._normalize_projects(normalized.get("projects"))
         normalized["education"] = ResumeValidationService._normalize_education(normalized.get("education"))
         normalized["experience"] = ResumeValidationService._normalize_experience(normalized.get("experience"))
+        normalized["awards"] = ResumeValidationService._normalize_awards(normalized.get("awards"))
+        normalized["languages"] = ResumeValidationService._normalize_languages(normalized.get("languages"))
 
         return normalized
 
@@ -114,6 +118,21 @@ class ResumeValidationService:
 
         normalized = []
         for item in value:
+            if isinstance(item, str):
+                title = item.strip()
+                if title:
+                    normalized.append(
+                        {
+                            "title": title,
+                            "stack": "",
+                            "date_range": "",
+                            "bullets": [],
+                            "source_code": "",
+                            "description": "",
+                        }
+                    )
+                continue
+
             if not isinstance(item, dict):
                 continue
 
@@ -154,12 +173,21 @@ class ResumeValidationService:
             if not isinstance(item, dict):
                 continue
 
+            details = item.get("details") or []
+            if isinstance(details, str):
+                details = [part.strip() for part in details.splitlines() if part.strip()]
+            if not isinstance(details, list):
+                details = []
+            cleaned_details = [detail.strip() for detail in details if isinstance(detail, str) and detail.strip()]
+
             normalized.append(
                 {
                     "degree": str(item.get("degree", "")).strip(),
                     "institution": str(item.get("institution", item.get("school", ""))).strip(),
-                    "year": str(item.get("year", item.get("graduation_year", ""))).strip(),
+                    "duration": str(item.get("duration", item.get("year", item.get("graduation_year", "")))).strip(),
+                    "year": str(item.get("year", item.get("duration", item.get("graduation_year", "")))).strip(),
                     "location": str(item.get("location", "")).strip(),
+                    "details": cleaned_details,
                 }
             )
 
@@ -175,22 +203,26 @@ class ResumeValidationService:
             if not isinstance(item, dict):
                 continue
 
-            responsibilities = item.get("responsibilities") or item.get("bullets") or []
-            if isinstance(responsibilities, str):
-                responsibilities = [responsibilities]
-            if not isinstance(responsibilities, list):
-                responsibilities = []
+            details = item.get("details") or item.get("responsibilities") or item.get("bullets") or []
+            if isinstance(details, str):
+                details = [details]
+            if not isinstance(details, list):
+                details = []
+            cleaned_details = [
+                detail.strip()
+                for detail in details
+                if isinstance(detail, str) and detail.strip()
+            ]
 
             normalized.append(
                 {
-                    "job_title": str(item.get("job_title", item.get("title", ""))).strip(),
+                    "role": str(item.get("role", item.get("job_title", item.get("title", "")))).strip(),
+                    "job_title": str(item.get("job_title", item.get("role", item.get("title", "")))).strip(),
                     "company": str(item.get("company", "")).strip(),
                     "duration": str(item.get("duration", "")).strip(),
-                    "responsibilities": [
-                        responsibility.strip()
-                        for responsibility in responsibilities
-                        if isinstance(responsibility, str) and responsibility.strip()
-                    ],
+                    "location": str(item.get("location", "")).strip(),
+                    "details": cleaned_details,
+                    "responsibilities": cleaned_details,
                     "technologies": [
                         technology.strip()
                         for technology in (item.get("technologies") or [])
@@ -198,6 +230,41 @@ class ResumeValidationService:
                     ],
                 }
             )
+
+        return normalized
+
+    @staticmethod
+    def _normalize_awards(value):
+        if not isinstance(value, list):
+            return []
+
+        normalized = []
+        for item in value:
+            if isinstance(item, str) and item.strip():
+                normalized.append(item.strip())
+                continue
+            if isinstance(item, dict):
+                title = str(item.get("title", "")).strip()
+                if title:
+                    normalized.append(title)
+        return normalized
+
+    @staticmethod
+    def _normalize_languages(value):
+        if not isinstance(value, list):
+            return []
+
+        normalized = []
+        for item in value:
+            if isinstance(item, dict):
+                name = str(item.get("name", "")).strip()
+                level = str(item.get("level", "")).strip()
+                if name or level:
+                    normalized.append({"name": name, "level": level})
+                continue
+
+            if isinstance(item, str) and item.strip():
+                normalized.append({"name": item.strip(), "level": ""})
 
         return normalized
 
@@ -241,7 +308,18 @@ class ResumeValidationService:
     def _extract_required_paths_from_template(html_structure):
         if not html_structure:
             return set()
-        return {match.group(1) for match in ResumeValidationService.TEMPLATE_DATA_PATH_PATTERN.finditer(html_structure)}
+
+        output_paths = set()
+        for match in ResumeValidationService.TEMPLATE_DATA_PATH_PATTERN.finditer(html_structure):
+            output_paths.add(match.group(1))
+
+        conditional_paths = set()
+        for block_match in ResumeValidationService.TEMPLATE_IF_BLOCK_PATTERN.finditer(html_structure):
+            conditional_block = block_match.group(1)
+            for path_match in ResumeValidationService.TEMPLATE_ANY_PATH_PATTERN.finditer(conditional_block):
+                conditional_paths.add(path_match.group(1))
+
+        return {path for path in output_paths if path not in conditional_paths}
 
     @staticmethod
     def _path_exists_in_data(data, path):
