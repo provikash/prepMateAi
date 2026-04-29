@@ -54,7 +54,15 @@ class ResumeRemoteDataSource {
         'templates/$id/',
         options: await _authorizedOptions(),
       );
-      return TemplateDetailModel.fromJson(response.data as Map<String, dynamic>);
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return TemplateDetailModel.fromJson(data);
+      }
+      if (data is List && data.isNotEmpty && data[0] is Map<String, dynamic>) {
+        // sometimes backend returns a list — pick the first item
+        return TemplateDetailModel.fromJson(data[0] as Map<String, dynamic>);
+      }
+      throw Exception('Unexpected template format: ${data.runtimeType}');
     } catch (error) {
       throw Exception('Failed to load template detail: ${_normalizeDioError(error)}');
     }

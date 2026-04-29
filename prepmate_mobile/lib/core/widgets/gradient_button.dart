@@ -25,6 +25,7 @@ class GradientButton extends StatelessWidget {
       onTap: onPressed,
       child: Container(
         height: height,
+
         // decoration: BoxDecoration(
         //   gradient: AppTheme.buttonGradient,
         //   borderRadius: BorderRadius.circular(borderRadius),
@@ -36,7 +37,6 @@ class GradientButton extends StatelessWidget {
         //     )
         //   ],
         // ),
-
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
@@ -63,10 +63,7 @@ class GradientButton extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            if (trailing != null) ...[
-              const SizedBox(width: 8),
-              trailing!,
-            ]
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
           ],
         ),
       ),

@@ -65,11 +65,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final bottomNavIndex = ref.watch(bottomNavProvider);
 
     return Scaffold(
-      
       backgroundColor: colors.screenBackground,
       body: IndexedStack(
         index: bottomNavIndex,
         children: const [
+          
           _HomeContent(),
           InterviewScreen(),
           AnalyzeScreen(),
@@ -81,7 +81,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBottomNav(BuildContext context, WidgetRef ref, int currentIndex) {
+  Widget _buildBottomNav(
+    BuildContext context,
+    WidgetRef ref,
+    int currentIndex,
+  ) {
     final colors = AppColors.of(context);
 
     return BottomNavigationBar(
@@ -135,22 +139,38 @@ class _HomeContent extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: _HeaderRow(onAddTap: () => context.push('/template')),
             ),
+           
           ),
+           SliverToBoxAdapter(child: SizedBox(height: 8)),
+          
           SliverToBoxAdapter(
-            child: SizedBox(height: 114, child: _ResumeStrip(resumesAsync: resumesAsync)),
+            child: SizedBox(
+              height: 114,
+              child: _ResumeStrip(resumesAsync: resumesAsync),
+            ),
+
           ),
+
+           SliverToBoxAdapter(child: SizedBox(height: 18)),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: _GreetingRow(dashboardAsync: dashboardAsync),
             ),
           ),
+
+           SliverToBoxAdapter(child: SizedBox(height: 18)),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: _ProgressCard(dashboardAsync: dashboardAsync),
             ),
           ),
+
+           SliverToBoxAdapter(child: SizedBox(height: 18)),
+
+          
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
@@ -159,20 +179,22 @@ class _HomeContent extends ConsumerWidget {
                 subtitle: 'See all',
                 trailing: TextButton(
                   onPressed: () => context.push('/template'),
-                  child: Text('See all', style: TextStyle(color: colors.primary)),
+                  child: Text(
+                    'See all',
+                    style: TextStyle(color: colors.primary),
+                  ),
                 ),
               ),
             ),
           ),
+          
           SliverToBoxAdapter(
-            child: SizedBox(height: 220, child: _TemplateStrip(templatesAsync: templatesAsync)),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: _PremiumCard(onUpgradeTap: () {}),
+            child: SizedBox(
+              height: 220,
+              child: _TemplateStrip(templatesAsync: templatesAsync),
             ),
           ),
+          
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
         ],
       ),
@@ -189,22 +211,20 @@ class _HeaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-     
-
     return Padding(
-     
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12,),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SizedBox(height: 18,),
                 Text(
-                  'Prep Mate ✨',
+                  'PrepMate ✨',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -214,32 +234,14 @@ class _HeaderRow extends StatelessWidget {
               ],
             ),
           ),
+          SizedBox(height: 20.0,),
+
           Row(
             children: [
-              _IconCircleButton(
-                icon: Icons.notifications_none,
-                onTap: () {},
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: onAddTap,
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.buttonGradient,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.14),
-                        blurRadius: 14,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-              ),
+              _IconCircleButton(icon: Icons.notifications_none, onTap: () {}),
+              const SizedBox(width: 18),
+             
+              
             ],
           ),
         ],
@@ -338,7 +340,11 @@ class _AddResumeItem extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Icon(Icons.description_outlined, color: colors.primary, size: 30),
+                Icon(
+                  Icons.description_outlined,
+                  color: colors.primary,
+                  size: 30,
+                ),
                 Positioned(
                   right: 8,
                   bottom: 8,
@@ -434,11 +440,11 @@ class _GreetingRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                    Text(
-                      'Hello, $userName! 👋',
+                  Text(
+                    'Hello, $userName! 👋',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -466,10 +472,18 @@ class _GreetingRow extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('1250', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 16)),
+                      Text(
+                        '1250',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleLarge?.copyWith(fontSize: 16),
+                      ),
                       Text(
                         'Prep Points',
-                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -511,23 +525,37 @@ class _ProgressCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Current Progress',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: colors.primarySoft,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Text('Analyzed', style: TextStyle(color: colors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
+                    child: Text(
+                      'Analyzed',
+                      style: TextStyle(
+                        color: colors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 data.latestResume,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 6),
               Row(
@@ -544,7 +572,10 @@ class _ProgressCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     '$score%',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700, color: colors.primary),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colors.primary,
+                    ),
                   ),
                 ],
               ),
@@ -634,16 +665,27 @@ class _TemplateStrip extends StatelessWidget {
                               template.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
-                          _TagBadge(label: index.isEven ? 'NEW' : 'POPULAR', color: index.isEven ? colors.primary : const Color(0xFF2DB36D)),
+                          _TagBadge(
+                            label: index.isEven ? 'NEW' : 'POPULAR',
+                            color: index.isEven
+                                ? colors.primary
+                                : const Color(0xFF2DB36D),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         template.category,
-                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -673,52 +715,13 @@ class _TagBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
 }
 
-class _PremiumCard extends StatelessWidget {
-  final VoidCallback onUpgradeTap;
-
-  const _PremiumCard({required this.onUpgradeTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return AppCard(
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: colors.primarySoft,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(Icons.workspace_premium_outlined, color: colors.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Go Premium', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text('Unlock premium templates, AI insights & more', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-              ],
-            ),
-          ),
-          GradientButton(
-            onPressed: onUpgradeTap,
-            text: 'Upgrade Now',
-            borderRadius: 16,
-            height: 42,
-          ),
-        ],
-      ),
-    );
-  }
-}

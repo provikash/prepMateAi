@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     'exports',
     'ai',
     'resume_analyzer',
-
+    'courses_ai',
 ]
 
 MIDDLEWARE = [
@@ -116,7 +116,6 @@ DATABASES = {
         "PORT": DB_PORT,
         "CONN_MAX_AGE": 60,
         "OPTIONS": {
-            "connect_timeout": 10,
         },
     }
 }

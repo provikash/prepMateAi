@@ -17,7 +17,7 @@ final dioProvider = Provider<Dio>((ref) {
     BaseOptions(
       // Change this based on your environment
       baseUrl:
-          'http://10.213.59.93:8000/api/v1/', // local dev (replace with your IP)
+          'http://10.213.59.93:8000/api/v1/', // local dev (replace with your IP), // production URL
       connectTimeout: const Duration(seconds: 12),
       receiveTimeout: const Duration(seconds: 12),
       headers: {
