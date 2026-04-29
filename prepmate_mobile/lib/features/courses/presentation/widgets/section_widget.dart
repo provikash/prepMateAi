@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/theme.dart';
 import '../../data/models/course_model.dart';
 import 'course_card.dart';
 
@@ -19,6 +20,7 @@ class SectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (courses.isEmpty) return const SizedBox.shrink();
+    final colors = AppColors.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,17 +32,17 @@ class SectionWidget extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
+                  color: colors.textPrimary,
                 ),
               ),
               TextButton(
                 onPressed: onViewAll,
-                child: const Text(
+                child: Text(
                   'View all',
-                  style: TextStyle(color: Colors.blueAccent),
+                  style: TextStyle(color: colors.primary),
                 ),
               ),
             ],

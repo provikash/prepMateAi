@@ -9,7 +9,7 @@ class AICourseRepository {
   Future<List<Recommendation>> getRecommendations(List<String> skills) async {
     try {
       final response = await _dio.post(
-        'course-recommendations/recommendations/',
+        'courses/recommendations/',
         data: {'skills': skills},
       );
       final List results = response.data['results'];
@@ -21,7 +21,7 @@ class AICourseRepository {
 
   Future<CourseProgress> getProgress(String videoId) async {
     try {
-      final response = await _dio.get('course-recommendations/progress/$videoId/');
+      final response = await _dio.get('courses/progress/$videoId/');
       return CourseProgress.fromJson(response.data);
     } catch (e) {
       return CourseProgress(videoId: videoId, watchedSeconds: 0, totalSeconds: 0);
@@ -31,7 +31,7 @@ class AICourseRepository {
   Future<void> updateProgress(String videoId, int watchedSeconds, int totalSeconds) async {
     try {
       await _dio.post(
-        'course-recommendations/progress/',
+        'courses/progress/',
         data: {
           'video_id': videoId,
           'watched_seconds': watchedSeconds,

@@ -1,210 +1,628 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:shimmer/shimmer.dart';
-// import '../providers/course_providers.dart';
-// import '../screens/category_courses_screen.dart';
-// import '../widgets/continue_learning_card.dart';
-// import '../widgets/section_widget.dart';
-// import '../../data/models/course_model.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../config/theme.dart';
+import '../providers/course_providers.dart';
+import '../../../resume_analyzer/presentation/providers/resume_analyzer_providers.dart';
+import '../widgets/section_widget.dart';
+import '../widgets/continue_learning_card.dart';
+import '../../data/models/ai_course_model.dart';
+import 'course_video_player_screen.dart';
 
-// class CoursesScreen extends ConsumerWidget {
-//   const CoursesScreen({super.key});
+class CoursesScreen extends ConsumerWidget {
+  const CoursesScreen({super.key});
 
-//   @override
-//   Widget build(BuildContext context, WidgetRef ref) {
-//     final coursesAsync = ref.watch(courseListProvider);
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recommendationsAsync = ref.watch(courseRecommendationsProvider);
+    final skillGapsAsync = ref.watch(skillGapProvider);
+    final colors = AppColors.of(context);
 
-//     return RefreshIndicator(
-//       onRefresh: () => ref.read(courseListProvider.notifier).refresh(),
-//       child: CustomScrollView(
-//         slivers: [
-//           // Header
-//           SliverPadding(
-//             padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-//             sliver: SliverToBoxAdapter(
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   const Text(
-//                     'Courses',
-//                     style: TextStyle(
-//                       fontSize: 28,
-//                       fontWeight: FontWeight.bold,
-//                     ),
-//                   ),
-//                   const SizedBox(height: 16),
-//                   _buildSearchBar(),
-//                 ],
-//               ),
-//             ),
-//           ),
+    return Scaffold(
+      backgroundColor: colors.screenBackground,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(courseRecommendationsProvider);
+            ref.invalidate(allCourseProgressProvider);
+            ref.invalidate(historyProvider);
+          },
+          child: CustomScrollView(
+            slivers: [
+              // Header
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Courses',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Personalized courses based on your Skill Gap',
+                        style: TextStyle(fontSize: 14, color: colors.textSecondary),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildAICourseFinder(context, ref, skillGapsAsync, colors),
+                    ],
+                  ),
+                ),
+              ),
 
-//           coursesAsync.when(
-//             data: (data) => SliverList(
-//               delegate: SliverChildListDelegate([
-//                 if (data.continueLearning.isNotEmpty) ...[
-//                   const Padding(
-//                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-//                     child: Row(
-//                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                       children: [
-//                         Text(
-//                           'Continue Learning',
-//                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//                         ),
-//                         Text('View all', style: TextStyle(color: Colors.blueAccent)),
-//                       ],
-//                     ),
-//                   ),
-//                   Padding(
-//                     padding: const EdgeInsets.symmetric(horizontal: 20),
-//                     child: ContinueLearningCard(
-//                       course: data.continueLearning.first,
-//                       onTap: () => _handleCourseTap(context, ref, data.continueLearning.first),
-//                     ),
-//                   ),
-//                 ],
-//                 const SizedBox(height: 10),
-//                 SectionWidget(
-//                   title: 'Career Growth',
-//                   courses: data.careerGrowth,
-//                   onCourseTap: (course) => _handleCourseTap(context, ref, course),
-//                   onViewAll: () => _navigateToCategory(context, ref, 'Career Growth', data.careerGrowth),
-//                 ),
-//                 SectionWidget(
-//                   title: 'Technical Skills',
-//                   courses: data.technicalSkills,
-//                   onCourseTap: (course) => _handleCourseTap(context, ref, course),
-//                   onViewAll: () => _navigateToCategory(context, ref, 'Technical Skills', data.technicalSkills),
-//                 ),
-//                 SectionWidget(
-//                   title: 'Soft Skills',
-//                   courses: data.softSkills,
-//                   onCourseTap: (course) => _handleCourseTap(context, ref, course),
-//                   onViewAll: () => _navigateToCategory(context, ref, 'Soft Skills', data.softSkills),
-//                 ),
-//                 _buildStatsGrid(),
-//                 const SizedBox(height: 100), // Increased space for bottom nav
-//               ]),
-//             ),
-//             loading: () => const SliverFillRemaining(
-//               child: CoursesSkeleton(),
-//             ),
-//             error: (err, stack) => SliverFillRemaining(
-//               child: Center(
-//                 child: Column(
-//                   mainAxisAlignment: MainAxisAlignment.center,
-//                   children: [
-//                     const Text('Failed to load courses'),
-//                     ElevatedButton(
-//                       onPressed: () => ref.read(courseListProvider.notifier).refresh(),
-//                       child: const Text('Retry'),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
+              // Recommended Playlists
+              SliverToBoxAdapter(
+                child: _buildRecommendationsSection(context, recommendationsAsync, colors),
+              ),
 
-//   Widget _buildSearchBar() {
-//     return Container(
-//       decoration: BoxDecoration(
-//         color: const Color(0xFFF5F6F9),
-//         borderRadius: BorderRadius.circular(15),
-//       ),
-//       child: const TextField(
-//         decoration: InputDecoration(
-//           hintText: 'Search courses, topics or skills...',
-//           prefixIcon: Icon(Icons.search, color: Colors.grey),
-//           border: InputBorder.none,
-//           contentPadding: EdgeInsets.symmetric(vertical: 15),
-//         ),
-//       ),
-//     );
-//   }
+              // Skill Gap Summary
+              SliverToBoxAdapter(
+                child: _buildSkillGapSummary(context, ref, skillGapsAsync, colors),
+              ),
 
-//   Widget _buildStatsGrid() {
-//     return Container(
-//       margin: const EdgeInsets.all(20),
-//       padding: const EdgeInsets.all(20),
-//       decoration: BoxDecoration(
-//         border: Border.all(color: Colors.grey[200]!),
-//         borderRadius: BorderRadius.circular(20),
-//       ),
-//       child: Row(
-//         mainAxisAlignment: MainAxisAlignment.spaceAround,
-//         children: [
-//           _buildStatItem(Icons.play_circle_outline, '50+', 'Courses', Colors.blue),
-//           _buildStatItem(Icons.access_time, '120+', 'Hours', Colors.green),
-//           _buildStatItem(Icons.book_outlined, '300+', 'Lessons', Colors.orange),
-//           _buildStatItem(Icons.people_outline, '10K+', 'Learners', Colors.purple),
-//         ],
-//       ),
-//     );
-//   }
+              // Continue Learning
+              SliverToBoxAdapter(
+                child: _buildContinueLearningSection(context, ref, colors),
+              ),
 
-//   Widget _buildStatItem(IconData icon, String count, String label, Color color) {
-//     return Column(
-//       children: [
-//         Icon(icon, color: color, size: 28),
-//         const SizedBox(height: 8),
-//         Text(count, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-//         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-//       ],
-//     );
-//   }
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-//   void _navigateToCategory(BuildContext context, WidgetRef ref, String title, List<Course> courses) {
-//     Navigator.of(context).push(
-//       MaterialPageRoute(
-//         builder: (context) => CategoryCoursesScreen(
-//           categoryTitle: title,
-//           courses: courses,
-//           onCourseTap: (course) => _handleCourseTap(context, ref, course),
-//         ),
-//       ),
-//     );
-//   }
+  Widget _buildAICourseFinder(BuildContext context, WidgetRef ref, List<String> skills, AppColors colors) {
+    final controller = TextEditingController(text: skills.join(', '));
+    final primaryPurple = const Color(0xFF7C3AED);
+    final lightPurple = const Color(0xFFF3E8FF);
 
-//   void _handleCourseTap(BuildContext context, WidgetRef ref, Course course) async {
-//     try {
-//       await ref.read(courseActionProvider).openCourse(context, course);
-//     } catch (e) {
-//       if (context.mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(content: Text('Could not open course: $e')),
-//         );
-//       }
-//     }
-//   }
-// }
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: lightPurple,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primaryPurple,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.psychology, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'AI Course Finder',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              hintText: 'Find playlists on YouTube for...',
+              hintStyle: TextStyle(color: colors.textSecondary.withOpacity(0.5)),
+              suffixIcon: Icon(Icons.search, color: primaryPurple),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.search, color: Colors.white),
+              label: const Text(
+                'Search',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              onPressed: () {
+                final query = controller.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+                ref.read(courseRecommendationsProvider.notifier).fetchRecommendations(query);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryPurple,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: primaryPurple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, size: 14, color: primaryPurple),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Powered by Skill Analyzer',
+                      style: TextStyle(fontSize: 11, color: primaryPurple, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
 
-// class CoursesSkeleton extends StatelessWidget {
-//   const CoursesSkeleton({super.key});
+  Widget _buildSkillGapSummary(BuildContext context, WidgetRef ref, List<String> skills, AppColors colors) {
+    final analysisAsync = ref.watch(historyProvider);
+    final overallScore = analysisAsync.when(
+      data: (history) => history.isEmpty ? 0 : history.first.atsScore,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Shimmer.fromColors(
-//       baseColor: Colors.grey[300]!,
-//       highlightColor: Colors.grey[100]!,
-//       child: ListView.builder(
-//         itemCount: 3,
-//         itemBuilder: (_, __) => Padding(
-//           padding: const EdgeInsets.all(20),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               Container(width: 150, height: 20, color: Colors.white),
-//               const SizedBox(height: 20),
-//               Container(width: double.infinity, height: 150, color: Colors.white),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB), // Light cream/yellow
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFEF3C7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Your Skill Gap Summary',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: const Color(0xFF92400E).withOpacity(0.2), // Faded header
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildCircularScore(overallScore, colors),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Top Missing Skills',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: skills.map((s) => _buildSkillChip(s, colors)).toList(),
+                    ),
+                  ],
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lightbulb, color: Color(0xFFD97706), size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Improve your development and advanced coding skills.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: const Color(0xFF92400E),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircularScore(int score, AppColors colors) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              height: 90,
+              width: 90,
+              child: CircularProgressIndicator(
+                value: score / 100,
+                strokeWidth: 10,
+                backgroundColor: Colors.white,
+                color: const Color(0xFFEF4444), // Red from design
+              ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$score%',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                Text(
+                  'Overall',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Score',
+          style: TextStyle(fontSize: 12, color: colors.textSecondary),
+        )
+      ],
+    );
+  }
+
+  Widget _buildSkillChip(String label, AppColors colors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildRecommendationsSection(BuildContext context, AsyncValue<List<AICourse>> asyncRecs, AppColors colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recommended Playlists',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: colors.textPrimary,
+                ),
+              ),
+              Text(
+                'View all',
+                style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 5),
+        SizedBox(
+          height: 260,
+          child: asyncRecs.when(
+            data: (recs) {
+              if (recs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search_off, size: 48, color: colors.textSecondary.withOpacity(0.5)),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No recommendations found. Try searching above!',
+                        style: TextStyle(color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: recs.length,
+                itemBuilder: (context, index) => _buildRecommendationCard(context, recs[index], colors),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  'Could not load AI recommendations. Make sure backend is running.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendationCard(BuildContext context, AICourse rec, AppColors colors) {
+    return Container(
+      width: 220,
+      margin: const EdgeInsets.only(right: 16, bottom: 10),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CourseVideoPlayerScreen(course: rec),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(
+                    rec.thumbnail,
+                    height: 120,
+                    width: 220,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(height: 120, color: colors.border),
+                  ),
+                ),
+                Positioned(
+                  bottom: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      rec.duration ?? 'Playlist',
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Icon(Icons.play_circle_fill, color: Colors.white.withOpacity(0.8)),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    rec.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: colors.textPrimary),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        rec.channel,
+                        style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                      ),
+                      const SizedBox(width: 4),
+                      if (rec.channel.toLowerCase().contains('freecodecamp'))
+                        const Icon(Icons.verified, size: 12, color: Colors.blue),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 14, color: Colors.orange),
+                      const SizedBox(width: 4),
+                      Text(
+                        '4.8 (2.1M views)',
+                        style: TextStyle(fontSize: 10, color: colors.textSecondary),
+                      ),
+                      const Spacer(),
+                      _buildMatchBadge(rec.matchScore),
+                    ],
+                  )
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMatchBadge(double score) {
+    Color color = Colors.green;
+    String text = 'High Match';
+    if (score < 40) {
+      color = Colors.orange;
+      text = 'Medium Match';
+    } else if (score < 20) {
+      color = Colors.grey;
+      text = 'Low Match';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildContinueLearningSection(BuildContext context, WidgetRef ref, AppColors colors) {
+    final progressAsync = ref.watch(continueLearningProvider);
+    return progressAsync.when(
+      data: (courses) {
+        if (courses.isEmpty) return const SizedBox.shrink();
+        final course = courses.first;
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Continue Learning',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'View all',
+                    style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              _buildContinueLearningItem(context, course, colors),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildContinueLearningItem(BuildContext context, AICourse course, AppColors colors) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              course.thumbnail,
+              width: 100,
+              height: 70,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  course.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
+                ),
+                Text(
+                  course.channel,
+                  style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: LinearProgressIndicator(
+                        value: 0.53, // Mock for now
+                        backgroundColor: colors.border,
+                        color: colors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('53%', style: TextStyle(fontSize: 10, color: colors.textSecondary)),
+                  ],
+                )
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => CourseVideoPlayerScreen(course: course),
+                ),
+              );
+            },
+            icon: Icon(Icons.play_arrow_rounded, color: colors.primary, size: 32),
+          ),
+        ],
+      ),
+    );
+  }
+}
