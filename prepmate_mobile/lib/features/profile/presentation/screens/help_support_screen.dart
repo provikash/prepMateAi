@@ -109,12 +109,11 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4B89FF), Color(0xFF246BFD)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: AppTheme.buttonGradient,
                 borderRadius: BorderRadius.circular(24),
+                boxShadow: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkShadow
+                    : AppTheme.lightShadow,
               ),
               child: Row(
                 children: [
@@ -134,7 +133,7 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                         Text(
                           'Describe the issue and our support team will get back to you soon.',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: Colors.white.withOpacity(0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -156,38 +155,39 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.cardBackground,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+                boxShadow: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkShadow
+                    : AppTheme.lightShadow,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Category',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Color(0xFF1D2939),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
+                      color: colors.mutedBackground,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: colors.border),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedCategory,
                         isExpanded: true,
+                        dropdownColor: colors.cardBackground,
+                        style: TextStyle(color: colors.textPrimary),
+                        icon: Icon(Icons.keyboard_arrow_down,
+                            color: colors.textSecondary),
                         items: _categories.map((String category) {
                           return DropdownMenuItem<String>(
                             value: category,
@@ -203,19 +203,20 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Describe your problem',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Color(0xFF1D2939),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
+                      color: colors.mutedBackground,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: colors.border),
                     ),
                     child: Column(
                       children: [
@@ -223,10 +224,16 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                           controller: _messageController,
                           maxLines: 6,
                           maxLength: 1000,
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: colors.textPrimary),
+                          decoration: InputDecoration(
                             hintText: 'Write your message here...',
-                            contentPadding: EdgeInsets.all(16),
+                            hintStyle: TextStyle(
+                                color: colors.textSecondary.withOpacity(0.5)),
+                            contentPadding: const EdgeInsets.all(16),
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            fillColor: Colors.transparent,
                             counterText: "",
                           ),
                           onChanged: (_) => setState(() {}),
@@ -239,7 +246,7 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                               Text(
                                 '${_messageController.text.length} / 1000',
                                 style: TextStyle(
-                                  color: Colors.grey.shade400,
+                                  color: colors.textSecondary.withOpacity(0.5),
                                   fontSize: 12,
                                 ),
                               ),
@@ -253,25 +260,32 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submitSupportTicket,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.buttonGradient,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Submit',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitSupportTicket,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : const Text(
+                                'Submit',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
+                      ),
                     ),
                   ),
                 ],

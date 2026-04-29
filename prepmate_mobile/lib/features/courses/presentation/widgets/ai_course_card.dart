@@ -5,11 +5,7 @@ class AICourseCard extends StatelessWidget {
   final AICourse course;
   final VoidCallback onTap;
 
-  const AICourseCard({
-    super.key,
-    required this.course,
-    required this.onTap,
-  });
+  const AICourseCard({super.key, required this.course, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -45,33 +41,9 @@ class AICourseCard extends StatelessWidget {
                       return Container(
                         height: 90,
                         color: Colors.grey[300],
-                        child: Center(
-                          child: Icon(Icons.image_not_supported),
-                        ),
+                        child: Center(child: Icon(Icons.image_not_supported)),
                       );
                     },
-                  ),
-                  // YouTube play button overlay
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                      ),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.play_arrow,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
                   ),
                   // Match score badge
                   Positioned(
@@ -95,7 +67,11 @@ class AICourseCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle, size: 12, color: Colors.green),
+                          Icon(
+                            Icons.check_circle,
+                            size: 12,
+                            color: Colors.green,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${course.matchScore.toStringAsFixed(0)}%',
@@ -155,8 +131,11 @@ class AICourseCard extends StatelessWidget {
                           Flexible(
                             child: Row(
                               children: [
-                                Icon(Icons.access_time,
-                                    size: 10, color: Colors.grey),
+                                Icon(
+                                  Icons.access_time,
+                                  size: 10,
+                                  color: Colors.grey,
+                                ),
                                 const SizedBox(width: 2),
                                 Flexible(
                                   child: Text(

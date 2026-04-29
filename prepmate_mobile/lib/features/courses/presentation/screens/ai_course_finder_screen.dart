@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/ai_course_model.dart';
 import '../providers/course_providers.dart';
 import '../widgets/ai_course_card.dart';
 import '../widgets/skill_gap_summary.dart';
-import '../screens/course_video_player_screen.dart';
 
 class AICourseFinderScreen extends ConsumerWidget {
   const AICourseFinderScreen({super.key});
@@ -38,15 +37,15 @@ class AICourseFinderScreen extends ConsumerWidget {
                   Text(
                     'Courses',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Personalized courses based on your Skill Gap',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -58,9 +57,7 @@ class AICourseFinderScreen extends ConsumerWidget {
           // ════════════════════════════════════════
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            sliver: SliverToBoxAdapter(
-              child: _buildAISearchBox(context, ref),
-            ),
+            sliver: SliverToBoxAdapter(child: _buildAISearchBox(context, ref)),
           ),
 
           // ════════════════════════════════════════
@@ -68,9 +65,7 @@ class AICourseFinderScreen extends ConsumerWidget {
           // ════════════════════════════════════════
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            sliver: SliverToBoxAdapter(
-              child: const SkillGapSummary(),
-            ),
+            sliver: SliverToBoxAdapter(child: const SkillGapSummary()),
           ),
 
           // ════════════════════════════════════════
@@ -109,7 +104,10 @@ class AICourseFinderScreen extends ConsumerWidget {
               }
 
               return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,10 +117,8 @@ class AICourseFinderScreen extends ConsumerWidget {
                         children: [
                           Text(
                             'Recommended Playlists',
-                            style:
-                                Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -138,11 +134,8 @@ class AICourseFinderScreen extends ConsumerWidget {
                               padding: const EdgeInsets.only(right: 16),
                               child: AICourseCard(
                                 course: course,
-                                onTap: () => _navigateToPlayer(
-                                  context,
-                                  ref,
-                                  course,
-                                ),
+                                onTap: () =>
+                                    _navigateToPlayer(context, ref, course),
                               ),
                             );
                           },
@@ -180,17 +173,13 @@ class AICourseFinderScreen extends ConsumerWidget {
             error: (error, stack) => SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: Center(
-                  child: Text('Error loading courses: $error'),
-                ),
+                child: Center(child: Text('Error loading courses: $error')),
               ),
             ),
           ),
 
           // Add bottom padding
-          SliverToBoxAdapter(
-            child: SizedBox(height: 100),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
@@ -205,10 +194,7 @@ class AICourseFinderScreen extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Color(0xFFD4B3FF),
-          width: 1,
-        ),
+        border: Border.all(color: Color(0xFFD4B3FF), width: 1),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -222,16 +208,15 @@ class AICourseFinderScreen extends ConsumerWidget {
                   color: Color(0xFF7C3AED),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.psychology,
-                    color: Colors.white, size: 20),
+                child: Icon(Icons.psychology, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
                 'AI Course Finder',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4C1D95),
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4C1D95),
+                ),
               ),
             ],
           ),
@@ -259,10 +244,10 @@ class AICourseFinderScreen extends ConsumerWidget {
                     ref
                         .read(courseRecommendationsProvider.notifier)
                         .fetchRecommendations([
-                      'React',
-                      'State Management',
-                      'Clean Code',
-                    ]);
+                          'React',
+                          'State Management',
+                          'Clean Code',
+                        ]);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF7C3AED),
@@ -334,14 +319,11 @@ class AICourseFinderScreen extends ConsumerWidget {
             children: [
               Text(
                 'Continue Learning',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              TextButton(
-                onPressed: () {},
-                child: Text('View all'),
-              ),
+              TextButton(onPressed: () {}, child: Text('View all')),
             ],
           ),
           const SizedBox(height: 12),
@@ -379,8 +361,8 @@ class AICourseFinderScreen extends ConsumerWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -410,11 +392,8 @@ class AICourseFinderScreen extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () => _navigateToPlayer(
-                            context,
-                            ref,
-                            course,
-                          ),
+                          onPressed: () =>
+                              _navigateToPlayer(context, ref, course),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF7C3AED),
                             foregroundColor: Colors.white,
@@ -440,13 +419,18 @@ class AICourseFinderScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AICourse course,
-  ) {
-    ref.read(currentVideoIdProvider.notifier).setCurrentVideoId(course.videoId);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CourseVideoPlayerScreen(course: course),
-      ),
-    );
+  ) async {
+    // Open YouTube URL instead of playing inline
+    final youtubeUrl = 'https://www.youtube.com/watch?v=${course.videoId}';
+    final uri = Uri.parse(youtubeUrl);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      // Fallback: show error message
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open YouTube')));
+    }
   }
 }

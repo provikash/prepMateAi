@@ -10,6 +10,8 @@ class AICourse {
   final String channel;
   @JsonKey(name: 'video_id')
   final String videoId;
+  @JsonKey(name: 'playlist_id')
+  final String? playlistId;
   final String thumbnail;
   final String? duration;
   @JsonKey(name: 'video_count')
@@ -24,6 +26,7 @@ class AICourse {
     required this.title,
     required this.channel,
     required this.videoId,
+    this.playlistId,
     required this.thumbnail,
     this.duration,
     required this.videoCount,
@@ -32,28 +35,28 @@ class AICourse {
   });
 
   factory AICourse.fromJson(Map<String, dynamic> json) => AICourse(
-        id: json['id']?.toString() ?? json['playlist_id']?.toString() ?? '',
-        title: json['title'] ?? '',
-        channel: json['channel'] ?? '',
-        videoId: json['video_id'] ?? '',
-        thumbnail: json['thumbnail'] ?? '',
-        duration: json['duration'],
-        videoCount: (json['video_count'] ?? 0) as int,
-        matchScore: (json['match_score'] ?? 0).toDouble(),
-        createdAt: json['created_at'] ?? DateTime.now().toIso8601String(),
-      );
+    id: json['id']?.toString() ?? json['playlist_id']?.toString() ?? '',
+    title: json['title'] ?? '',
+    channel: json['channel'] ?? '',
+    videoId: json['video_id'] ?? '',
+    thumbnail: json['thumbnail'] ?? '',
+    duration: json['duration'],
+    videoCount: (json['video_count'] ?? 0) as int,
+    matchScore: (json['match_score'] ?? 0).toDouble(),
+    createdAt: json['created_at'] ?? DateTime.now().toIso8601String(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'channel': channel,
-        'video_id': videoId,
-        'thumbnail': thumbnail,
-        'duration': duration,
-        'video_count': videoCount,
-        'match_score': matchScore,
-        'created_at': createdAt,
-      };
+    'id': id,
+    'title': title,
+    'channel': channel,
+    'video_id': videoId,
+    'thumbnail': thumbnail,
+    'duration': duration,
+    'video_count': videoCount,
+    'match_score': matchScore,
+    'created_at': createdAt,
+  };
 
   AICourse copyWith({
     String? id,
@@ -138,7 +141,5 @@ class CourseRecommendationRequest {
 
   CourseRecommendationRequest({required this.skills});
 
-  Map<String, dynamic> toJson() => {
-    'skills': skills,
-  };
+  Map<String, dynamic> toJson() => {'skills': skills};
 }

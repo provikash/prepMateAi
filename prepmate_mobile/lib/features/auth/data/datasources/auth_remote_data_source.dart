@@ -39,10 +39,7 @@ class AuthRemoteDataSource {
 
     final response = await dio.post(
       'auth/google/',
-      data: {
-        'token': idToken,
-        'id_token': idToken,
-      },
+      data: {'token': idToken, 'id_token': idToken},
     );
 
     final data = response.data as Map<String, dynamic>;
@@ -57,14 +54,19 @@ class AuthRemoteDataSource {
     return UserModel.fromJson(userData);
   }
 
-  Future<bool> signup(String name, String email, String password) async {
+  Future<bool> signup(
+    String name,
+    String email,
+    String password,
+    String passwordConfirm,
+  ) async {
     final response = await dio.post(
       'auth/register/',
       data: {
         'name': name,
         'email': email,
         'password': password,
-        'password_confirm': password,
+        'password_confirm': passwordConfirm,
       },
     );
 

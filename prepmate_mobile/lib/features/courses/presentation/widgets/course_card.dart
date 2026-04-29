@@ -21,13 +21,9 @@ class CourseCard extends StatelessWidget {
           color: colors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: colors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkShadow
+              : AppTheme.lightShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/theme.dart';
 import '../providers/course_providers.dart';
 import '../../../resume_analyzer/presentation/providers/resume_analyzer_providers.dart';
 import '../widgets/section_widget.dart';
 import '../widgets/continue_learning_card.dart';
 import '../../data/models/ai_course_model.dart';
-import 'course_video_player_screen.dart';
+import 'all_playlists_screen.dart';
 
 class CoursesScreen extends ConsumerWidget {
   const CoursesScreen({super.key});
@@ -37,18 +38,19 @@ class CoursesScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'Courses',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: colors.textPrimary,
-                        ),
+                        style: Theme.of(context).textTheme.headlineLarge,
                       ),
                       Text(
                         'Personalized courses based on your Skill Gap',
-                        style: TextStyle(fontSize: 14, color: colors.textSecondary),
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 20),
-                      _buildAICourseFinder(context, ref, skillGapsAsync, colors),
+                      _buildAICourseFinder(
+                        context,
+                        ref,
+                        skillGapsAsync,
+                        colors,
+                      ),
                     ],
                   ),
                 ),
@@ -56,12 +58,21 @@ class CoursesScreen extends ConsumerWidget {
 
               // Recommended Playlists
               SliverToBoxAdapter(
-                child: _buildRecommendationsSection(context, recommendationsAsync, colors),
+                child: _buildRecommendationsSection(
+                  context,
+                  recommendationsAsync,
+                  colors,
+                ),
               ),
 
               // Skill Gap Summary
               SliverToBoxAdapter(
-                child: _buildSkillGapSummary(context, ref, skillGapsAsync, colors),
+                child: _buildSkillGapSummary(
+                  context,
+                  ref,
+                  skillGapsAsync,
+                  colors,
+                ),
               ),
 
               // Continue Learning
@@ -77,15 +88,20 @@ class CoursesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAICourseFinder(BuildContext context, WidgetRef ref, List<String> skills, AppColors colors) {
+  Widget _buildAICourseFinder(
+    BuildContext context,
+    WidgetRef ref,
+    List<String> skills,
+    AppColors colors,
+  ) {
     final controller = TextEditingController(text: skills.join(', '));
-    final primaryPurple = const Color(0xFF7C3AED);
-    final lightPurple = const Color(0xFFF3E8FF);
+    final primaryColor = colors.primary;
+    final secondaryColor = colors.primarySoft;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: lightPurple,
+        color: secondaryColor,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -96,10 +112,14 @@ class CoursesScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: primaryPurple,
+                  color: primaryColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.psychology, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.psychology,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -117,10 +137,12 @@ class CoursesScreen extends ConsumerWidget {
             controller: controller,
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white,
+              fillColor: colors.cardBackground,
               hintText: 'Find playlists on YouTube for...',
-              hintStyle: TextStyle(color: colors.textSecondary.withOpacity(0.5)),
-              suffixIcon: Icon(Icons.search, color: primaryPurple),
+              hintStyle: TextStyle(
+                color: colors.textSecondary.withOpacity(0.5),
+              ),
+              suffixIcon: Icon(Icons.search, color: primaryColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide.none,
@@ -135,15 +157,27 @@ class CoursesScreen extends ConsumerWidget {
               icon: const Icon(Icons.search, color: Colors.white),
               label: const Text(
                 'Search',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               onPressed: () {
-                final query = controller.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-                ref.read(courseRecommendationsProvider.notifier).fetchRecommendations(query);
+                final query = controller.text
+                    .split(',')
+                    .map((s) => s.trim())
+                    .where((s) => s.isNotEmpty)
+                    .toList();
+                ref
+                    .read(courseRecommendationsProvider.notifier)
+                    .fetchRecommendations(query);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryPurple,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                backgroundColor: primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),
@@ -154,28 +188,37 @@ class CoursesScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: primaryPurple.withOpacity(0.1),
+                  color: primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.check_circle, size: 14, color: primaryPurple),
+                    Icon(Icons.check_circle, size: 14, color: primaryColor),
                     const SizedBox(width: 4),
                     Text(
                       'Powered by Skill Analyzer',
-                      style: TextStyle(fontSize: 11, color: primaryPurple, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSkillGapSummary(BuildContext context, WidgetRef ref, List<String> skills, AppColors colors) {
+  Widget _buildSkillGapSummary(
+    BuildContext context,
+    WidgetRef ref,
+    List<String> skills,
+    AppColors colors,
+  ) {
     final analysisAsync = ref.watch(historyProvider);
     final overallScore = analysisAsync.when(
       data: (history) => history.isEmpty ? 0 : history.first.atsScore,
@@ -187,9 +230,9 @@ class CoursesScreen extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB), // Light cream/yellow
+        color: colors.mutedBackground,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFFEF3C7)),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +242,7 @@ class CoursesScreen extends ConsumerWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,
-              color: const Color(0xFF92400E).withOpacity(0.2), // Faded header
+              color: colors.textPrimary.withOpacity(0.5),
             ),
           ),
           const SizedBox(height: 20),
@@ -211,49 +254,51 @@ class CoursesScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Top Missing Skills',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF92400E),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: skills.map((s) => _buildSkillChip(s, colors)).toList(),
+                      children: skills
+                          .map((s) => _buildSkillChip(s, colors))
+                          .toList(),
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7),
+              color: colors.primarySoft,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                const Icon(Icons.lightbulb, color: Color(0xFFD97706), size: 20),
+                Icon(Icons.lightbulb, color: colors.primary, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Improve your development and advanced coding skills.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: const Color(0xFF92400E),
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -271,8 +316,8 @@ class CoursesScreen extends ConsumerWidget {
               child: CircularProgressIndicator(
                 value: score / 100,
                 strokeWidth: 10,
-                backgroundColor: Colors.white,
-                color: const Color(0xFFEF4444), // Red from design
+                backgroundColor: colors.border,
+                color: colors.primary,
               ),
             ),
             Column(
@@ -288,10 +333,7 @@ class CoursesScreen extends ConsumerWidget {
                 ),
                 Text(
                   'Overall',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: colors.textSecondary,
-                  ),
+                  style: TextStyle(fontSize: 10, color: colors.textSecondary),
                 ),
               ],
             ),
@@ -301,7 +343,7 @@ class CoursesScreen extends ConsumerWidget {
         Text(
           'Score',
           style: TextStyle(fontSize: 12, color: colors.textSecondary),
-        )
+        ),
       ],
     );
   }
@@ -310,18 +352,26 @@ class CoursesScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFDE68A)),
+        border: Border.all(color: colors.border),
       ),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 12,
+          color: colors.primary,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
-  Widget _buildRecommendationsSection(BuildContext context, AsyncValue<List<AICourse>> asyncRecs, AppColors colors) {
+  Widget _buildRecommendationsSection(
+    BuildContext context,
+    AsyncValue<List<AICourse>> asyncRecs,
+    AppColors colors,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -338,9 +388,19 @@ class CoursesScreen extends ConsumerWidget {
                   color: colors.textPrimary,
                 ),
               ),
-              Text(
-                'View all',
-                style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold),
+              GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AllPlaylistsScreen(),
+                  ),
+                ),
+                child: Text(
+                  'View all',
+                  style: TextStyle(
+                    color: colors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -355,7 +415,11 @@ class CoursesScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.search_off, size: 48, color: colors.textSecondary.withOpacity(0.5)),
+                      Icon(
+                        Icons.search_off,
+                        size: 48,
+                        color: colors.textSecondary.withOpacity(0.5),
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'No recommendations found. Try searching above!',
@@ -369,7 +433,8 @@ class CoursesScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 scrollDirection: Axis.horizontal,
                 itemCount: recs.length,
-                itemBuilder: (context, index) => _buildRecommendationCard(context, recs[index], colors),
+                itemBuilder: (context, index) =>
+                    _buildRecommendationCard(context, recs[index], colors),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -389,7 +454,11 @@ class CoursesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecommendationCard(BuildContext context, AICourse rec, AppColors colors) {
+  Widget _buildRecommendationCard(
+    BuildContext context,
+    AICourse rec,
+    AppColors colors,
+  ) {
     return Container(
       width: 220,
       margin: const EdgeInsets.only(right: 16, bottom: 10),
@@ -397,21 +466,22 @@ class CoursesScreen extends ConsumerWidget {
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkShadow
+            : AppTheme.lightShadow,
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => CourseVideoPlayerScreen(course: rec),
-            ),
-          );
+        onTap: () async {
+          final youtubeUrl = 'https://www.youtube.com/watch?v=${rec.videoId}';
+          final uri = Uri.parse(youtubeUrl);
+
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Could not open YouTube')));
+          }
         },
         borderRadius: BorderRadius.circular(16),
         child: Column(
@@ -420,20 +490,26 @@ class CoursesScreen extends ConsumerWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
                   child: Image.network(
                     rec.thumbnail,
                     height: 120,
                     width: 220,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(height: 120, color: colors.border),
+                    errorBuilder: (_, __, ___) =>
+                        Container(height: 120, color: colors.border),
                   ),
                 ),
                 Positioned(
                   bottom: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(4),
@@ -447,7 +523,10 @@ class CoursesScreen extends ConsumerWidget {
                 Positioned(
                   top: 8,
                   left: 8,
-                  child: Icon(Icons.play_circle_fill, color: Colors.white.withOpacity(0.8)),
+                  child: Icon(
+                    Icons.play_circle_fill,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
                 ),
               ],
             ),
@@ -460,18 +539,29 @@ class CoursesScreen extends ConsumerWidget {
                     rec.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: colors.textPrimary),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: colors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Text(
                         rec.channel,
-                        style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.textSecondary,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       if (rec.channel.toLowerCase().contains('freecodecamp'))
-                        const Icon(Icons.verified, size: 12, color: Colors.blue),
+                        const Icon(
+                          Icons.verified,
+                          size: 12,
+                          color: Colors.blue,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -481,15 +571,18 @@ class CoursesScreen extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Text(
                         '4.8 (2.1M views)',
-                        style: TextStyle(fontSize: 10, color: colors.textSecondary),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: colors.textSecondary,
+                        ),
                       ),
                       const Spacer(),
                       _buildMatchBadge(rec.matchScore),
                     ],
-                  )
+                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -515,12 +608,20 @@ class CoursesScreen extends ConsumerWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
-  Widget _buildContinueLearningSection(BuildContext context, WidgetRef ref, AppColors colors) {
+  Widget _buildContinueLearningSection(
+    BuildContext context,
+    WidgetRef ref,
+    AppColors colors,
+  ) {
     final progressAsync = ref.watch(continueLearningProvider);
     return progressAsync.when(
       data: (courses) {
@@ -544,7 +645,10 @@ class CoursesScreen extends ConsumerWidget {
                   ),
                   Text(
                     'View all',
-                    style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: colors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -559,13 +663,20 @@ class CoursesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContinueLearningItem(BuildContext context, AICourse course, AppColors colors) {
+  Widget _buildContinueLearningItem(
+    BuildContext context,
+    AICourse course,
+    AppColors colors,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colors.border),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkShadow
+            : AppTheme.lightShadow,
       ),
       child: Row(
         children: [
@@ -587,7 +698,10 @@ class CoursesScreen extends ConsumerWidget {
                   course.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                  ),
                 ),
                 Text(
                   course.channel,
@@ -604,22 +718,38 @@ class CoursesScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text('53%', style: TextStyle(fontSize: 10, color: colors.textSecondary)),
+                    Text(
+                      '53%',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: colors.textSecondary,
+                      ),
+                    ),
                   ],
-                )
+                ),
               ],
             ),
           ),
           const SizedBox(width: 8),
           IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CourseVideoPlayerScreen(course: course),
-                ),
-              );
+            onPressed: () async {
+              final youtubeUrl =
+                  'https://www.youtube.com/watch?v=${course.videoId}';
+              final uri = Uri.parse(youtubeUrl);
+
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not open YouTube')),
+                );
+              }
             },
-            icon: Icon(Icons.play_arrow_rounded, color: colors.primary, size: 32),
+            icon: Icon(
+              Icons.play_arrow_rounded,
+              color: colors.primary,
+              size: 32,
+            ),
           ),
         ],
       ),

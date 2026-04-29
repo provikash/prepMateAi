@@ -18,6 +18,9 @@ class ContinueLearningCard extends StatelessWidget {
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colors.border),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkShadow
+            : AppTheme.lightShadow,
       ),
       child: Row(
         children: [
@@ -35,7 +38,8 @@ class ContinueLearningCard extends StatelessWidget {
                     width: 100,
                     height: 100,
                     color: colors.mutedBackground,
-                    child: Icon(Icons.image_not_supported, color: colors.textSecondary),
+                    child: Icon(Icons.image_not_supported,
+                        color: colors.textSecondary),
                   ),
                 ),
               ),
@@ -45,7 +49,8 @@ class ContinueLearningCard extends StatelessWidget {
                   color: colors.cardBackground.withOpacity(0.8),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.play_arrow, color: colors.textPrimary, size: 24),
+                child:
+                    Icon(Icons.play_arrow, color: colors.textPrimary, size: 24),
               ),
             ],
           ),
@@ -55,20 +60,22 @@ class ContinueLearningCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: colors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.play_circle_outline, size: 12, color: Colors.green),
-                      SizedBox(width: 4),
+                      Icon(Icons.play_circle_outline,
+                          size: 12, color: colors.primary),
+                      const SizedBox(width: 4),
                       Text(
                         'IN PROGRESS',
                         style: TextStyle(
-                          color: Colors.green,
+                          color: colors.primary,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -81,7 +88,10 @@ class ContinueLearningCard extends StatelessWidget {
                   course.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.textPrimary),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: colors.textPrimary),
                 ),
                 Text(
                   course.lessonInfo ?? '',
@@ -96,7 +106,7 @@ class ContinueLearningCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: (course.progressPercentage ?? 0) / 100,
                           backgroundColor: colors.mutedBackground,
-                          color: Colors.green,
+                          color: colors.primary,
                           minHeight: 6,
                         ),
                       ),
@@ -104,7 +114,8 @@ class ContinueLearningCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       '${course.progressPercentage}%',
-                      style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                      style:
+                          TextStyle(fontSize: 12, color: colors.textSecondary),
                     ),
                   ],
                 ),
@@ -114,27 +125,30 @@ class ContinueLearningCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.access_time, size: 14, color: colors.textSecondary),
+                        Icon(Icons.access_time,
+                            size: 14, color: colors.textSecondary),
                         const SizedBox(width: 4),
                         Text(
                           course.remainingTime ?? '',
-                          style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                          style: TextStyle(
+                              fontSize: 12, color: colors.textSecondary),
                         ),
                       ],
                     ),
                     ElevatedButton(
                       onPressed: onTap,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.cardBackground,
-                        foregroundColor: colors.primary,
+                        backgroundColor: colors.primary,
+                        foregroundColor: Colors.white,
                         elevation: 0,
-                        side: BorderSide(color: colors.border),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text('Continue',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
