@@ -60,7 +60,12 @@ class AuthRemoteDataSource {
   Future<bool> signup(String name, String email, String password) async {
     final response = await dio.post(
       'auth/register/',
-      data: {'full_name': name, 'email': email, 'password': password},
+      data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'password_confirm': password,
+      },
     );
 
     return response.statusCode == 200 || response.statusCode == 201;

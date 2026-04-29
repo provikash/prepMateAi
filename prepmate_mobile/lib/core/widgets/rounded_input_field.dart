@@ -15,7 +15,7 @@ class RoundedInputField extends StatelessWidget {
   const RoundedInputField({
     super.key,
     required this.hintText,
-    
+
     required this.prefixIcon,
     this.obscureText = false,
     this.controller,
@@ -38,51 +38,39 @@ class RoundedInputField extends StatelessWidget {
             color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 6),
-          )
+          ),
         ],
         border: Border.all(color: colors.border, width: 0.6),
       ),
 
-            child: TextFormField(
-              controller: controller,
-              obscureText: obscureText,
-              onChanged: onChanged,
-              validator: validator,
-              keyboardType: keyboardType,
-              textCapitalization: textCapitalization,
-              decoration: InputDecoration(
-                
-                hintText: hintText,
-          
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                suffix: suffix,
-                prefixIcon: prefixIcon,
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscureText,
+        onChanged: onChanged,
+        validator: validator,
+        keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
+        decoration: InputDecoration(
+          hintText: hintText,
 
-                filled: true,
-                fillColor: colors.mutedBackground,
-                enabledBorder: OutlineInputBorder(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          suffix: suffix,
+          prefixIcon: prefixIcon,
+
+          filled: true,
+          fillColor: colors.mutedBackground,
+          enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(color: colors.border),
           ),
-          
-        focusedBorder: OutlineInputBorder(
+
+          focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(color: colors.primary, width: 1.4),
-          )
-
-         ),
-             
-            ),
-
-          
-          
-
-        
-      
-
-
-      
+          ),
+        ),
+      ),
     );
   }
 }
