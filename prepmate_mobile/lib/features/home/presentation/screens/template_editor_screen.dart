@@ -95,7 +95,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Resume created successfully.')),
       );
-      context.push('/resume-view', extra: created.id);
+      context.push('/resume/form', extra: widget.templateId);
     } catch (error) {
       if (!mounted) {
         return;

@@ -6,6 +6,7 @@ import '../../data/models/template_detail_model.dart';
 
 abstract class ResumeRepository {
   Future<TemplateDetailModel> getTemplateDetail(String id);
+  Future<List<Map<String, dynamic>>> getTemplates();
 
   Future<CreatedResumeModel> createResume({
     required String templateId,

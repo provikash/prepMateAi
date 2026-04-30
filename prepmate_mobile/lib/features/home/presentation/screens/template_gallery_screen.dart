@@ -42,8 +42,7 @@ class TemplateGalleryScreen extends ConsumerWidget {
                 final template = templates[index];
                 return InkWell(
                   borderRadius: BorderRadius.circular(14),
-                  onTap: () =>
-                      context.push('/template-detail', extra: template.id),
+                  onTap: () => context.push('/resume/form', extra: template.id),
                   child: Container(
                     decoration: BoxDecoration(
                       color: colors.cardBackground,

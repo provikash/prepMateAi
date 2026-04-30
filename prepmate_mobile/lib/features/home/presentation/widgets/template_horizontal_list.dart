@@ -88,7 +88,7 @@ class TemplateItemWidget extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return GestureDetector(
-      onTap: () => context.push('/template-detail', extra: template.id),
+      onTap: () => context.push('/resume/form', extra: template.id),
       child: Container(
         width: 150,
         margin: const EdgeInsets.only(right: 16),

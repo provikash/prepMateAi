@@ -134,7 +134,7 @@ class ResumeItemWidget extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return GestureDetector(
-      onTap: () => context.push('/resume-view', extra: resume.id),
+      onTap: () => context.push('/resume/pdf/${resume.id}'),
       child: Padding(
         padding: const EdgeInsets.only(right: 16.0),
         child: Column(

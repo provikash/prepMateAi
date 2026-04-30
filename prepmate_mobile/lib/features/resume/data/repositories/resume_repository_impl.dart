@@ -33,4 +33,7 @@ class ResumeRepositoryImpl implements ResumeRepository {
 
   @override
   Future<List<ResumeModel>> getResumes() => remote.getResumes();
+
+  @override
+  Future<List<Map<String, dynamic>>> getTemplates() => remote.getTemplates();
 }

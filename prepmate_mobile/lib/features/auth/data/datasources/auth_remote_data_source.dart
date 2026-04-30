@@ -16,11 +16,16 @@ class AuthRemoteDataSource {
       data: {'email': email, 'password': password},
     );
 
-    final token = response.data["tokens"]?["access"];
-    final userData = response.data["user"];
+    final tokens = response.data['tokens'] as Map<String, dynamic>?;
+    final accessToken = tokens?['access']?.toString();
+    final refreshToken = tokens?['refresh']?.toString();
+    final userData = response.data['user'];
 
-    if (token != null) {
-      await TokenService.saveToken(token);
+    if (accessToken != null && accessToken.isNotEmpty) {
+      await TokenService.saveTokens(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
       return UserModel.fromJson(userData);
     }
 
@@ -46,12 +51,22 @@ class AuthRemoteDataSource {
     );
 
     final data = response.data as Map<String, dynamic>;
-    final token =
-        data['tokens']?['access'] ?? data['access'] ?? data['access_token'];
+    final tokensMap = data['tokens'] as Map<String, dynamic>?;
+    final accessToken =
+        tokensMap?['access']?.toString() ??
+        data['access']?.toString() ??
+        data['access_token']?.toString();
+    final refreshToken =
+        tokensMap?['refresh']?.toString() ??
+        data['refresh']?.toString() ??
+        data['refresh_token']?.toString();
     final userData = (data['user'] ?? data) as Map<String, dynamic>;
 
-    if (token != null) {
-      await TokenService.saveToken(token.toString());
+    if (accessToken != null && accessToken.isNotEmpty) {
+      await TokenService.saveTokens(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
     }
 
     return UserModel.fromJson(userData);
@@ -99,14 +114,8 @@ class AuthRemoteDataSource {
   }
 
   Future<User?> getProfile() async {
-    final summaryResponse = await dio.get('profile/');
     final profileResponse = await dio.get('profile/');
-
-    final merged = <String, dynamic>{
-      ...(summaryResponse.data as Map<String, dynamic>),
-      ...(profileResponse.data as Map<String, dynamic>),
-    };
-    return UserModel.fromJson(merged);
+    return UserModel.fromJson(profileResponse.data as Map<String, dynamic>);
   }
 
   Future<User?> updateProfile(User user) async {

@@ -123,6 +123,7 @@ class AppTheme {
         fontWeight: FontWeight.w500,
         color: textPrimary,
       ),
+
       bodyMedium: TextStyle(fontSize: 14, color: textSecondary),
     ),
 
@@ -162,6 +163,7 @@ class AppTheme {
         fontWeight: FontWeight.w500,
         color: darkTextPrimary,
       ),
+
       bodyMedium: TextStyle(fontSize: 14, color: darkTextSecondary),
     ),
 
