@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../config/theme.dart';
 import '../../data/models/course_model.dart';
 
 class CourseCard extends StatelessWidget {
@@ -9,6 +10,7 @@ class CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -16,15 +18,12 @@ class CourseCard extends StatelessWidget {
         width: 220,
         margin: const EdgeInsets.only(right: 16, bottom: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: colors.border),
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkShadow
+              : AppTheme.lightShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,8 +39,8 @@ class CourseCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 120,
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.image_not_supported),
+                      color: colors.mutedBackground,
+                      child: Icon(Icons.image_not_supported, color: colors.textSecondary),
                     ),
                   ),
                 ),
@@ -51,7 +50,7 @@ class CourseCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: colors.cardBackground.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -79,11 +78,11 @@ class CourseCard extends StatelessWidget {
                   right: 8,
                   child: Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: colors.cardBackground,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.bookmark_border, size: 16, color: Colors.grey),
+                    child: Icon(Icons.bookmark_border, size: 16, color: colors.textSecondary),
                   ),
                 ),
               ],
@@ -97,12 +96,12 @@ class CourseCard extends StatelessWidget {
                     course.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: colors.textPrimary),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _getDetailText(course),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -111,13 +110,13 @@ class CourseCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${course.rating} (${course.reviewCount ?? 0})',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colors.textPrimary),
                       ),
                       const Spacer(),
                       if (course.isOpened)
                         const Icon(Icons.check_circle, size: 16, color: Colors.green)
                       else
-                        const Icon(Icons.more_vert, size: 16, color: Colors.grey),
+                        Icon(Icons.more_vert, size: 16, color: colors.textSecondary),
                     ],
                   ),
                 ],

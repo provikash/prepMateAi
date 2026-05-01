@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prepmate_mobile/config/theme.dart';
 import '../../domain/models/chat_message.dart';
 import '../viewmodels/interview_viewmodel.dart';
 
@@ -42,21 +43,26 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(interviewViewModelProvider);
+    final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: colors.screenBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.cardBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+          icon: Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           children: [
-            const Text(
+            Text(
               'AI Interview Coach',
-              style: TextStyle(color: Color(0xFF1D2939), fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -64,10 +70,16 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 4),
-                const Text('Online', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  'Online',
+                  style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                ),
               ],
             ),
           ],
@@ -75,7 +87,7 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_horiz, color: Colors.black),
+            icon: Icon(Icons.more_horiz, color: colors.textPrimary),
             onPressed: () {},
           ),
         ],
@@ -89,14 +101,15 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
               itemCount: state.messages.length,
               itemBuilder: (context, index) {
                 final message = state.messages[index];
-                final isLastAiMessage = message.sender == MessageSender.ai && 
-                    (index == 0 || state.messages[index-1].sender == MessageSender.user);
+                final isLastAiMessage = message.sender == MessageSender.ai &&
+                    (index == 0 ||
+                        state.messages[index - 1].sender == MessageSender.user);
 
-                return _buildMessageBubble(message, isLastAiMessage);
+                return _buildMessageBubble(message, isLastAiMessage, colors);
               },
             ),
           ),
-          
+
           // Quick Actions
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -104,9 +117,9 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildQuickAction('Give me a hint'),
-                  _buildQuickAction('Analyze my tone'),
-                  _buildQuickAction('Different question'),
+                  _buildQuickAction('Give me a hint', colors),
+                  _buildQuickAction('Analyze my tone', colors),
+                  _buildQuickAction('Different question', colors),
                 ],
               ),
             ),
@@ -115,13 +128,13 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
           // Input Area
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            decoration: const BoxDecoration(color: Colors.white),
+            decoration: BoxDecoration(color: colors.cardBackground),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF2F4F7),
+                      color: colors.mutedBackground,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Row(
@@ -130,16 +143,22 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
                         Expanded(
                           child: TextField(
                             controller: _messageController,
-                            decoration: const InputDecoration(
+                            style: TextStyle(color: colors.textPrimary),
+                            decoration: InputDecoration(
                               hintText: 'Type your response...',
                               border: InputBorder.none,
-                              hintStyle: TextStyle(color: Colors.grey),
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              fillColor: Colors.transparent,
+                              hintStyle: TextStyle(
+                                color: colors.textSecondary.withOpacity(0.5),
+                              ),
                             ),
                             onSubmitted: (_) => _sendMessage(),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.mic_none, color: Colors.grey),
+                          icon: Icon(Icons.mic_none, color: colors.textSecondary),
                           onPressed: () {},
                         ),
                       ],
@@ -151,8 +170,8 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
                   onTap: _sendMessage,
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF246BFD),
+                    decoration: BoxDecoration(
+                      color: colors.primary,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.send, color: Colors.white, size: 20),
@@ -166,22 +185,33 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message, bool showHeader) {
+  Widget _buildMessageBubble(
+    ChatMessage message,
+    bool showHeader,
+    AppColors colors,
+  ) {
     final isAi = message.sender == MessageSender.ai;
 
     return Column(
-      crossAxisAlignment: isAi ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      crossAxisAlignment:
+          isAi ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
         if (showHeader)
           Padding(
             padding: const EdgeInsets.only(left: 48, bottom: 4, top: 12),
             child: Text(
               isAi ? 'PREPMATE AI' : 'YOU',
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: colors.textSecondary,
+                letterSpacing: 1,
+              ),
             ),
           ),
         Row(
-          mainAxisAlignment: isAi ? MainAxisAlignment.start : MainAxisAlignment.end,
+          mainAxisAlignment:
+              isAi ? MainAxisAlignment.start : MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (isAi)
@@ -189,54 +219,55 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
                 margin: const EdgeInsets.only(right: 8, bottom: 4),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE0E7FF),
+                  color: colors.primarySoft,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.smart_toy_outlined, color: Color(0xFF246BFD), size: 20),
+                child: Icon(
+                  Icons.smart_toy_outlined,
+                  color: colors.primary,
+                  size: 20,
+                ),
               ),
             Flexible(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isAi ? Colors.white : const Color(0xFF1565C0),
+                  color: isAi ? colors.cardBackground : colors.primary,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
                     bottomLeft: Radius.circular(isAi ? 4 : 16),
                     bottomRight: Radius.circular(isAi ? 16 : 4),
                   ),
-                  boxShadow: [
-                    if (isAi)
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                  ],
+                  boxShadow: isAi
+                      ? (Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkShadow
+                          : AppTheme.lightShadow)
+                      : null,
                 ),
-                child: message.isTyping 
-                  ? const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _TypingDot(),
-                        SizedBox(width: 4),
-                        _TypingDot(),
-                        SizedBox(width: 4),
-                        _TypingDot(),
-                      ],
-                    )
-                  : Text(
-                      message.text,
-                      style: TextStyle(
-                        color: isAi ? const Color(0xFF1D2939) : Colors.white,
-                        fontSize: 14,
-                        height: 1.4,
+                child: message.isTyping
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _TypingDot(color: colors.textSecondary),
+                          const SizedBox(width: 4),
+                          _TypingDot(color: colors.textSecondary),
+                          const SizedBox(width: 4),
+                          _TypingDot(color: colors.textSecondary),
+                        ],
+                      )
+                    : Text(
+                        message.text,
+                        style: TextStyle(
+                          color: isAi ? colors.textPrimary : Colors.white,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
               ),
             ),
-            if (!isAi)
-              const SizedBox(width: 8),
+            if (!isAi) const SizedBox(width: 8),
           ],
         ),
         const SizedBox(height: 12),
@@ -244,20 +275,26 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
     );
   }
 
-  Widget _buildQuickAction(String text) {
+  Widget _buildQuickAction(String text, AppColors colors) {
     return Container(
       margin: const EdgeInsets.only(right: 8, bottom: 16),
       child: OutlinedButton(
-        onPressed: () => ref.read(interviewViewModelProvider.notifier).sendMessage(text),
+        onPressed: () =>
+            ref.read(interviewViewModelProvider.notifier).sendMessage(text),
         style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          side: const BorderSide(color: Color(0xFFD0D5DD)),
-          backgroundColor: const Color(0xFFF0F5FF),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          side: BorderSide(color: colors.border),
+          backgroundColor: colors.primarySoft,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
         child: Text(
           text,
-          style: const TextStyle(color: Color(0xFF246BFD), fontSize: 13, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: colors.primary,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -265,19 +302,24 @@ class _InterviewScreenState extends ConsumerState<InterviewScreen> {
 }
 
 class _TypingDot extends StatefulWidget {
-  const _TypingDot();
+  final Color color;
+  const _TypingDot({required this.color});
 
   @override
   State<_TypingDot> createState() => _TypingDotState();
 }
 
-class _TypingDotState extends State<_TypingDot> with SingleTickerProviderStateMixin {
+class _TypingDotState extends State<_TypingDot>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..repeat(reverse: true);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -293,7 +335,7 @@ class _TypingDotState extends State<_TypingDot> with SingleTickerProviderStateMi
       child: Container(
         width: 6,
         height: 6,
-        decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
+        decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
       ),
     );
   }

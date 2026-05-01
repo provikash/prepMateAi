@@ -9,6 +9,7 @@ import 'package:prepmate_mobile/features/home/data/models/dashboard_model.dart';
 import 'package:prepmate_mobile/features/home/data/models/resume_model.dart';
 import 'package:prepmate_mobile/features/home/data/models/template_model.dart';
 import 'package:prepmate_mobile/features/interview/presentation/screens/interview_screen.dart';
+import 'package:prepmate_mobile/features/courses/presentation/screens/courses_screen.dart';
 import 'package:prepmate_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
 
@@ -70,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _HomeContent(),
           InterviewScreen(),
           AnalyzeScreen(),
-          Center(child: Text('Courses Screen')),
+          CoursesScreen(),
           Center(child: Text('Profile Screen Placeholder')),
         ],
       ),

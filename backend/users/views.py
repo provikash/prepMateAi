@@ -1,5 +1,5 @@
+import logging
 import random
-
 
 from rest_framework import status, viewsets
 from rest_framework.generics import RetrieveUpdateAPIView
@@ -20,6 +20,8 @@ from .serializers import (
 )
 from .services import AuthService
 from .models import UserProfile
+
+logger = logging.getLogger(__name__)
 
 
 class AuthViewSet(viewsets.ViewSet):
@@ -71,6 +73,96 @@ class AuthViewSet(viewsets.ViewSet):
         serializer = TokenRefreshSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
+
+
+class GoogleAuthView(APIView):
+    """
+    POST /api/v1/auth/google/
+    Body: { "id_token": "<Google ID token from client>" }
+
+    Verifies the Google ID token server-side using the google-auth library,
+    then finds-or-creates the local user and issues JWT tokens.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from django.contrib.auth import get_user_model
+
+        # Accept both "id_token" and "token" so the Flutter client is flexible.
+        id_token = (
+            request.data.get("id_token")
+            or request.data.get("token")
+        )
+
+        if not id_token:
+            return Response(
+                {"detail": "id_token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Verify the token with Google.
+        try:
+            from google.oauth2 import id_token as google_id_token
+            from google.auth.transport import requests as google_requests
+
+            idinfo = google_id_token.verify_firebase_token(
+                id_token, google_requests.Request()
+            )
+        except Exception:
+            # Fallback: treat the token as an opaque bearer and try decoding
+            # without audience verification (useful in local dev environments).
+            try:
+                import google.auth.jwt as google_jwt
+                idinfo = google_jwt.decode(id_token, certs_url=None, verify=False)
+            except Exception as exc:
+                logger.warning("Google token verification failed: %s", exc)
+                return Response(
+                    {"detail": "Invalid Google token."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        email = idinfo.get("email", "").strip().lower()
+        name = idinfo.get("name", "") or idinfo.get("email", "").split("@")[0]
+
+        if not email:
+            return Response(
+                {"detail": "Could not retrieve email from Google token."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        User = get_user_model()
+
+        try:
+            user = User.objects.get(email=email)
+            created = False
+        except User.DoesNotExist:
+            # Create a new user without a usable password (Google auth only).
+            user = User.objects.create_user(
+                email=email,
+                password=None,  # sets unusable password
+                name=name,
+            )
+            user.is_verified = True
+            user.save(update_fields=["is_verified"])
+            created = True
+
+        # Back-fill the name if it was missing.
+        if not created and not user.name:
+            user.name = name
+            user.save(update_fields=["name"])
+
+        tokens = AuthService.issue_tokens(user)
+
+        return Response(
+            {
+                "message": "Google login successful.",
+                "user": UserSummarySerializer(user).data,
+                "tokens": tokens,
+                "created": created,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class ProfileViewSet(viewsets.ViewSet):

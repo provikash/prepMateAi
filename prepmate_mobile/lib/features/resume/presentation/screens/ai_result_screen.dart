@@ -38,7 +38,7 @@ class AIResultScreen extends ConsumerWidget {
       body: aiState.status == AIStatus.polling
           ? _buildPollingState()
           : aiState.status == AIStatus.success
-          ? _buildSuccessState(context, ref, aiState.result ?? '')
+          ? _buildSuccessState(context, ref, aiState)
           : _buildErrorState(aiState.errorMessage ?? 'Unknown error'),
     );
   }
@@ -67,26 +67,27 @@ class AIResultScreen extends ConsumerWidget {
   Widget _buildSuccessState(
     BuildContext context,
     WidgetRef ref,
-    String result,
+    AIState aiState,
   ) {
+    final result = aiState.result ?? '';
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
           _buildSuccessIcon(),
           const SizedBox(height: 24),
-          const Text(
-            'Summary Generated',
-            style: TextStyle(
+          Text(
+            _titleForAction(aiState.action),
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Color(0xFF004D40),
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Here is your AI generated summary.',
-            style: TextStyle(color: Colors.grey, fontSize: 14),
+          Text(
+            _subtitleForAction(aiState.action),
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
           ),
           const SizedBox(height: 32),
           Expanded(
@@ -158,7 +159,7 @@ class AIResultScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           AIButton(
-            text: 'Back to Form',
+            text: 'Applied ✓ — Back to Form',
             onPressed: () {
               ref.read(aiProvider.notifier).reset();
               context.go('/resume/form');
@@ -201,17 +202,35 @@ class AIResultScreen extends ConsumerWidget {
   Widget _buildSuccessIcon() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE0F2F1),
+      decoration: const BoxDecoration(
+        color: Color(0xFFE0F2F1),
         shape: BoxShape.circle,
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          const Icon(Icons.check_circle, color: Color(0xFF00796B), size: 48),
-          // Sparkles can be added as positioned icons
-        ],
+      child: const Icon(
+        Icons.check_circle,
+        color: Color(0xFF00796B),
+        size: 48,
       ),
     );
+  }
+
+  String _titleForAction(String? action) {
+    return switch (action) {
+      'generate_summary' => 'Summary Generated ✨',
+      'improve_section' => 'Section Improved ✨',
+      'suggest_skills' => 'Skills Suggested ✨',
+      'generate_bullets' => 'Bullets Generated ✨',
+      _ => 'AI Result',
+    };
+  }
+
+  String _subtitleForAction(String? action) {
+    return switch (action) {
+      'generate_summary' => 'Applied to your Summary section.',
+      'improve_section' => 'Applied to your Summary section.',
+      'suggest_skills' => 'Skills added to your Skills section.',
+      'generate_bullets' => 'Bullets added to your first experience.',
+      _ => 'Applied to your resume form.',
+    };
   }
 }

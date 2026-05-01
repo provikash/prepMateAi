@@ -198,6 +198,36 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
         .toList();
     state = state.copyWith(data: nextData);
   }
+
+  /// Pre-fills the basics section from the authenticated user's profile.
+  /// Only sets fields that are currently empty so it doesn't overwrite
+  /// anything the user has already typed.
+  void prefillFromProfile(Map<String, dynamic> profile) {
+    final current = basics;
+    final patch = <String, dynamic>{};
+
+    void setIfEmpty(String key, dynamic value) {
+      final existing = current[key];
+      if ((existing == null || existing.toString().trim().isEmpty) &&
+          value != null &&
+          value.toString().trim().isNotEmpty) {
+        patch[key] = value.toString().trim();
+      }
+    }
+
+    setIfEmpty('name', profile['full_name'] ?? profile['name']);
+    setIfEmpty('email', profile['email']);
+    setIfEmpty('phone', profile['phone'] ?? profile['phone_number']);
+    setIfEmpty('location', profile['location'] ?? profile['city']);
+    setIfEmpty('label', profile['job_title'] ?? profile['title']);
+    setIfEmpty('summary', profile['bio'] ?? profile['summary']);
+    setIfEmpty('linkedin', profile['linkedin']);
+    setIfEmpty('github', profile['github']);
+
+    if (patch.isNotEmpty) {
+      updateBasics(patch);
+    }
+  }
 }
 
 final resumeFormProvider =

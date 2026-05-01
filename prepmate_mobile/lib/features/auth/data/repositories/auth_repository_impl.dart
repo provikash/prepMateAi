@@ -18,8 +18,13 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<bool> signup(String name, String email, String password) {
-    return remote.signup(name, email, password);
+  Future<bool> signup(
+    String name,
+    String email,
+    String password,
+    String passwordConfirm,
+  ) {
+    return remote.signup(name, email, password, passwordConfirm);
   }
 
   @override

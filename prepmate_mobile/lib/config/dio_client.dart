@@ -22,8 +22,11 @@ final secureStorageProvider = Provider<FlutterSecureStorage>(
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
+
       // ⚠️  Change this to your environment-specific URL.
       baseUrl: 'http://10.176.105.1:8000/api/v1/',
+
+      // Change this based on your environment
       connectTimeout: const Duration(seconds: 12),
       receiveTimeout: const Duration(seconds: 12),
       headers: {

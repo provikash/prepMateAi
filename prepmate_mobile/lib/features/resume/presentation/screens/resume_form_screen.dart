@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
+import '../../../../features/auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../data/models/template_detail_model.dart';
 import '../providers/resume_providers.dart';
 import '../../../../core/providers/form_provider.dart';
@@ -21,6 +22,32 @@ class ResumeFormScreen extends ConsumerStatefulWidget {
 
 class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
   String? _appliedTemplateId;
+  bool _profilePrefilled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefill basics from profile on the very first build.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prefillProfile());
+  }
+
+  void _prefillProfile() {
+    if (_profilePrefilled) return;
+    final authState = ref.read(authViewModelProvider);
+    final user = authState.user;
+    if (user == null) return;
+    _profilePrefilled = true;
+    ref.read(resumeFormProvider.notifier).prefillFromProfile({
+      'name': user.fullName,
+      'email': user.email,
+      'phone': user.phoneNumber,
+      'location': user.location,
+      'job_title': user.title,
+      'bio': user.bio,
+      'linkedin': user.linkedin,
+      'github': user.github,
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

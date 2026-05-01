@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/storage.dart';
@@ -7,7 +8,7 @@ import '../providers/auth_provider.dart';
 import '../state/auth_state.dart';
 
 final authViewModelProvider = NotifierProvider<AuthViewModel, AuthState>(
-      () => AuthViewModel(),
+  () => AuthViewModel(),
 );
 
 final authProvider = authViewModelProvider;
@@ -70,7 +71,7 @@ class AuthViewModel extends Notifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: _normalizeAuthError(e),
       );
     }
   }
@@ -79,11 +80,17 @@ class AuthViewModel extends Notifier<AuthState> {
     required String name,
     required String email,
     required String password,
+    required String passwordConfirm,
   }) async {
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
-      final success = await _repository.signup(name, email, password);
+      final success = await _repository.signup(
+        name,
+        email,
+        password,
+        passwordConfirm,
+      );
 
       if (success) {
         state = state.copyWith(status: AuthStatus.success, email: email);
@@ -96,9 +103,25 @@ class AuthViewModel extends Notifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: _normalizeAuthError(e),
       );
     }
+  }
+
+  String _normalizeAuthError(Object error) {
+    if (error is DioException) {
+      final responseData = error.response?.data;
+      if (responseData != null) {
+        if (responseData is Map<String, dynamic>) {
+          return responseData.values
+              .expand((value) => value is Iterable ? value : [value])
+              .map((value) => value.toString())
+              .join(' ');
+        }
+        return responseData.toString();
+      }
+    }
+    return error.toString();
   }
 
   Future<void> verifyOtp(String email, String otp, String flow) async {
@@ -151,7 +174,10 @@ class AuthViewModel extends Notifier<AuthState> {
 
   Future<void> logout() async {
     await _repository.logout();
-    state = AuthState(status: AuthStatus.unauthenticated, hasCheckedSession: true);
+    state = AuthState(
+      status: AuthStatus.unauthenticated,
+      hasCheckedSession: true,
+    );
   }
 
   /// Fetches profile and validates token.
@@ -163,7 +189,9 @@ class AuthViewModel extends Notifier<AuthState> {
         state = state.copyWith(
           status: AuthStatus.authenticated,
           user: user,
-          hasCheckedSession: markSessionChecked ? true : state.hasCheckedSession,
+          hasCheckedSession: markSessionChecked
+              ? true
+              : state.hasCheckedSession,
           clearError: true,
         );
         return true;

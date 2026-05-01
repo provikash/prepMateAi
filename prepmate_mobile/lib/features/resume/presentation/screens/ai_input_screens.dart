@@ -98,10 +98,23 @@ class _GenerateSummaryInputScreenState
                 ref
                     .read(aiProvider.notifier)
                     .submitAIAction('generate_summary', {
-                      'job_role': _jobRoleController.text,
-                      'skills': _skillsController.text,
-                      'highlights': _highlightsController.text,
-                      'target_jd': _jdController.text,
+                      // Backend expects: role (str), skills (List<str>),
+                      // experience (List<str>), target_job_description (str)
+                      'role': _jobRoleController.text.trim(),
+                      'skills': _skillsController.text
+                          .split(',')
+                          .map((s) => s.trim())
+                          .where((s) => s.isNotEmpty)
+                          .toList(),
+                      'experience': _highlightsController.text.trim().isEmpty
+                          ? <String>[]
+                          : _highlightsController.text
+                              .split('\n')
+                              .map((s) => s.trim())
+                              .where((s) => s.isNotEmpty)
+                              .toList(),
+                      'target_job_description':
+                          _jdController.text.trim(),
                     });
               },
             ),
@@ -309,7 +322,11 @@ class _ImproveSectionInputScreenState
               onPressed: () {
                 ref.read(aiProvider.notifier).submitAIAction(
                   'improve_section',
-                  {'section': _selectedSection, 'text': _textController.text},
+                  {
+                    // Backend expects: section_name (str), text (str)
+                    'section_name': _selectedSection,
+                    'text': _textController.text.trim(),
+                  },
                 );
               },
             ),
@@ -498,8 +515,13 @@ class _SuggestSkillsInputScreenState
               isLoading: aiState.status == AIStatus.loading,
               onPressed: () {
                 ref.read(aiProvider.notifier).submitAIAction('suggest_skills', {
-                  'job_role': _roleController.text,
-                  'existing_skills': _skillsController.text,
+                  // Backend expects: role (str), existing_skills (List<str>)
+                  'role': _roleController.text.trim(),
+                  'existing_skills': _skillsController.text
+                      .split(',')
+                      .map((s) => s.trim())
+                      .where((s) => s.isNotEmpty)
+                      .toList(),
                 });
               },
             ),
@@ -654,7 +676,20 @@ class _GenerateBulletsInputScreenState
               onPressed: () {
                 ref.read(aiProvider.notifier).submitAIAction(
                   'generate_bullets',
-                  {'details': _detailsController.text},
+                  {
+                    // Backend expects: experience (List<{job_title, company, ...}>)
+                    'experience': [
+                      {
+                        'job_title': 'Role',
+                        'company': 'Company',
+                        'responsibilities': _detailsController.text
+                            .split('\n')
+                            .map((s) => s.trim())
+                            .where((s) => s.isNotEmpty)
+                            .toList(),
+                      }
+                    ],
+                  },
                 );
               },
             ),

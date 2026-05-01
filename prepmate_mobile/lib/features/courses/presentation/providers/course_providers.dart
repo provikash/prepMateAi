@@ -1,52 +1,171 @@
-// import 'dart:convert';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:url_launcher/url_launcher.dart';
-// import 'package:go_router/go_router.dart';
-// import '../../../../config/dio_client.dart';
-// import '../../data/models/course_model.dart';
-// import '../../data/repositories/course_repository_impl.dart';
-// import '../../domain/repositories/course_repository.dart';
-// import '../screens/pdf_viewer_screen.dart';
-// import '../screens/video_player_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import '../../../../config/dio_client.dart';
+import '../../../resume_analyzer/presentation/providers/resume_analyzer_providers.dart';
+import '../../data/models/ai_course_model.dart';
+import '../../data/repositories/course_repository.dart';
 
-// final courseRepositoryProvider = Provider<CourseRepository>((ref) {
-//   final dio = ref.watch(dioProvider);
-//   return CourseRepositoryImpl(dio);
-// });
+import 'package:prepmate_mobile/features/resume_analyzer/presentation/providers/resume_analyzer_providers.dart' show historyProvider;
 
-// final sharedPreferencesProvider = FutureProvider<SharedPreferences>((
-//   ref,
-// ) async {
-//   return await SharedPreferences.getInstance();
-// });
+// ────────────────────────────────────────────────
+// Repository Provider
+// ────────────────────────────────────────────────
 
-// final openedCoursesProvider =
-//     StateNotifierProvider<OpenedCoursesNotifier, Map<String, int>>((ref) {
-//       return OpenedCoursesNotifier(ref);
-//     });
+final courseRepositoryProvider = Provider<CourseRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return CourseRepository(dio: dio);
+});
 
-// class OpenedCoursesNotifier extends StateNotifier<Map<String, int>> {
-//   final Ref _ref;
-//   static const _key = 'opened_courses_progress';
+// ────────────────────────────────────────────────
+// State Notifiers
+// ────────────────────────────────────────────────
 
-//   OpenedCoursesNotifier(this._ref) : super({}) {
-//     _load();
-//   }
+class CourseRecommendationNotifier
+    extends AsyncNotifier<List<AICourse>> {
+  late CourseRepository _repository;
 
-//   Future<void> _load() async {
-//     final prefs = await _ref.read(sharedPreferencesProvider.future);
-//     final data = prefs.getString(_key);
-//     if (data != null) {
-//       try {
-//         final Map<String, dynamic> decoded = jsonDecode(data);
-//         state = decoded.map((key, value) => MapEntry(key, value as int));
-//       } catch (e) {
-//         state = {};
-//       }
-//     }
-//   }
+  @override
+  Future<List<AICourse>> build() async {
+    _repository = ref.watch(courseRepositoryProvider);
+    final skills = ref.watch(skillGapProvider);
+    if (skills.isEmpty) return [];
+    return _repository.getCourseRecommendations(skills: skills);
+  }
+
+  Future<void> fetchRecommendations(List<String> skills) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      return _repository.getCourseRecommendations(skills: skills);
+    });
+  }
+}
+
+/// Provider for course recommendations
+final courseRecommendationsProvider =
+    AsyncNotifierProvider<CourseRecommendationNotifier, List<AICourse>>(
+  () => CourseRecommendationNotifier(),
+);
+
+// ────────────────────────────────────────────────
+// Course Progress Providers
+// ────────────────────────────────────────────────
+
+class CourseProgressNotifier extends FamilyAsyncNotifier<CourseProgress, String> {
+  late CourseRepository _repository;
+
+  @override
+  Future<CourseProgress> build(String videoId) async {
+    _repository = ref.watch(courseRepositoryProvider);
+    return _repository.getCourseProgress(videoId: videoId);
+  }
+
+  Future<void> updateProgress({
+    required int watchedSeconds,
+    required int totalSeconds,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      return _repository.updateCourseProgress(
+        videoId: arg,
+        watchedSeconds: watchedSeconds,
+        totalSeconds: totalSeconds,
+      );
+    });
+  }
+
+  Future<void> refresh() async {
+    state = await AsyncValue.guard(() async {
+      return _repository.getCourseProgress(videoId: arg);
+    });
+  }
+}
+
+/// Provider for individual course progress
+final courseProgressProvider = AsyncNotifierProvider.family<
+    CourseProgressNotifier,
+    CourseProgress,
+    String>(() => CourseProgressNotifier());
+
+/// Provider for all course progress
+class AllCourseProgressNotifier extends AsyncNotifier<List<CourseProgress>> {
+  late CourseRepository _repository;
+
+  @override
+  Future<List<CourseProgress>> build() async {
+    _repository = ref.watch(courseRepositoryProvider);
+    return _repository.getAllCourseProgress();
+  }
+
+  Future<void> refresh() async {
+    state = await AsyncValue.guard(() async {
+      return _repository.getAllCourseProgress();
+    });
+  }
+}
+
+final allCourseProgressProvider =
+    AsyncNotifierProvider<AllCourseProgressNotifier, List<CourseProgress>>(
+  () => AllCourseProgressNotifier(),
+);
+
+// ────────────────────────────────────────────────
+// Skill Gap Data Provider (from Resume Analyzer)
+// ────────────────────────────────────────────────
+
+final skillGapProvider = Provider<List<String>>((ref) {
+  final historyAsync = ref.watch(historyProvider);
+  return historyAsync.when(
+    data: (history) {
+      if (history.isEmpty) return [];
+      // Take the most recent analysis
+      final latest = history.first;
+      final List<String> skills = [];
+      latest.missingSkills.values.forEach(skills.addAll);
+      return skills.take(5).toList(); // Take top 5 missing skills
+    },
+    loading: () => [],
+    error: (_, __) => [],
+  );
+});
+
+// ────────────────────────────────────────────────
+// Video Player State Provider
+// ────────────────────────────────────────────────
+
+class VideoPlayerStateNotifier extends StateNotifier<String?> {
+  VideoPlayerStateNotifier() : super(null);
+
+  void setCurrentVideoId(String videoId) {
+    state = videoId;
+  }
+
+  void clearCurrentVideo() {
+    state = null;
+  }
+}
+
+final currentVideoIdProvider =
+    StateNotifierProvider<VideoPlayerStateNotifier, String?>(
+  (ref) => VideoPlayerStateNotifier(),
+);
+
+// ────────────────────────────────────────────────
+// Continue Learning (Recently Started Videos)
+// ────────────────────────────────────────────────
+
+final continueLearningProvider = FutureProvider<List<AICourse>>((ref) async {
+  final allProgress = await ref.watch(allCourseProgressProvider.future);
+  final recommendations = await ref.watch(courseRecommendationsProvider.future);
+
+  // Filter to videos that have been started but not completed
+  final continuing = allProgress.where((p) => p.hasStarted && !p.isCompleted);
+
+  // Return corresponding course recommendations
+  return recommendations
+      .where((course) =>
+          continuing.any((p) => p.videoId == course.videoId))
+      .toList();
+  });
 
 //   Future<void> updateProgress(String id, int percentage) async {
 //     // Only update if progress has increased to avoid unnecessary writes

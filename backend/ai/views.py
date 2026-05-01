@@ -1,4 +1,8 @@
-from celery.result import AsyncResult
+try:
+	from celery.result import AsyncResult
+except Exception:
+	AsyncResult = None
+
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -99,6 +103,9 @@ class AIViewSet(viewsets.ViewSet):
 		)
 
 	def task_status(self, request, task_id=None):
+		if AsyncResult is None:
+			return Response({"detail": "Celery is not available in this environment."}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
 		result = AsyncResult(task_id)
 		state = result.state.lower()
 

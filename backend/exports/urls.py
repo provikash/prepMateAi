@@ -9,4 +9,9 @@ urlpatterns = [
         ResumeExportViewSet.as_view({"get": "export"}),
         name="resume-export",
     ),
+    path(
+        "templates/<uuid:template_id>/preview/",
+        ResumeExportViewSet.as_view({"post": "preview_template"}),
+        name="template-preview",
+    ),
 ]

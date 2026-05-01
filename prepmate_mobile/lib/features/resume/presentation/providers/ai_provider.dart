@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import '../../../../../config/dio_client.dart';
 import '../../../../../core/providers/form_provider.dart';
 
@@ -55,10 +54,18 @@ class AINotifier extends StateNotifier<AIState> {
     state = state.copyWith(status: AIStatus.loading, errorMessage: null);
 
     try {
-      // Convert action name from underscore to hyphen (e.g., generate_summary -> generate-summary)
+      // Convert action name from underscore to hyphen: generate_summary → generate-summary
       final normalizedAction = action.replaceAll('_', '-');
-      final response = await _dio.post('/ai/$normalizedAction/', data: data);
-      final taskId = response.data['task_id'];
+      final response = await _dio.post('ai/$normalizedAction/', data: data);
+      final taskId = response.data['task_id'] as String?;
+
+      if (taskId == null) {
+        state = state.copyWith(
+          status: AIStatus.error,
+          errorMessage: 'No task ID returned from server.',
+        );
+        return;
+      }
 
       state = state.copyWith(
         status: AIStatus.polling,
@@ -66,6 +73,11 @@ class AINotifier extends StateNotifier<AIState> {
         action: action,
       );
       _startPolling(taskId);
+    } on DioException catch (e) {
+      final detail = e.response?.data is Map
+          ? (e.response!.data as Map).toString()
+          : e.message;
+      state = state.copyWith(status: AIStatus.error, errorMessage: detail);
     } catch (e) {
       state = state.copyWith(
         status: AIStatus.error,
@@ -78,24 +90,31 @@ class AINotifier extends StateNotifier<AIState> {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
       try {
-        final response = await _dio.get('/ai/task/$taskId/');
-        final status = response.data['status'];
+        final response = await _dio.get('ai/tasks/$taskId/');
+        final data = response.data as Map<String, dynamic>;
+        // Celery task states: PENDING → STARTED → SUCCESS/FAILURE
+        // Our backend returns lowercase: 'success', 'failure', 'pending', etc.
+        final taskStatus = (data['status'] as String? ?? '').toLowerCase();
 
-        if (status == 'completed') {
+        if (taskStatus == 'success') {
           timer.cancel();
-          final result = response.data['result'];
+          final result = data['result'];
+          // Apply result directly into the resume form
           _applyResultToForm(state.action, result);
+          // Compute a clean string representation for the result screen
+          final displayResult = _extractDisplayString(state.action, result);
           state = state.copyWith(
             status: AIStatus.success,
-            result: result?.toString(),
+            result: displayResult,
           );
-        } else if (status == 'failed') {
+        } else if (taskStatus == 'failure' || taskStatus == 'failed') {
           timer.cancel();
           state = state.copyWith(
             status: AIStatus.error,
-            errorMessage: 'AI generation failed',
+            errorMessage: data['error']?.toString() ?? 'AI generation failed.',
           );
         }
+        // For 'pending' / 'started' / 'retry' — keep polling.
       } catch (e) {
         timer.cancel();
         state = state.copyWith(
@@ -106,63 +125,91 @@ class AINotifier extends StateNotifier<AIState> {
     });
   }
 
+  /// Extracts a human-readable string from the task result for the result screen.
+  String _extractDisplayString(String? action, dynamic result) {
+    if (result == null) return '';
+    if (result is String) return result;
+    if (result is Map) {
+      switch (action) {
+        case 'generate_summary':
+          return result['summary']?.toString() ?? result.toString();
+        case 'improve_section':
+          return result['improved_text']?.toString() ?? result.toString();
+        case 'suggest_skills':
+          final skills = result['skills'];
+          if (skills is List) return skills.join(', ');
+          return result.toString();
+        case 'generate_bullets':
+          final bullets = result['bullets'];
+          if (bullets is List) {
+            return bullets.map((b) => '• $b').join('\n');
+          }
+          return result.toString();
+      }
+    }
+    return result.toString();
+  }
+
   void reset() {
     _pollingTimer?.cancel();
     state = AIState();
   }
 
+  /// Applies the completed AI result directly into the resume form state.
   void _applyResultToForm(String? action, dynamic result) {
     if (action == null || result == null) return;
 
     final form = _ref.read(resumeFormProvider.notifier);
 
-    if (action == 'generate_summary') {
-      if (result is Map && result['summary'] != null) {
-        form.updateSummary(result['summary'].toString());
-      } else {
-        form.updateSummary(result.toString());
-      }
-      return;
-    }
+    switch (action) {
+      case 'generate_summary':
+        final summary = result is Map
+            ? result['summary']?.toString()
+            : result.toString();
+        if (summary != null && summary.isNotEmpty) {
+          form.updateSummary(summary);
+        }
 
-    if (action == 'improve_section') {
-      if (result is Map && result['improved_text'] != null) {
-        form.updateSummary(result['improved_text'].toString());
-      } else {
-        form.updateSummary(result.toString());
-      }
-      return;
-    }
+      case 'improve_section':
+        final improved = result is Map
+            ? result['improved_text']?.toString()
+            : result.toString();
+        if (improved != null && improved.isNotEmpty) {
+          form.updateSummary(improved);
+        }
 
-    if (action == 'suggest_skills') {
-      final skills = result is Map && result['skills'] is List
-          ? List<String>.from(result['skills'] as List)
-          : result is List
-          ? List<String>.from(result)
-          : <String>[];
-      for (final skill in skills) {
-        form.addSkill(skill);
-      }
-      return;
-    }
+      case 'suggest_skills':
+        final skills = result is Map && result['skills'] is List
+            ? List<String>.from(result['skills'] as List)
+            : result is List
+            ? List<String>.from(result)
+            : <String>[];
+        for (final skill in skills) {
+          form.addSkill(skill);
+        }
 
-    if (action == 'generate_bullets') {
-      final bullets = result is Map && result['bullets'] is List
-          ? List<String>.from(result['bullets'] as List)
-          : result is List
-          ? List<String>.from(result)
-          : <String>[];
-      final items = form.experienceItems;
-      if (items.isEmpty) {
-        form.addExperience();
-      }
-      final current = form.experienceItems;
-      if (current.isEmpty) return;
-      final first = Map<String, dynamic>.from(current.first);
-      final existing = List<String>.from(first['bullets'] as List? ?? const []);
-      existing.addAll(bullets);
-      first['bullets'] = existing;
-      form.updateExperience(0, first);
+      case 'generate_bullets':
+        final bullets = result is Map && result['bullets'] is List
+            ? List<String>.from(result['bullets'] as List)
+            : result is List
+            ? List<String>.from(result)
+            : <String>[];
+
+        if (bullets.isEmpty) return;
+
+        // Append bullets to the first experience entry, adding one if empty.
+        if (form.experienceItems.isEmpty) {
+          form.addExperience();
+        }
+        final items = form.experienceItems;
+        if (items.isEmpty) return;
+        final first = Map<String, dynamic>.from(items.first);
+        final existing = List<String>.from(
+          first['bullets'] as List? ?? const [],
+        );
+        existing.addAll(bullets);
+        first['bullets'] = existing;
+        form.updateExperience(0, first);
     }
   }
 

@@ -164,15 +164,11 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colors.cardBackground,
                       borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      boxShadow: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkShadow
+                          : AppTheme.lightShadow,
                     ),
                     child: Column(
                       children: [
@@ -180,7 +176,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                           children: [
                             CircleAvatar(
                               radius: 50,
-                              backgroundColor: Colors.grey.shade200,
+                              backgroundColor: colors.mutedBackground,
                               backgroundImage: user?.profileImage != null
                                   ? NetworkImage(user!.profileImage!)
                                   : const AssetImage(
@@ -200,7 +196,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                                     color: colors.primary,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Colors.white,
+                                      color: colors.cardBackground,
                                       width: 2,
                                     ),
                                   ),
@@ -234,9 +230,9 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.location_on,
-                              color: Color(0xFF667085),
+                              color: colors.textSecondary,
                               size: 18,
                             ),
                             const SizedBox(width: 4),
@@ -254,135 +250,56 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  _buildLabel('Full Name'),
+                  _buildLabel('Full Name', colors),
                   _buildTextField(
                     controller: _nameController,
                     hint: 'Enter your full name',
+                    colors: colors,
                   ),
 
-                  _buildLabel('Email Address'),
+                  _buildLabel('Email Address', colors),
                   _buildTextField(
                     controller: _emailController,
                     enabled: false,
                     hint: 'email@example.com',
+                    colors: colors,
                   ),
 
-                  _buildLabel('Phone Number'),
+                  _buildLabel('Phone Number', colors),
                   _buildTextField(
                     controller: _phoneController,
                     hint: '+1 123 456 7890',
+                    colors: colors,
                   ),
 
-                  _buildLabel('Location'),
-                  _buildDropdownField(),
+                  _buildLabel('Location', colors),
+                  _buildTextField(
+                    controller: _locationController,
+                    hint: ' Enter your Adderss',
+                    colors: colors,
+                  ),
 
-                  _buildLabel('Linkedin / Portfolio'),
+                  _buildLabel('Linkedin / Portfolio', colors),
                   _buildTextField(
                     controller: _linkedinController,
                     hint: 'linkedin.com/in/username',
+                    colors: colors,
                   ),
 
-                  _buildLabel('GitHub'),
+                  _buildLabel('GitHub', colors),
                   _buildTextField(
                     controller: _githubController,
                     hint: 'github.com/username',
+                    colors: colors,
                   ),
 
-                  _buildLabel('Job Title'),
-                  _buildTextField(
-                    controller: _jobTitleController,
-                    hint: 'Software Engineer',
-                  ),
+
 
                   const SizedBox(height: 12),
                   // Skills & Bio Container
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Skills',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Color(0xFF1D2939),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _skills
-                              .map((skill) => _buildSkillChip(skill))
-                              .toList(),
-                        ),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: _bioController,
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            hintText: 'Write a short bio about yourself...',
-                            hintStyle: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 14,
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade100,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade100,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+
 
                   // Skills Add Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Skills',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color(0xFF1D2939),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _showAddSkillDialog,
-                        icon: const Icon(
-                          Icons.add,
-                          size: 20,
-                          color: Color(0xFF246BFD),
-                        ),
-                        label: const Text(
-                          'Add Skill',
-                          style: TextStyle(
-                            color: Color(0xFF246BFD),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 32),
 
                   // Action Buttons
@@ -420,12 +337,12 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        side: BorderSide(color: Colors.grey.shade300),
+                        side: BorderSide(color: colors.border),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Cancel',
                         style: TextStyle(
-                          color: Color(0xFF1D2939),
+                          color: colors.textPrimary,
                           fontWeight: FontWeight.w500,
                           fontSize: 16,
                         ),
@@ -442,15 +359,15 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, AppColors colors) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, top: 4),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 15,
-          color: Color(0xFF1D2939),
+          color: colors.textPrimary,
         ),
       ),
     );
@@ -460,47 +377,49 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     required TextEditingController controller,
     bool enabled = true,
     String? hint,
+    required AppColors colors,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
       child: TextFormField(
         controller: controller,
         enabled: enabled,
+        style: TextStyle(color: colors.textPrimary),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade400),
+          hintStyle: TextStyle(color: colors.textSecondary.withOpacity(0.5)),
           filled: true,
-          fillColor: enabled ? Colors.white : const Color(0xFFF2F4F7),
+          fillColor: enabled ? colors.cardBackground : colors.mutedBackground,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 16,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200),
+            borderSide: BorderSide(color: colors.border),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200),
+            borderSide: BorderSide(color: colors.border),
           ),
           disabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade100),
+            borderSide: BorderSide(color: colors.border.withOpacity(0.5)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDropdownField() {
+  Widget _buildDropdownField(AppColors colors) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.cardBackground,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: colors.border),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
@@ -508,8 +427,10 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                 ? null
                 : _locationController.text,
             isExpanded: true,
-            hint: const Text('Select Location'),
-            icon: const Icon(Icons.keyboard_arrow_down),
+            hint: Text('Select Location', style: TextStyle(color: colors.textSecondary)),
+            icon: Icon(Icons.keyboard_arrow_down, color: colors.textSecondary),
+            dropdownColor: colors.cardBackground,
+            style: TextStyle(color: colors.textPrimary),
             items: [
               'San Francisco, CA',
               'New York, NY',
@@ -527,11 +448,11 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
     );
   }
 
-  Widget _buildSkillChip(String skill) {
+  Widget _buildSkillChip(String skill, AppColors colors) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F5FF),
+        color: colors.primarySoft,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -539,8 +460,8 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
         children: [
           Text(
             skill,
-            style: const TextStyle(
-              color: Color(0xFF246BFD),
+            style: TextStyle(
+              color: colors.primary,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -552,7 +473,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                 _skills.remove(skill);
               });
             },
-            child: const Icon(Icons.close, size: 14, color: Color(0xFF246BFD)),
+            child: Icon(Icons.close, size: 14, color: colors.primary),
           ),
         ],
       ),

@@ -5,7 +5,12 @@ abstract class AuthRepository {
 
   Future<User?> signInWithGoogle();
 
-  Future<bool> signup(String name, String email, String password);
+  Future<bool> signup(
+    String name,
+    String email,
+    String password,
+    String passwordConfirm,
+  );
 
   Future<bool> verifyOtp(String email, String otp, String flow);
 
