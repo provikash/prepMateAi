@@ -1,0 +1,368 @@
+prepMateAi/
+├── .gitignore
+├── LICENSE
+├── README.md
+├── backend
+│   ├── .env
+│   ├── ai
+│   │   ├── __init__.py
+│   │   ├── apps.py
+│   │   ├── prompts
+│   │   │   ├── __init__.py
+│   │   │   ├── generate_bullets.txt
+│   │   │   ├── improve_section.txt
+│   │   │   ├── suggest_skills.txt
+│   │   │   ├── summary.txt
+│   │   │   ├── test_resume_extracted.txt
+│   │   │   ├── test_resume_page_1.png
+│   │   │   └── vikash_template_page_1.png
+│   │   ├── serializers.py
+│   │   ├── services
+│   │   │   ├── __init__.py
+│   │   │   ├── ai_service.py
+│   │   │   ├── exceptions.py
+│   │   │   └── prompt_builder.py
+│   │   ├── tasks.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── backup_full_2026-04-24.json
+│   ├── backup_postgres_2026-04-25_002001.json
+│   ├── backup_safe_2026-04-24.clean.json
+│   ├── backup_safe_2026-04-24.json
+│   ├── backup_safe_2026-04-24.utf8.json
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── asgi.py
+│   │   ├── celery.py
+│   │   ├── models.py
+│   │   ├── pagination.py
+│   │   ├── permissions.py
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   ├── course_recommendations
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── migrations
+│   │   │   └── __init__.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── services
+│   │   │   ├── __init__.py
+│   │   │   ├── scoring.py
+│   │   │   └── youtube_service.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── courses_ai
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   └── __init__.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── services
+│   │   │   ├── scoring.py
+│   │   │   └── youtube_service.py
+│   │   ├── tests.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── db.sqlite3
+│   ├── db.sqlite3.bak_2026-04-24
+│   ├── env
+│   │   ├── .gitignore
+│   │   ├── Include
+│   │   ├── Lib
+│   │   │   └── site-packages
+│   │   ├── Scripts
+│   │   │   ├── Activate.ps1
+│   │   │   ├── activate
+│   │   │   ├── activate.bat
+│   │   │   ├── activate.fish
+│   │   │   ├── celery.exe
+│   │   │   ├── deactivate.bat
+│   │   │   ├── django-admin.exe
+│   │   │   ├── dotenv.exe
+│   │   │   ├── fonttools.exe
+│   │   │   ├── normalizer.exe
+│   │   │   ├── pip.exe
+│   │   │   ├── pip3.14.exe
+│   │   │   ├── pip3.exe
+│   │   │   ├── pipreqs.exe
+│   │   │   ├── pyftmerge.exe
+│   │   │   ├── pyftsubset.exe
+│   │   │   ├── python.exe
+│   │   │   ├── pythonw.exe
+│   │   │   ├── sqlformat.exe
+│   │   │   ├── ttx.exe
+│   │   │   └── weasyprint.exe
+│   │   ├── pyvenv.cfg
+│   │   └── share
+│   │       └── man
+│   ├── exports
+│   │   ├── apps.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── services
+│   │   │   └── pdf_service.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── manage.py
+│   ├── media
+│   │   └── users
+│   │       └── profile_images
+│   ├── requirements.txt
+│   ├── resume
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   ├── 0002_alter_resume_template.py
+│   │   │   ├── 0003_alter_resume_template.py
+│   │   │   ├── 0004_alter_resume_template.py
+│   │   │   ├── 0005_alter_resume_template.py
+│   │   │   ├── 0006_resumetemplate_alter_resume_options_and_more.py
+│   │   │   ├── 0007_rename_schema_to_html_structure.py
+│   │   │   ├── 0008_alter_resumetemplate_html_structure.py
+│   │   │   ├── 0009_fix_legacy_resume_uuid_values.py
+│   │   │   ├── 0010_add_professional_html_template.py
+│   │   │   ├── 0011_add_vikash_flutter_template.py
+│   │   │   ├── 0012_update_vikash_template_quality.py
+│   │   │   ├── 0013_refactor_vikash_template_structure.py
+│   │   │   ├── 0014_resume_metadata_resume_pdf_file_resume_thumbnail_and_more.py
+│   │   │   ├── 0015_add_modern_json_resume_template.py
+│   │   │   └── __init__.py
+│   │   ├── models.py
+│   │   ├── rendering.py
+│   │   ├── serializers.py
+│   │   ├── services.py
+│   │   ├── tests.py
+│   │   ├── thumbnail_utils.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── resume_analyzer
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── ai_engine.py
+│   │   ├── analysis_service.py
+│   │   ├── apps.py
+│   │   ├── ats_engine.py
+│   │   ├── constants.py
+│   │   ├── contact_validator.py
+│   │   ├── formatter.py
+│   │   ├── keyword_engine.py
+│   │   ├── migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   └── __init__.py
+│   │   ├── models.py
+│   │   ├── parser.py
+│   │   ├── serializers.py
+│   │   ├── skill_gap_engine.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── templates
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── migrations
+│   │   │   ├── 0001_initial.py
+│   │   │   └── __init__.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── tests.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   └── users
+│       ├── __init__.py
+│       ├── admin.py
+│       ├── apps.py
+│       ├── management
+│       │   └── commands
+│       ├── migrations
+│       │   ├── 0001_initial.py
+│       │   ├── 0002_otp_alter_user_managers_user_is_verified_and_more.py
+│       │   ├── 0003_alter_user_is_active.py
+│       │   ├── 0004_alter_user_managers_user_avatar_url_user_full_name_and_more.py
+│       │   ├── 0005_alter_user_full_name.py
+│       │   ├── 0006_rename_full_name_to_name.py
+│       │   ├── 0007_delete_otp_alter_user_managers.py
+│       │   ├── 0008_userprofile.py
+│       │   └── __init__.py
+│       ├── models.py
+│       ├── profile_urls.py
+│       ├── serializers.py
+│       ├── services.py
+│       ├── signals.py
+│       ├── urls.py
+│       ├── utils.py
+│       └── views.py
+├── db.sqlite3
+├── et --hard
+├── generate.py
+├── prepmate_mobile
+│   ├── .flutter-plugins-dependencies
+│   ├── .gitignore
+│   ├── .metadata
+│   ├── README.md
+│   ├── analysis_options.yaml
+│   ├── android
+│   │   ├── .gitignore
+│   │   ├── .gradle
+│   │   │   ├── 8.12
+│   │   │   ├── buildOutputCleanup
+│   │   │   ├── file-system.probe
+│   │   │   ├── noVersion
+│   │   │   └── vcs-1
+│   │   ├── .kotlin
+│   │   │   └── sessions
+│   │   ├── app
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src
+│   │   ├── build.gradle.kts
+│   │   ├── gradle
+│   │   │   └── wrapper
+│   │   ├── gradle.properties
+│   │   ├── gradlew
+│   │   ├── gradlew.bat
+│   │   ├── local.properties
+│   │   └── settings.gradle.kts
+│   ├── assets
+│   │   ├── fonts
+│   │   │   ├── Poppins-Bold.ttf
+│   │   │   ├── Poppins-Medium.ttf
+│   │   │   ├── Poppins-Regular.ttf
+│   │   │   └── Poppins-SemiBold.ttf
+│   │   ├── images
+│   │   │   ├── headerText.svg
+│   │   │   └── otp.png
+│   │   └── logos
+│   │       └── light_1024.png
+│   ├── devtools_options.yaml
+│   ├── flutter_01.png
+│   ├── ios
+│   │   ├── .gitignore
+│   │   ├── Flutter
+│   │   │   ├── AppFrameworkInfo.plist
+│   │   │   ├── Debug.xcconfig
+│   │   │   ├── Generated.xcconfig
+│   │   │   ├── Release.xcconfig
+│   │   │   ├── ephemeral
+│   │   │   └── flutter_export_environment.sh
+│   │   ├── Runner
+│   │   │   ├── AppDelegate.swift
+│   │   │   ├── Assets.xcassets
+│   │   │   ├── Base.lproj
+│   │   │   ├── GeneratedPluginRegistrant.h
+│   │   │   ├── GeneratedPluginRegistrant.m
+│   │   │   ├── Info.plist
+│   │   │   └── Runner-Bridging-Header.h
+│   │   ├── Runner.xcodeproj
+│   │   │   ├── project.pbxproj
+│   │   │   ├── project.xcworkspace
+│   │   │   └── xcshareddata
+│   │   ├── Runner.xcworkspace
+│   │   │   ├── contents.xcworkspacedata
+│   │   │   └── xcshareddata
+│   │   └── RunnerTests
+│   │       └── RunnerTests.swift
+│   ├── lib
+│   │   ├── config
+│   │   │   ├── app_router.dart
+│   │   │   ├── dio_client.dart
+│   │   │   └── theme.dart
+│   │   ├── constants
+│   │   │   └── assets.dart
+│   │   ├── core
+│   │   │   ├── services
+│   │   │   ├── utils
+│   │   │   └── widgets
+│   │   ├── features
+│   │   │   ├── auth
+│   │   │   ├── courses
+│   │   │   ├── home
+│   │   │   ├── interview
+│   │   │   ├── profile
+│   │   │   ├── resume
+│   │   │   ├── resume_analyzer
+│   │   │   └── splash
+│   │   └── main.dart
+│   ├── linux
+│   │   ├── .gitignore
+│   │   ├── CMakeLists.txt
+│   │   ├── flutter
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── ephemeral
+│   │   │   ├── generated_plugin_registrant.cc
+│   │   │   ├── generated_plugin_registrant.h
+│   │   │   └── generated_plugins.cmake
+│   │   └── runner
+│   │       ├── CMakeLists.txt
+│   │       ├── main.cc
+│   │       ├── my_application.cc
+│   │       └── my_application.h
+│   ├── macos
+│   │   ├── .gitignore
+│   │   ├── Flutter
+│   │   │   ├── Flutter-Debug.xcconfig
+│   │   │   ├── Flutter-Release.xcconfig
+│   │   │   ├── GeneratedPluginRegistrant.swift
+│   │   │   └── ephemeral
+│   │   ├── Runner
+│   │   │   ├── AppDelegate.swift
+│   │   │   ├── Assets.xcassets
+│   │   │   ├── Base.lproj
+│   │   │   ├── Configs
+│   │   │   ├── DebugProfile.entitlements
+│   │   │   ├── Info.plist
+│   │   │   ├── MainFlutterWindow.swift
+│   │   │   └── Release.entitlements
+│   │   ├── Runner.xcodeproj
+│   │   │   ├── project.pbxproj
+│   │   │   ├── project.xcworkspace
+│   │   │   └── xcshareddata
+│   │   ├── Runner.xcworkspace
+│   │   │   ├── contents.xcworkspacedata
+│   │   │   └── xcshareddata
+│   │   └── RunnerTests
+│   │       └── RunnerTests.swift
+│   ├── pubspec.lock
+│   ├── pubspec.yaml
+│   ├── tmp_template_detail.json
+│   ├── web
+│   │   ├── favicon.png
+│   │   ├── icons
+│   │   │   ├── Icon-192.png
+│   │   │   ├── Icon-512.png
+│   │   │   ├── Icon-maskable-192.png
+│   │   │   └── Icon-maskable-512.png
+│   │   ├── index.html
+│   │   └── manifest.json
+│   └── windows
+│       ├── .gitignore
+│       ├── CMakeLists.txt
+│       ├── flutter
+│       │   ├── CMakeLists.txt
+│       │   ├── ephemeral
+│       │   ├── generated_plugin_registrant.cc
+│       │   ├── generated_plugin_registrant.h
+│       │   └── generated_plugins.cmake
+│       └── runner
+│           ├── CMakeLists.txt
+│           ├── Runner.rc
+│           ├── flutter_window.cpp
+│           ├── flutter_window.h
+│           ├── main.cpp
+│           ├── resource.h
+│           ├── resources
+│           ├── utils.cpp
+│           ├── utils.h
+│           ├── win32_window.cpp
+│           └── win32_window.h
+├── prepmateai_db.dump
+├── pyproject.toml
+├── replit.md
+├── structure.txt
+└── test.txt
