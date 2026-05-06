@@ -35,7 +35,7 @@ class _GenerateSummaryInputScreenState
     final colors = AppColors.of(context);
 
     ref.listen(aiProvider, (previous, next) {
-      if (next.status == AIStatus.polling) {
+      if (next.status == AIStatus.loading && previous?.status != AIStatus.loading) {
         context.push('/resume/ai-result');
       }
     });
@@ -257,7 +257,9 @@ class _ImproveSectionInputScreenState
     final colors = AppColors.of(context);
 
     ref.listen(aiProvider, (previous, next) {
-      if (next.status == AIStatus.polling) context.push('/resume/ai-result');
+      if (next.status == AIStatus.loading && previous?.status != AIStatus.loading) {
+        context.push('/resume/ai-result');
+      }
     });
 
     return Scaffold(
@@ -446,7 +448,9 @@ class _SuggestSkillsInputScreenState
     final aiState = ref.watch(aiProvider);
     final colors = AppColors.of(context);
     ref.listen(aiProvider, (previous, next) {
-      if (next.status == AIStatus.polling) context.push('/resume/ai-result');
+      if (next.status == AIStatus.loading && previous?.status != AIStatus.loading) {
+        context.push('/resume/ai-result');
+      }
     });
 
     return Scaffold(
@@ -611,7 +615,9 @@ class _GenerateBulletsInputScreenState
     final aiState = ref.watch(aiProvider);
     final colors = AppColors.of(context);
     ref.listen(aiProvider, (previous, next) {
-      if (next.status == AIStatus.polling) context.push('/resume/ai-result');
+      if (next.status == AIStatus.loading && previous?.status != AIStatus.loading) {
+        context.push('/resume/ai-result');
+      }
     });
 
     return Scaffold(

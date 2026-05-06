@@ -283,19 +283,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               Icons.lock_outline,
                               color: colors.primary,
                             ),
+                            isPassword: true,
                             controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            suffix: IconButton(
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                color: colors.textSecondary,
-                              ),
-                            ),
+                          
+            
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter a password';
@@ -315,20 +306,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               Icons.lock_outline,
                               color: colors.primary,
                             ),
+                            isPassword: true,
                             controller: _confirmPasswordController,
-                            obscureText: _obscureConfirmPassword,
-                            suffix: IconButton(
-                              onPressed: () => setState(
-                                () => _obscureConfirmPassword =
-                                    !_obscureConfirmPassword,
-                              ),
-                              icon: Icon(
-                                _obscureConfirmPassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                color: colors.textSecondary,
-                              ),
-                            ),
+  
+                    
+                             
+                            
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please confirm your password';

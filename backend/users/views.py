@@ -13,12 +13,14 @@ from resume_analyzer.models import ResumeAnalysis
 
 from .serializers import (
     DashboardSerializer,
+    GoogleAuthSerializer,
     LoginSerializer,
     RegisterSerializer,
     UserProfileSerializer,
     UserSummarySerializer,
 )
 from .services import AuthService
+from .services.google_oauth import GoogleTokenError, verify_google_id_token
 from .models import UserProfile
 
 logger = logging.getLogger(__name__)
@@ -87,43 +89,27 @@ class GoogleAuthView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        from django.contrib.auth import get_user_model
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        # Accept both "id_token" and "token" so the Flutter client is flexible.
-        id_token = (
-            request.data.get("id_token")
-            or request.data.get("token")
-        )
-
-        if not id_token:
-            return Response(
-                {"detail": "id_token is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Verify the token with Google.
         try:
-            from google.oauth2 import id_token as google_id_token
-            from google.auth.transport import requests as google_requests
-
-            idinfo = google_id_token.verify_firebase_token(
-                id_token, google_requests.Request()
+            idinfo = verify_google_id_token(serializer.validated_data["id_token"])
+        except GoogleTokenError as exc:
+            logger.warning("Google token verification failed: %s", exc)
+            return Response(
+                {"detail": "Invalid or expired Google token."},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
-        except Exception:
-            # Fallback: treat the token as an opaque bearer and try decoding
-            # without audience verification (useful in local dev environments).
-            try:
-                import google.auth.jwt as google_jwt
-                idinfo = google_jwt.decode(id_token, certs_url=None, verify=False)
-            except Exception as exc:
-                logger.warning("Google token verification failed: %s", exc)
-                return Response(
-                    {"detail": "Invalid Google token."},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+        except Exception as exc:
+            logger.exception("Unexpected Google token verification error: %s", exc)
+            return Response(
+                {"detail": "Could not verify Google token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         email = idinfo.get("email", "").strip().lower()
         name = idinfo.get("name", "") or idinfo.get("email", "").split("@")[0]
+        picture = idinfo.get("picture") or ""
 
         if not email:
             return Response(
@@ -131,26 +117,32 @@ class GoogleAuthView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        from django.contrib.auth import get_user_model
+
         User = get_user_model()
 
-        try:
-            user = User.objects.get(email=email)
-            created = False
-        except User.DoesNotExist:
-            # Create a new user without a usable password (Google auth only).
-            user = User.objects.create_user(
-                email=email,
-                password=None,  # sets unusable password
-                name=name,
-            )
-            user.is_verified = True
-            user.save(update_fields=["is_verified"])
-            created = True
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "name": name,
+                "avatar_url": picture,
+                "is_verified": True,
+            },
+        )
 
-        # Back-fill the name if it was missing.
-        if not created and not user.name:
+        updates = []
+        if not user.name and name:
             user.name = name
-            user.save(update_fields=["name"])
+            updates.append("name")
+        if picture and not user.avatar_url:
+            user.avatar_url = picture
+            updates.append("avatar_url")
+        if not user.is_verified:
+            user.is_verified = True
+            updates.append("is_verified")
+
+        if updates:
+            user.save(update_fields=updates)
 
         tokens = AuthService.issue_tokens(user)
 

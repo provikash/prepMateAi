@@ -16,20 +16,51 @@ class ResumeValidationService:
 
         normalized = copy.deepcopy(data)
 
+        # ── Bridge JSON Resume `basics` object (sent by Flutter) into our internal
+        # `personal_info` key so all downstream code can rely on personal_info.
+        basics = normalized.get("basics")
+        if isinstance(basics, dict):
+            # Merge basics into personal_info, not overwriting existing personal_info keys.
+            existing_pi = normalized.get("personal_info")
+            if not isinstance(existing_pi, dict):
+                existing_pi = {}
+            location_raw = basics.get("location", {})
+            location_city = (
+                location_raw.get("city", "") if isinstance(location_raw, dict)
+                else str(location_raw)
+            )
+            profiles = ResumeValidationService._normalize_profiles(basics.get("profiles", []))
+            merged = {
+                "name": basics.get("name", ""),
+                "label": basics.get("label", ""),
+                "email": basics.get("email", ""),
+                "phone": basics.get("phone", ""),
+                "summary": basics.get("summary", ""),
+                "url": basics.get("url", ""),
+                "location": location_city,
+                "profiles": profiles,
+            }
+            merged.update({k: v for k, v in existing_pi.items() if v})
+            normalized["personal_info"] = merged
+            # Also keep basics intact so templates using resume.basics.* work directly.
+
         personal_info = normalized.get("personal_info")
         if not isinstance(personal_info, dict):
             personal_info = {}
 
         top_level_personal_fields = {
             "name": normalized.get("name", personal_info.get("name", "")),
-            "role": normalized.get("role", personal_info.get("role", "")),
+            "label": normalized.get("label", personal_info.get("label", "")),
+            "role": normalized.get("role", personal_info.get("role", personal_info.get("label", ""))),
             "phone": normalized.get("phone", personal_info.get("phone", "")),
             "email": normalized.get("email", personal_info.get("email", "")),
             "website": normalized.get("website", personal_info.get("website", "")),
             "url": normalized.get("url", personal_info.get("url", "")),
             "location": normalized.get("location", personal_info.get("location", "")),
             "image": normalized.get("image", personal_info.get("image", "")),
-            "profiles": normalized.get("profiles", personal_info.get("profiles", [])),
+            "profiles": ResumeValidationService._normalize_profiles(
+                normalized.get("profiles", personal_info.get("profiles", []))
+            ),
             "linkedin": normalized.get("linkedin", personal_info.get("linkedin", "")),
             "linkedin_url": normalized.get("linkedin_url", personal_info.get("linkedin_url", "")),
             "github": normalized.get("github", personal_info.get("github", "")),
@@ -49,6 +80,7 @@ class ResumeValidationService:
 
         normalized["personal_info"] = top_level_personal_fields
 
+        # Bridge JSON Resume `work` → internal `experience` list.
         if isinstance(normalized.get("work"), list) and not normalized.get("experience"):
             normalized["experience"] = normalized["work"]
 
@@ -62,34 +94,8 @@ class ResumeValidationService:
             skill_groups = {}
 
         if isinstance(skills, list) and skills:
-            cleaned_skills = []
-            skill_items = []
-            for item in skills:
-                if isinstance(item, str) and item.strip():
-                    cleaned_skills.append(item.strip())
-                    skill_items.append(item.strip())
-                elif isinstance(item, dict):
-                    name = str(item.get("name", "")).strip()
-                    level = str(item.get("level", "")).strip()
-                    keywords = item.get("keywords") or []
-                    if isinstance(keywords, str):
-                        keywords = [part.strip() for part in keywords.split(",") if part.strip()]
-                    if not isinstance(keywords, list):
-                        keywords = []
-                    cleaned_keywords = [
-                        keyword.strip() for keyword in keywords if isinstance(keyword, str) and keyword.strip()
-                    ]
-                    if name or level or cleaned_keywords:
-                        skill_items.append(
-                            {
-                                "name": name,
-                                "level": level,
-                                "keywords": cleaned_keywords,
-                            }
-                        )
-                        if name:
-                            cleaned_skills.append(name)
-            cleaned_skills = cleaned_skills or []
+            skill_items = ResumeValidationService._normalize_skill_entries(skills)
+            cleaned_skills = [item["name"] for item in skill_items if item.get("name")]
             normalized["skills"] = skill_items
         else:
             cleaned_skills = []
@@ -119,8 +125,13 @@ class ResumeValidationService:
         if not any(canonical_skill_groups.values()) and cleaned_skills:
             canonical_skill_groups["programming_languages"] = ", ".join(cleaned_skills)
 
-        if not isinstance(normalized.get("skills"), list) or not normalized["skills"]:
-            normalized["skills"] = cleaned_skills or cleaned_skills_from_skill_groups(canonical_skill_groups)
+        # Preserve JSON Resume skills list format (list of {name, keywords}) if already set.
+        existing_skills = normalized.get("skills")
+        if not isinstance(existing_skills, list) or not existing_skills:
+            normalized["skills"] = ResumeValidationService._skill_entries_from_skill_groups(
+                canonical_skill_groups,
+                cleaned_skills,
+            )
         normalized["skill_groups"] = canonical_skill_groups
 
         normalized["certifications"] = ResumeValidationService._normalize_certifications(
@@ -203,7 +214,9 @@ class ResumeValidationService:
                     ).strip(),
                     "bullets": cleaned_bullets,
                     "source_code": str(item.get("source_code", item.get("website", item.get("link", "")))).strip(),
+                    "url": str(item.get("url", item.get("source_code", item.get("website", item.get("link", ""))))).strip(),
                     "description": description or str(item.get("summary", "")).strip(),
+                    "highlights": cleaned_bullets,
                 }
             )
 
@@ -254,7 +267,13 @@ class ResumeValidationService:
             if not isinstance(item, dict):
                 continue
 
-            details = item.get("details") or item.get("responsibilities") or item.get("bullets") or []
+            details = (
+                item.get("details")
+                or item.get("highlights")
+                or item.get("responsibilities")
+                or item.get("bullets")
+                or []
+            )
             if isinstance(details, str):
                 details = [details]
             if not isinstance(details, list):
@@ -277,8 +296,10 @@ class ResumeValidationService:
                         )
                     ).strip(),
                     "location": str(item.get("location", "")).strip(),
+                    "summary": str(item.get("summary", item.get("description", ""))).strip(),
                     "details": cleaned_details,
                     "responsibilities": cleaned_details,
+                    "highlights": cleaned_details,
                     "technologies": [
                         technology.strip()
                         for technology in (item.get("technologies") or [])
@@ -330,6 +351,90 @@ class ResumeValidationService:
                 normalized.append({"name": item.strip(), "level": ""})
 
         return normalized
+
+    @staticmethod
+    def _normalize_profiles(value):
+        if not isinstance(value, list):
+            if isinstance(value, str) and value.strip():
+                return [{"network": "", "username": value.strip(), "url": ""}]
+            return []
+
+        normalized = []
+        for item in value:
+            if isinstance(item, dict):
+                network = str(item.get("network", "")).strip()
+                username = str(item.get("username", "")).strip()
+                url = str(item.get("url", "")).strip()
+                if network or username or url:
+                    normalized.append({"network": network, "username": username, "url": url})
+            elif isinstance(item, str) and item.strip():
+                normalized.append({"network": "", "username": item.strip(), "url": ""})
+
+        return normalized
+
+    @staticmethod
+    def _normalize_skill_entries(value):
+        if not isinstance(value, list):
+            return []
+
+        normalized = []
+        for item in value:
+            if isinstance(item, str):
+                name = item.strip()
+                if name:
+                    normalized.append({"name": name, "level": "", "keywords": []})
+                continue
+
+            if not isinstance(item, dict):
+                continue
+
+            name = str(item.get("name", "")).strip()
+            level = str(item.get("level", "")).strip()
+            keywords = ResumeValidationService._normalize_keywords(item.get("keywords"))
+            if name or level or keywords:
+                normalized.append(
+                    {
+                        "name": name,
+                        "level": level,
+                        "keywords": keywords,
+                    }
+                )
+
+        return normalized
+
+    @staticmethod
+    def _skill_entries_from_skill_groups(skill_groups, fallback_names=None):
+        fallback_names = fallback_names or []
+        entries = []
+
+        for value in skill_groups.values():
+            if isinstance(value, list):
+                entries.extend(
+                    {"name": item.strip(), "level": "", "keywords": []}
+                    for item in value
+                    if isinstance(item, str) and item.strip()
+                )
+            elif isinstance(value, str) and value.strip():
+                entries.extend(
+                    {"name": item.strip(), "level": "", "keywords": []}
+                    for item in value.split(",")
+                    if item.strip()
+                )
+
+        if not entries:
+            entries.extend({"name": name, "level": "", "keywords": []} for name in fallback_names if name)
+
+        return entries
+
+    @staticmethod
+    def _normalize_keywords(value):
+        if isinstance(value, str):
+            return [part.strip() for part in re.split(r"[\n,]", value) if part.strip()]
+
+        if isinstance(value, list):
+            return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+
+        return []
 
     @staticmethod
     def _stringify_skill_group_value(value):

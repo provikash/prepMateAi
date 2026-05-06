@@ -18,18 +18,21 @@ class ResumeRepositoryImpl implements ResumeRepository {
   @override
   Future<CreatedResumeModel> createResume({
     required String templateId,
+    required String title,
     required Map<String, dynamic> data,
-  }) =>
-      remote.createResume(templateId: templateId, data: data);
+  }) => remote.createResume(templateId: templateId, title: title, data: data);
 
   @override
   Future<String> getResumePdfUrl(String id) => remote.getResumePdfUrl(id);
 
   @override
-  Future<Uint8List> getResumePdfBytes(String id) => remote.getResumePdfBytes(id);
+  Future<Uint8List> getResumePdfBytes(String id) =>
+      remote.getResumePdfBytes(id);
 
   @override
   Future<Uint8List> downloadPdf(String id) => remote.downloadPdf(id);
+
+  Future<void> deleteResume(String id) => remote.deleteResume(id);
 
   @override
   Future<List<ResumeModel>> getResumes() => remote.getResumes();

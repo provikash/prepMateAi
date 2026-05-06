@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
-import '../../../../features/auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../data/models/template_detail_model.dart';
 import '../providers/resume_providers.dart';
 import '../../../../core/providers/form_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import '../widgets/resume_form_sections.dart';
 import '../widgets/schema_form_section.dart';
 import '../widgets/resume_widgets.dart';
@@ -27,23 +27,27 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() => ref.read(profileProvider.notifier).loadProfile());
     // Prefill basics from profile on the very first build.
     WidgetsBinding.instance.addPostFrameCallback((_) => _prefillProfile());
   }
 
   void _prefillProfile() {
     if (_profilePrefilled) return;
-    final authState = ref.read(authViewModelProvider);
-    final user = authState.user;
+    final user = ref.read(profileProvider).user;
     if (user == null) return;
     _profilePrefilled = true;
     ref.read(resumeFormProvider.notifier).prefillFromProfile({
+      'full_name': user.fullName,
       'name': user.fullName,
       'email': user.email,
       'phone': user.phoneNumber,
+      'phone_number': user.phoneNumber,
       'location': user.location,
       'job_title': user.title,
+      'title': user.title,
       'bio': user.bio,
+      'summary': user.bio,
       'linkedin': user.linkedin,
       'github': user.github,
     });
@@ -51,10 +55,15 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profileState = ref.watch(profileProvider);
     final templateAsync = widget.templateId == null
         ? null
         : ref.watch(templateDetailProvider(widget.templateId!));
     final colors = AppColors.of(context);
+
+    if (profileState.user != null && !_profilePrefilled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _prefillProfile());
+    }
 
     final template = templateAsync?.valueOrNull;
     if (template != null && _appliedTemplateId != template.id) {
@@ -76,7 +85,7 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
           template?.title ?? 'My Resume',
           style: TextStyle(
             color: colors.textPrimary,
-            fontWeight: FontWeight.bold,
+            // fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -117,7 +126,8 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
           ...sections.map(
             (section) => SchemaFormSection(
               section: section,
-              aiActions: controls[section.key.toLowerCase()] ?? section.aiActions,
+              aiActions:
+                  controls[section.key.toLowerCase()] ?? section.aiActions,
               onAiAction: (action) => _openAiAction(context, [action]),
               onAiPressed: () => _openAiAction(
                 context,
@@ -186,9 +196,7 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
           _hasField(section, 'email') ||
           _hasField(section, 'phone')) {
         visible.add('basics');
-        if (actionList.isNotEmpty) {
-          actions['summary'] = [...?actions['summary'], ...actionList];
-        }
+        continue;
       }
 
       if (key == 'summary' || _hasField(section, 'summary')) {
@@ -284,9 +292,21 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
     final form = ref.read(resumeFormProvider);
+
+    // Derive a human-readable title from the name field so the backend
+    // serializer's required `title` field is always satisfied.
+    final basicsName = (form.basics['name'] as String? ?? '').trim();
+    final resumeTitle = basicsName.isNotEmpty
+        ? '$basicsName\'s Resume'
+        : 'My Resume';
+
     final created = await ref
         .read(createResumeProvider.notifier)
-        .submit(templateId: templateId, formData: form.data);
+        .submit(
+          templateId: templateId,
+          title: resumeTitle,
+          formData: form.data,
+        );
 
     if (!mounted) return;
 
@@ -340,5 +360,11 @@ class _TemplateHeader extends StatelessWidget {
     );
   }
 }
-
-
+//             // 'Schema-driven sections with AI autofill.',
+//             style: TextStyle(color: colors.textSecondary),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }

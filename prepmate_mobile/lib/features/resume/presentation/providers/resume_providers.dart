@@ -62,12 +62,14 @@ class CreateResumeNotifier extends StateNotifier<CreateResumeState> {
 
   Future<CreatedResumeModel?> submit({
     required String templateId,
+    required String title,
     required Map<String, dynamic> formData,
   }) async {
     state = const CreateResumeState(isLoading: true);
     try {
       final created = await repository.createResume(
         templateId: templateId,
+        title: title,
         data: formData,
       );
       state = CreateResumeState(data: created);

@@ -106,6 +106,12 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_HOST = os.getenv("DB_HOST", "")
 DB_PORT = os.getenv("DB_PORT", "")
 
+
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get(
+    'GOOGLE_OAUTH_CLIENT_ID',
+    '123456789-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com'
+)
+
 DATABASES = {
     "default": {
         "ENGINE": DB_ENGINE,
@@ -214,20 +220,9 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "20"))
 
 # AI provider config (Gemini by default)
-AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
 AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "25"))
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-
-# Celery + Redis
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_TASK_TRACK_STARTED = True
-CELERY_RESULT_EXPIRES = int(os.getenv("CELERY_RESULT_EXPIRES", "3600"))
 
 LOGGING = {
     "version": 1,

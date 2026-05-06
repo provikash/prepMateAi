@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ resume.basics.name }} - Resume</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 14mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 11pt;
+      color: #111827;
+      line-height: 1.6;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      overflow-wrap: break-word;
+    }
+
+    .resume-wrapper {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 40px;
+      background: #ffffff;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid #6b7280;
+    }
+
+    .header-name {
+      font-size: 26pt;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .header-label {
+      font-size: 13pt;
+      color: #1f2937;
+      font-style: italic;
+      margin-bottom: 14px;
+      font-weight: 400;
+    }
+
+    .header-contact {
+      font-size: 10pt;
+      color: #1f2937;
+    }
+
+    .header-contact a {
+      color: #1f2937;
+      text-decoration: underline;
+    }
+
+    .contact-sep {
+      color: #9ca3af;
+      margin: 0 6px;
+    }
+
+    .header-summary {
+      font-size: 11pt;
+      line-height: 1.6;
+      color: #1f2937;
+      margin-top: 16px;
+      text-align: left;
+    }
+
+    /* ── SECTION ── */
+    .section {
+      margin-bottom: 28px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .section-title {
+      font-size: 14pt;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 14px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid #111827;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ── WORK EXPERIENCE ── */
+    .work-item {
+      margin-bottom: 20px;
+      break-inside: avoid;
+    }
+
+    .work-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .work-header {
+      margin-bottom: 4px;
+    }
+
+    .work-position {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 2px;
+    }
+
+    .work-company {
+      font-size: 11pt;
+      color: #1f2937;
+      font-style: italic;
+      margin-bottom: 2px;
+    }
+
+    .work-date {
+      font-size: 10pt;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    .work-summary {
+      font-size: 11pt;
+      color: #1f2937;
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .work-highlights {
+      margin: 6px 0 0 18px;
+      padding: 0;
+      list-style-type: disc;
+    }
+
+    .work-highlights li {
+      font-size: 11pt;
+      color: #1f2937;
+      line-height: 1.5;
+      margin-bottom: 3px;
+    }
+
+    /* ── EDUCATION ── */
+    .edu-item {
+      margin-bottom: 16px;
+    }
+
+    .edu-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .edu-institution {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 2px;
+    }
+
+    .edu-degree {
+      font-size: 11pt;
+      color: #1f2937;
+      margin-bottom: 2px;
+    }
+
+    .edu-date {
+      font-size: 10pt;
+      color: #6b7280;
+    }
+
+    /* ── PROJECTS ── */
+    .project-item {
+      margin-bottom: 20px;
+      padding-left: 18px;
+      border-left: 3px solid #9ca3af;
+      break-inside: avoid;
+    }
+
+    .project-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .project-name {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 2px;
+    }
+
+    .project-description {
+      font-size: 11pt;
+      color: #1f2937;
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .project-highlights {
+      margin: 4px 0 0 16px;
+      padding: 0;
+      list-style-type: disc;
+    }
+
+    .project-highlights li {
+      font-size: 11pt;
+      color: #1f2937;
+      line-height: 1.5;
+      margin-bottom: 3px;
+    }
+
+    .project-url {
+      font-size: 10pt;
+      color: #1f2937;
+      text-decoration: underline;
+    }
+
+    /* ── SKILLS ── */
+    .skills-grid {
+      display: table;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .skill-row {
+      display: table-row;
+    }
+
+    .skill-name {
+      display: table-cell;
+      font-weight: 700;
+      color: #111827;
+      font-size: 11pt;
+      padding: 3px 12px 3px 0;
+      width: 130px;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    .skill-keywords {
+      display: table-cell;
+      color: #1f2937;
+      font-size: 11pt;
+      padding: 3px 0;
+      vertical-align: top;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      .resume-wrapper {
+        padding: 24px 30px;
+      }
+
+      .section {
+        page-break-inside: avoid;
+      }
+
+      .work-item {
+        page-break-inside: avoid;
+      }
+
+      .project-item {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="resume-wrapper">
+
+    <!-- HEADER -->
+    <header class="header">
+      <h1 class="header-name">{{ resume.basics.name }}</h1>
+
+      {% if resume.basics.label %}
+      <div class="header-label">{{ resume.basics.label }}</div>
+      {% endif %}
+
+      <div class="header-contact">
+        {% if resume.basics.email %}
+        <a href="mailto:{{ resume.basics.email }}">{{ resume.basics.email }}</a>
+        {% endif %}
+
+        {% if resume.basics.phone %}
+          <span class="contact-sep">|</span>
+        <a href="tel:{{ resume.basics.phone }}">{{ resume.basics.phone }}</a>
+        {% endif %}
+
+        {% if resume.basics.location and resume.basics.location.city %}
+          <span class="contact-sep">|</span>
+        <span>{{ resume.basics.location.city }}</span>
+        {% endif %}
+
+        {% if resume.basics.url %}
+          <span class="contact-sep">|</span>
+        <a href="{{ resume.basics.url }}" target="_blank">{{ resume.basics.url }}</a>
+        {% endif %}
+
+        {% if resume.basics.profiles %}
+          {% if resume.basics.profiles.0 %}
+            {% for profile in resume.basics.profiles %}
+            <span class="contact-sep">|</span>
+            {% if profile.url %}
+            <a href="{{ profile.url }}" target="_blank">{{ profile.network|default:profile.username }}</a>
+            {% else %}
+            <span>{{ profile.network }}: {{ profile.username }}</span>
+            {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endif %}
+      </div>
+
+      {% if resume.basics.summary %}
+      <p class="header-summary">{{ resume.basics.summary }}</p>
+      {% endif %}
+    </header>
+
+    <!-- EDUCATION -->
+    {% if resume.education %}
+    {% if resume.education.0 %}
+    <section class="section">
+      <h2 class="section-title">Education</h2>
+      {% for edu in resume.education %}
+      <div class="edu-item">
+        <div class="edu-institution">{{ edu.institution }}</div>
+        <div class="edu-degree">
+          {{ edu.studyType|default:edu.degree }}{% if edu.area %} in {{ edu.area }}{% endif %}
+        </div>
+        <div class="edu-date">
+          {% if edu.startDate %}{{ edu.startDate }}{% endif %}
+          {% if edu.startDate and edu.endDate %} - {% endif %}
+          {% if edu.endDate %}{{ edu.endDate }}{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+    {% endif %}
+
+    <!-- WORK EXPERIENCE -->
+    {% with resume.experience|default:resume.work as work_items %}
+    {% if work_items %}
+    {% if work_items.0 %}
+    <section class="section">
+      <h2 class="section-title">Professional Experience</h2>
+      {% for job in work_items %}
+      <div class="work-item">
+        <div class="work-header">
+          <div class="work-position">
+            {% if job.role %}{{ job.role }}{% elif job.position %}{{ job.position }}{% elif job.job_title %}{{ job.job_title }}{% else %}{{ job.title }}{% endif %}
+          </div>
+          <div class="work-company">
+            {% if job.company %}{{ job.company }}{% else %}{{ job.name }}{% endif %}
+          </div>
+          <div class="work-date">
+            {% if job.duration %}{{ job.duration }}{% else %}
+            {% if job.startDate %}{{ job.startDate }}{% endif %}
+            {% if job.startDate and job.endDate %} - {% endif %}
+            {% if job.endDate %}{{ job.endDate }}{% endif %}
+            {% endif %}
+          </div>
+        </div>
+
+        {% if job.summary %}
+        <p class="work-summary">{{ job.summary }}</p>
+        {% endif %}
+
+        {% with job.highlights as job_highlights %}
+        {% if job_highlights %}
+        {% if job_highlights.0 %}
+        <ul class="work-highlights">
+          {% for bullet in job_highlights %}
+          <li>{{ bullet }}</li>
+          {% endfor %}
+        </ul>
+        {% elif job_highlights %}
+        <p class="work-summary">{{ job_highlights }}</p>
+        {% endif %}
+        {% endif %}
+        {% endwith %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- PROJECTS -->
+    {% if resume.projects %}
+    {% if resume.projects.0 %}
+    <section class="section">
+      <h2 class="section-title">Projects</h2>
+      {% for project in resume.projects %}
+      <div class="project-item">
+        <div class="project-name">
+          {{ project.name }}
+          {% if project.source_code %}
+          - <a class="project-url" href="{{ project.source_code }}" target="_blank">{{ project.source_code }}</a>
+          {% elif project.url %}
+          - <a class="project-url" href="{{ project.url }}" target="_blank">{{ project.url }}</a>
+          {% endif %}
+        </div>
+
+        {% if project.description %}
+        <p class="project-description">{{ project.description }}</p>
+        {% endif %}
+
+        {% with project.highlights as project_highlights %}
+        {% if project_highlights %}
+        {% if project_highlights.0 %}
+        <ul class="project-highlights">
+          {% for highlight in project_highlights %}
+          <li>{{ highlight }}</li>
+          {% endfor %}
+        </ul>
+        {% elif project_highlights %}
+        <p class="project-description">{{ project_highlights }}</p>
+        {% endif %}
+        {% endif %}
+        {% endwith %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+    {% endif %}
+
+    <!-- SKILLS -->
+    {% if resume.skills %}
+    {% if resume.skills.0 %}
+    <section class="section">
+      <h2 class="section-title">Skills</h2>
+      <div class="skills-grid">
+        {% for skill in resume.skills %}
+        <div class="skill-row">
+          <span class="skill-name">
+            {% if skill.name %}{{ skill.name }}{% elif skill.title %}{{ skill.title }}{% elif skill.label %}{{ skill.label }}{% endif %}
+            {% if skill.name or skill.title or skill.label %}:{% endif %}
+          </span>
+          <span class="skill-keywords">
+            {% if skill.keywords %}
+            {% if skill.keywords.0 %}{{ skill.keywords|join:", " }}{% endif %}
+            {% else %}
+            {{ skill.level }}
+            {% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+    {% endif %}
+
+  </div>
+</body>
+
+</html>

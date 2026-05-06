@@ -1,7 +1,1 @@
-try:
-	from .celery import app as celery_app
-except Exception:
-	# Celery may not be installed in all environments (e.g., minimal dev venv).
-	celery_app = None
-
-__all__ = ["celery_app"]
+# Django core package

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -72,6 +73,7 @@ class ResumeRemoteDataSource {
 
   Future<CreatedResumeModel> createResume({
     required String templateId,
+    required String title,
     required Map<String, dynamic> data,
   }) async {
     try {
@@ -80,33 +82,35 @@ class ResumeRemoteDataSource {
         throw Exception('Missing auth token. Please sign in again.');
       }
 
+      // Build a proper JSON Resume payload. The `data` map already contains
+      // the section keys (basics, work, education, projects, skills).
+      // We pass it verbatim as the `data` field; the backend normalises it.
       final response = await dio.post(
         'resumes/',
-        data: {
-          'template_id': templateId,
-          'data': data,
-        },
+        data: {'template_id': templateId, 'title': title, 'data': data},
         options: options,
       );
       return CreatedResumeModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (error) {
-      debugPrint('Resume save failed: ${error.response?.data}');
+      debugPrint(
+        '[Resume Save] failed: ${error.response?.statusCode} ${error.response?.data}',
+      );
       throw Exception('Failed to create resume: ${_normalizeDioError(error)}');
     } catch (error) {
-      debugPrint('Resume save failed: $error');
+      debugPrint('[Resume Save] unexpected error: $error');
       throw Exception('Failed to create resume: ${_normalizeDioError(error)}');
     }
   }
 
   Future<String> getResumePdfUrl(String id) async {
     final base = dio.options.baseUrl;
-    return '$base/resumes/$id/export/'.replaceAll('//resumes', '/resumes');
+    return '$base/resumes/$id/pdf/'.replaceAll('//resumes', '/resumes');
   }
 
   Future<Uint8List> getResumePdfBytes(String id) async {
     try {
       final response = await dio.get<List<int>>(
-        'resumes/$id/export/',
+        'resumes/$id/pdf/',
         options: Options(
           headers: (await _authorizedOptions()).headers,
           responseType: ResponseType.bytes,
@@ -124,6 +128,14 @@ class ResumeRemoteDataSource {
 
   Future<Uint8List> downloadPdf(String id) {
     return getResumePdfBytes(id);
+  }
+
+  Future<void> deleteResume(String id) async {
+    try {
+      await dio.delete('resumes/$id/', options: await _authorizedOptions());
+    } catch (error) {
+      throw Exception('Failed to delete resume: ${_normalizeDioError(error)}');
+    }
   }
 
   Future<List<ResumeModel>> getResumes() async {

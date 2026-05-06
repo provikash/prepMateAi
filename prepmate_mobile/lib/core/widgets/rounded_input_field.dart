@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 
-class RoundedInputField extends StatelessWidget {
+class RoundedInputField extends StatefulWidget {
   final String hintText;
   final Widget prefixIcon;
-  final bool obscureText;
+  final bool isPassword;
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
-  final Widget? suffix;
   final FormFieldValidator<String>? validator;
   final TextInputType? keyboardType;
   final TextCapitalization textCapitalization;
@@ -15,20 +14,26 @@ class RoundedInputField extends StatelessWidget {
   const RoundedInputField({
     super.key,
     required this.hintText,
-
     required this.prefixIcon,
-    this.obscureText = false,
+    this.isPassword = false,
     this.controller,
     this.onChanged,
-    this.suffix,
     this.validator,
     this.keyboardType,
     this.textCapitalization = TextCapitalization.none,
   });
 
   @override
+  State<RoundedInputField> createState() => _RoundedInputFieldState();
+}
+
+class _RoundedInputFieldState extends State<RoundedInputField> {
+  bool _obscureText = true;
+
+  @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+
     return Container(
       decoration: BoxDecoration(
         color: colors.cardBackground,
@@ -44,22 +49,50 @@ class RoundedInputField extends StatelessWidget {
       ),
 
       child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        onChanged: onChanged,
-        validator: validator,
-        keyboardType: keyboardType,
-        textCapitalization: textCapitalization,
-        decoration: InputDecoration(
-          hintText: hintText,
+        controller: widget.controller,
+        obscureText: widget.isPassword ? _obscureText : false,
+        onChanged: widget.onChanged,
+        validator: widget.validator,
+        keyboardType: widget.keyboardType,
+        textCapitalization: widget.textCapitalization,
 
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+
+          // 🔥 FIX HEIGHT ISSUE
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          suffix: suffix,
-          prefixIcon: prefixIcon,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 14,
+            horizontal: 12,
+          ),
+
+          prefixIcon: widget.prefixIcon,
+
+          // ✅ Proper suffixIcon usage
+          suffixIcon: widget.isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _obscureText
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureText = !_obscureText;
+                    });
+                  },
+                )
+              : null,
+
+          // 🔥 Prevent height expansion
+          suffixIconConstraints: const BoxConstraints(
+            minHeight: 24,
+            minWidth: 24,
+          ),
 
           filled: true,
           fillColor: colors.mutedBackground,
+
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(color: colors.border),
@@ -67,7 +100,10 @@ class RoundedInputField extends StatelessWidget {
 
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: colors.primary, width: 1.4),
+            borderSide: BorderSide(
+              color: colors.primary,
+              width: 1.4,
+            ),
           ),
         ),
       ),

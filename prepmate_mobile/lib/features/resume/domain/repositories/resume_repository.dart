@@ -10,6 +10,7 @@ abstract class ResumeRepository {
 
   Future<CreatedResumeModel> createResume({
     required String templateId,
+    required String title,
     required Map<String, dynamic> data,
   });
 

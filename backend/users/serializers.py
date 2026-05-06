@@ -49,6 +49,16 @@ class LoginSerializer(serializers.Serializer):
         return value.strip().lower()
 
 
+class GoogleAuthSerializer(serializers.Serializer):
+    id_token = serializers.CharField(write_only=True, trim_whitespace=True)
+
+    def validate_id_token(self, value):
+        token = value.strip()
+        if not token:
+            raise serializers.ValidationError("id_token is required.")
+        return token
+
+
 class UserSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = User

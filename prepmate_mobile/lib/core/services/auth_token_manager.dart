@@ -31,7 +31,10 @@ final authTokenManagerProvider = Provider<AuthTokenManager>((ref) {
 class AuthTokenManager {
   AuthTokenManager(this._ref);
 
-  static const String _baseUrl = 'http://10.176.105.1:8000/api/v1/';
+  // ⚠️  Configure your backend URL here (must match dio_client.dart):
+  // For Android Emulator (default): http://10.0.2.2:8000/api/v1/
+  // For Physical Device: http://<YOUR_MACHINE_IP>:8000/api/v1/
+  static const String _baseUrl = 'http://10.24.117.1:8000/api/v1/';
   static const Duration _refreshWindow = Duration(minutes: 2);
 
   final Ref _ref;

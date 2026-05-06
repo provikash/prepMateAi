@@ -53,8 +53,8 @@ class CourseRepositoryImpl implements CourseRepository {
           count: 32,
         ).copyWith(
           lessonInfo: 'Lesson 4 • Functions',
-          progressPercentage: 66,
-          remainingTime: '3h 10m left',
+          progress: 66,
+          remainingTime: "3h 10m left", progressPercentage:55,
         ),
       ],
       careerGrowth: [

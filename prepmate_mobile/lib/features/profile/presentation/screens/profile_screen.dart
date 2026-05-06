@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prepmate_mobile/config/theme.dart';
+import 'package:prepmate_mobile/core/providers/theme_provider.dart';
 import 'package:prepmate_mobile/features/profile/presentation/providers/profile_provider.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import 'personal_info_screen.dart';
@@ -165,8 +166,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   icon: Icons.dark_mode_outlined,
                   title: 'Dark Mode',
                   trailing: Switch(
-                    value: false,
-                    onChanged: (val) {},
+                    value: ref.watch(themeModeProvider) == ThemeMode.dark,
+                    onChanged: (_) =>
+                        ref.read(themeModeProvider.notifier).toggle(),
                     activeThumbColor: colors.primary,
                   ),
                 ),

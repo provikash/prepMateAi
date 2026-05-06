@@ -9,11 +9,20 @@ class ResumeFormState {
       Map<String, dynamic>.from(data['basics'] as Map? ?? const {});
 
   List<Map<String, dynamic>> get experienceItems =>
-      List<Map<String, dynamic>>.from(data['experience'] as List? ?? const []);
+      List<Map<String, dynamic>>.from(data['work'] as List? ?? data['experience'] as List? ?? const []);
 
-  List<String> get skills => List<String>.from(data['skills'] as List? ?? const []);
+  List<String> get skills {
+    final raw = data['skills'];
+    if (raw is List) {
+      return raw
+          .map((e) => e is Map ? (e['name']?.toString() ?? '') : e.toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
 
-  String get summary => data['summary'] as String? ?? '';
+  String get summary => (data['basics'] as Map?)?['summary'] as String? ?? data['summary'] as String? ?? '';
 
   Map<String, dynamic> sectionMap(String key) =>
     Map<String, dynamic>.from(data[key] as Map? ?? const {});
@@ -45,10 +54,20 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     : super(
         const ResumeFormState(
           data: {
-            'basics': {'name': '', 'email': '', 'phone': '', 'label': ''},
-            'summary': '',
-            'experience': <Map<String, dynamic>>[],
-            'skills': <String>[],
+            // JSON Resume standard schema
+            'basics': {
+              'name': '',
+              'label': '',
+              'email': '',
+              'phone': '',
+              'summary': '',
+              'location': {'city': ''},
+              'profiles': <Map<String, dynamic>>[],
+            },
+            'work': <Map<String, dynamic>>[],
+            'education': <Map<String, dynamic>>[],
+            'projects': <Map<String, dynamic>>[],
+            'skills': <Map<String, dynamic>>[],
           },
         ),
       );
@@ -58,11 +77,19 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
 
   List<Map<String, dynamic>> get experienceItems =>
       List<Map<String, dynamic>>.from(
-        state.data['experience'] as List? ?? const [],
+        state.data['work'] as List? ?? state.data['experience'] as List? ?? const [],
       );
 
-  List<String> get skills =>
-      List<String>.from(state.data['skills'] as List? ?? const []);
+  List<String> get skills {
+    final raw = state.data['skills'];
+    if (raw is List) {
+      return raw
+          .map((e) => e is Map ? (e['name']?.toString() ?? '') : e.toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
 
     Map<String, dynamic> sectionMap(String key) =>
       Map<String, dynamic>.from(state.data[key] as Map? ?? const {});
@@ -91,8 +118,11 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
   void updateBasicField(String key, String value) => updateBasics({key: value});
 
   void updateSummary(String text) {
+    // Store summary inside basics as per JSON Resume schema.
+    final current = basics;
+    current['summary'] = text;
     final nextData = Map<String, dynamic>.from(state.data);
-    nextData['summary'] = text;
+    nextData['basics'] = current;
     state = state.copyWith(data: nextData);
   }
 
@@ -137,17 +167,17 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     list.add(
       item ??
           {
-            'title': '',
-            'company': '',
-            'location': '',
+            'position': '',
+            'name': '',   // company name per JSON Resume
             'startDate': '',
             'endDate': '',
             'summary': '',
-            'bullets': <String>[],
+            'highlights': <String>[],
           },
     );
     final nextData = Map<String, dynamic>.from(state.data);
-    nextData['experience'] = list;
+    // Store in `work` (JSON Resume standard key).
+    nextData['work'] = list;
     state = state.copyWith(data: nextData);
   }
 
@@ -158,7 +188,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     item.addAll(patch);
     list[index] = item;
     final nextData = Map<String, dynamic>.from(state.data);
-    nextData['experience'] = list;
+    nextData['work'] = list;
     state = state.copyWith(data: nextData);
   }
 
@@ -167,16 +197,19 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     if (index < 0 || index >= list.length) return;
     list.removeAt(index);
     final nextData = Map<String, dynamic>.from(state.data);
-    nextData['experience'] = list;
+    nextData['work'] = list;
     state = state.copyWith(data: nextData);
   }
 
   void addSkill(String skill) {
     final trimmed = skill.trim();
     if (trimmed.isEmpty) return;
-    final list = skills;
-    if (!list.contains(trimmed)) {
-      list.add(trimmed);
+    final raw = state.data['skills'];
+    final List<dynamic> list = raw is List ? List<dynamic>.from(raw) : [];
+    // Support both plain string list and {name, keywords} object list.
+    final names = list.map((e) => e is Map ? e['name']?.toString() ?? '' : e.toString()).toList();
+    if (!names.contains(trimmed)) {
+      list.add({'name': trimmed, 'level': '', 'keywords': <String>[]});
       final nextData = Map<String, dynamic>.from(state.data);
       nextData['skills'] = list;
       state = state.copyWith(data: nextData);
@@ -184,8 +217,13 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
   }
 
   void removeSkill(String skill) {
-    final list = skills;
-    list.remove(skill);
+    final raw = state.data['skills'];
+    if (raw is! List) return;
+    final list = List<dynamic>.from(raw);
+    list.removeWhere((e) {
+      final name = e is Map ? e['name']?.toString() ?? '' : e.toString();
+      return name == skill;
+    });
     final nextData = Map<String, dynamic>.from(state.data);
     nextData['skills'] = list;
     state = state.copyWith(data: nextData);
@@ -195,6 +233,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     final nextData = Map<String, dynamic>.from(state.data);
     nextData['skills'] = values
         .where((value) => value.trim().isNotEmpty)
+        .map((name) => {'name': name, 'level': '', 'keywords': <String>[]})
         .toList();
     state = state.copyWith(data: nextData);
   }
@@ -215,18 +254,54 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
       }
     }
 
+    // Both `name` and `full_name` keys are checked for compatibility.
     setIfEmpty('name', profile['full_name'] ?? profile['name']);
     setIfEmpty('email', profile['email']);
     setIfEmpty('phone', profile['phone'] ?? profile['phone_number']);
-    setIfEmpty('location', profile['location'] ?? profile['city']);
+    // location is stored as a nested {city: ''} object in JSON Resume.
+    final locationVal = profile['location'] ?? profile['city'];
+    if (locationVal != null && locationVal.toString().trim().isNotEmpty) {
+      final existingLoc = current['location'];
+      final existingCity = existingLoc is Map
+          ? (existingLoc['city']?.toString() ?? '')
+          : (existingLoc?.toString() ?? '');
+      if (existingCity.trim().isEmpty) {
+        patch['location'] = {'city': locationVal.toString().trim()};
+      }
+    }
     setIfEmpty('label', profile['job_title'] ?? profile['title']);
     setIfEmpty('summary', profile['bio'] ?? profile['summary']);
-    setIfEmpty('linkedin', profile['linkedin']);
-    setIfEmpty('github', profile['github']);
+    setIfEmpty('url', profile['website'] ?? profile['url']);
 
     if (patch.isNotEmpty) {
       updateBasics(patch);
     }
+
+    // Also mirror linkedin/github into the profiles array if empty.
+    _prefillSocialProfiles(profile);
+  }
+
+  void _prefillSocialProfiles(Map<String, dynamic> profile) {
+    final nextData = Map<String, dynamic>.from(state.data);
+    final basicsMap = Map<String, dynamic>.from(nextData['basics'] as Map? ?? {});
+    final profiles = List<dynamic>.from(basicsMap['profiles'] as List? ?? []);
+
+    void addProfileIfMissing(String network, String? url) {
+      if (url == null || url.trim().isEmpty) return;
+      final alreadyExists = profiles.any(
+        (p) => p is Map && (p['network'] as String? ?? '').toLowerCase() == network.toLowerCase(),
+      );
+      if (!alreadyExists) {
+        profiles.add({'network': network, 'username': url, 'url': url});
+      }
+    }
+
+    addProfileIfMissing('LinkedIn', profile['linkedin']);
+    addProfileIfMissing('GitHub', profile['github']);
+
+    basicsMap['profiles'] = profiles;
+    nextData['basics'] = basicsMap;
+    state = state.copyWith(data: nextData);
   }
 }
 
