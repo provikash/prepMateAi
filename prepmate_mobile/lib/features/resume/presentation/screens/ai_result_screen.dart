@@ -36,11 +36,13 @@ class AIResultScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: aiState.status == AIStatus.polling
+      body: aiState.status == AIStatus.loading
           ? _buildPollingState()
           : aiState.status == AIStatus.success
-          ? _buildSuccessState(context, ref, aiState)
-          : _buildErrorState(aiState.errorMessage ?? 'Unknown error'),
+              ? _buildSuccessState(context, ref, aiState)
+              : aiState.status == AIStatus.error
+                  ? _buildErrorState(aiState.errorMessage ?? 'Unknown error')
+                  : _buildErrorState('No AI action has been submitted yet.'),
     );
   }
 
@@ -163,7 +165,7 @@ class AIResultScreen extends ConsumerWidget {
             text: 'Applied ✓ — Back to Form',
             onPressed: () {
               ref.read(aiProvider.notifier).reset();
-              context.go('/resume/form', extra: {'fromAIResult': true} );
+              context.pop();
             },
           ),
         ],

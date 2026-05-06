@@ -1,4 +1,4 @@
-// lib/config/dio_client.dart
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,16 +20,15 @@ final secureStorageProvider = Provider<FlutterSecureStorage>(
 ///   3. [onError]    — on 401, attempt one token refresh then retry;
 ///                     if that fails, trigger forced logout.
 final dioProvider = Provider<Dio>((ref) {
-  
-  const baseUrl = 'http://10.203.119.93:8000//api/v1/';
-  
   final dio = Dio(
     BaseOptions(
-      baseUrl: baseUrl,
+      // ⚠️  Change this to your environment-specific URL.
+      baseUrl: 'http://10.203.119.1:8000/api/v1/',
 
-      // Change this based on your environment
-      connectTimeout: const Duration(seconds: 12),
-      receiveTimeout: const Duration(seconds: 12),
+      // Increased timeout to handle slower networks and backend responsiveness
+      // Adjust based on your environment and expected response times
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

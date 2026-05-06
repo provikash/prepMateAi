@@ -1,8 +1,6 @@
 import logging
 
-from celery import shared_task
-
-from .services import AIService
+from .services.resume_service import ResumeAIService
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +11,7 @@ def _is_rate_limit_error(error_message: str) -> bool:
     return "429" in message or "quota" in message
 
 
-def _handle_retry(task, exc: Exception, task_name: str):
+def _handle_retry(exc: Exception, task_name: str):
     error_message = str(exc)
 
     if _is_rate_limit_error(error_message):
@@ -23,60 +21,40 @@ def _handle_retry(task, exc: Exception, task_name: str):
             "message": "AI is currently busy. Please try again in a minute.",
         }
 
-    countdown = 5 * (task.request.retries + 1)
-    try:
-        raise task.retry(exc=exc, countdown=countdown, max_retries=2)
-    except task.MaxRetriesExceededError:
-        logger.exception("%s failed after max retries.", task_name)
-        return {
-            "status": "error",
-            "message": "AI generation failed after multiple attempts.",
-        }
+    logger.exception("%s failed.", task_name)
+    return {
+        "status": "error",
+        "message": "AI generation failed after multiple attempts.",
+    }
 
 
-@shared_task(
-    bind=True,
-    name="ai.generate_summary",
-)
-def generate_summary_task(self, data: dict) -> dict:
-    service = AIService()
+def generate_summary(data: dict) -> dict:
+    service = ResumeAIService()
     try:
         return service.generate_summary(data=data)
     except Exception as exc:
-        return _handle_retry(self, exc, "generate_summary")
+        return _handle_retry(exc, "generate_summary")
 
 
-@shared_task(
-    bind=True,
-    name="ai.improve_section",
-)
-def improve_section_task(self, text: str, section_name: str) -> dict:
-    service = AIService()
+def improve_section(text: str, section_name: str) -> dict:
+    service = ResumeAIService()
     try:
         return service.improve_section(text=text, section_name=section_name)
     except Exception as exc:
-        return _handle_retry(self, exc, "improve_section")
+        return _handle_retry(exc, "improve_section")
 
 
-@shared_task(
-    bind=True,
-    name="ai.suggest_skills",
-)
-def suggest_skills_task(self, role: str, existing_skills: list[str] | None = None) -> dict:
-    service = AIService()
+def suggest_skills(role: str, existing_skills: list[str] | None = None) -> dict:
+    service = ResumeAIService()
     try:
         return service.suggest_skills(role=role, existing_skills=existing_skills)
     except Exception as exc:
-        return _handle_retry(self, exc, "suggest_skills")
+        return _handle_retry(exc, "suggest_skills")
 
 
-@shared_task(
-    bind=True,
-    name="ai.generate_bullets",
-)
-def generate_bullets_task(self, experience: list[dict]) -> dict:
-    service = AIService()
+def generate_bullets(experience: list[dict]) -> dict:
+    service = ResumeAIService()
     try:
         return service.generate_bullets(experience=experience)
     except Exception as exc:
-        return _handle_retry(self, exc, "generate_bullets")
+        return _handle_retry(exc, "generate_bullets")

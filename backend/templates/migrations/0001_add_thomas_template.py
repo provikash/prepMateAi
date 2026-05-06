@@ -172,9 +172,11 @@ ul { margin: 5px 0 0 20px; }
     obj, created = ResumeTemplate.objects.update_or_create(
         name='Thomas Davis (JSON Resume)',
         defaults={
-            'description': 'JSON Resume Template',
             'html_structure': html_structure,
-            'form_schema': schema,  # ✅ DIRECT (IMPORTANT)
+            'metadata': {
+                'description': 'JSON Resume Template',
+                'form_schema': schema,
+            },
             'is_active': True,
         },
     )
