@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.template import Context, Template
+from pathlib import Path
 
 from resume.models import ResumeTemplate
 from resume.rendering import ResumeRenderService
@@ -142,6 +143,92 @@ class ResumeNormalizationAndRenderTests(TestCase):
             normalized["personal_info"]["github_url"],
             "https://github.com/vikash",
         )
+
+    def test_normalization_coerces_skill_keywords_and_highlights_to_lists(self):
+        normalized = ResumeValidationService.normalize_resume_data(
+            {
+                "basics": {
+                    "name": "Vikash",
+                    "email": "v@example.com",
+                    "phone": "12345",
+                },
+                "skills": [
+                    {"name": "Python", "keywords": "Django, DRF"},
+                    "Testing",
+                ],
+                "projects": [
+                    {
+                        "name": "Portal",
+                        "description": "Customer portal",
+                        "highlights": "Reduced support tickets",
+                    }
+                ],
+                "work": [
+                    {
+                        "position": "Engineer",
+                        "name": "Acme",
+                        "highlights": "Shipped a reliable release",
+                    }
+                ],
+                "education": [],
+                "experience": [],
+            }
+        )
+
+        self.assertEqual(normalized["skills"][0]["keywords"], ["Django", "DRF"])
+        self.assertEqual(normalized["skills"][1]["keywords"], [])
+        self.assertEqual(normalized["projects"][0]["highlights"], ["Reduced support tickets"])
+        self.assertEqual(normalized["experience"][0]["highlights"], ["Shipped a reliable release"])
+
+    def test_professional_template_renders_with_normalized_context(self):
+        template_path = Path(__file__).resolve().parents[1] / "templates" / "resume" / "professional.html"
+        html = template_path.read_text(encoding="utf-8")
+
+        normalized = ResumeValidationService.normalize_resume_data(
+            {
+                "basics": {
+                    "name": "Vikash",
+                    "label": "Software Engineer",
+                    "email": "v@example.com",
+                    "phone": "12345",
+                    "location": {"city": "Sydney"},
+                    "profiles": [{"network": "github", "username": "vikash", "url": "https://github.com/vikash"}],
+                    "summary": "Engineering leader",
+                },
+                "skills": [
+                    {"name": "Python", "keywords": "Django, DRF"},
+                ],
+                "projects": [
+                    {
+                        "name": "Portal",
+                        "url": "https://example.com",
+                        "description": "Customer portal",
+                        "highlights": "Reduced support tickets",
+                    }
+                ],
+                "work": [
+                    {
+                        "position": "Engineer",
+                        "name": "Acme",
+                        "summary": "Built core APIs",
+                        "highlights": "Shipped a reliable release",
+                    }
+                ],
+                "education": [
+                    {
+                        "institution": "University",
+                        "studyType": "BSc",
+                        "area": "Computer Science",
+                    }
+                ],
+            }
+        )
+
+        rendered = Template(html).render(Context({"resume": normalized}))
+
+        self.assertIn("Shipped a reliable release", rendered)
+        self.assertIn("Django, DRF", rendered)
+        self.assertIn("Reduced support tickets", rendered)
 
     def test_render_fallbacks_for_project_description_and_certification_punctuation(self):
         html = """

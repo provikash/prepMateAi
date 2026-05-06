@@ -51,7 +51,7 @@ class DashboardModel {
       analysisAvailable:
           json['analysis_available'] as bool? ?? latestResume != null,
       message: json['message'] as String? ?? '',
-      userName: (json['user_name'] as String?) ?? 'User',
+      userName: (json['full_name'] as String?) ?? 'User',
     );
   }
 }

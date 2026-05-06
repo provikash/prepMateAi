@@ -1,13 +1,6 @@
 import logging
 
-try:
-    from celery import shared_task
-except Exception:
-    # Fallback for environments without Celery installed (allows migrations to run).
-    def shared_task(*a, **kw):
-        def _decorator(fn):
-            return fn
-        return _decorator
+from celery import shared_task
 
 from .services import AIService
 

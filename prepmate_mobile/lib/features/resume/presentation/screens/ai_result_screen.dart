@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prepmate_mobile/config/theme.dart';
 import '../providers/ai_provider.dart';
 import '../widgets/resume_widgets.dart';
 
@@ -78,12 +79,12 @@ class AIResultScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           Text(
             _titleForAction(aiState.action),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF004D40),
+              color: AppColors.of(context).primary,),
             ),
-          ),
+          
           const SizedBox(height: 8),
           Text(
             _subtitleForAction(aiState.action),
@@ -162,7 +163,7 @@ class AIResultScreen extends ConsumerWidget {
             text: 'Applied ✓ — Back to Form',
             onPressed: () {
               ref.read(aiProvider.notifier).reset();
-              context.go('/resume/form');
+              context.go('/resume/form', extra: {'fromAIResult': true} );
             },
           ),
         ],

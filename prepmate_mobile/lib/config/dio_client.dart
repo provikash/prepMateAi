@@ -20,11 +20,15 @@ final secureStorageProvider = Provider<FlutterSecureStorage>(
 ///   3. [onError]    — on 401, attempt one token refresh then retry;
 ///                     if that fails, trigger forced logout.
 final dioProvider = Provider<Dio>((ref) {
+  // ⚠️  Configure your backend URL here:
+  // For Android Emulator (default): http://10.0.2.2:8000/api/v1/
+  // For Physical Device: http://<YOUR_MACHINE_IP>:8000/api/v1/
+  // Example: http://192.168.1.100:8000/api/v1/
+  const baseUrl = 'http://10.24.117.1:8000/api/v1/';
+  
   final dio = Dio(
     BaseOptions(
-
-      // ⚠️  Change this to your environment-specific URL.
-      baseUrl: 'http://10.176.105.1:8000/api/v1/',
+      baseUrl: baseUrl,
 
       // Change this based on your environment
       connectTimeout: const Duration(seconds: 12),
@@ -120,9 +124,7 @@ void _logError(DioException error) {
 dynamic _scrubSensitiveFields(dynamic data) {
   if (data is Map<String, dynamic>) {
     const sensitive = {'password', 'refresh', 'access', 'token', 'id_token'};
-    return data.map(
-      (k, v) => MapEntry(k, sensitive.contains(k) ? '***' : v),
-    );
+    return data.map((k, v) => MapEntry(k, sensitive.contains(k) ? '***' : v));
   }
   return data;
 }

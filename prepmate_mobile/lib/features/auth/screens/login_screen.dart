@@ -7,6 +7,7 @@ import 'package:prepmate_mobile/core/widgets/error_text.dart';
 import 'package:prepmate_mobile/core/widgets/top_circle_button.dart';
 
 import '../presentation/state/auth_state.dart';
+import '../../../core/widgets/socialButton.dart';
 import '../presentation/viewmodel/auth_viewmodel.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
+
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
@@ -27,9 +29,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         .login(_emailController.text.trim(), _passwordController.text);
   }
 
-  Future<void> _onGoogleSignInPressed() async {
-    await ref.read(authProvider.notifier).signInWithGoogle();
+    Future<void> _onGoogleTap() async {
+    await ref.read(authViewModelProvider.notifier).signInWithGoogle();
+
   }
+
 
   @override
   void dispose() {
@@ -56,6 +60,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authProvider);
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
       backgroundColor: colors.screenBackground,
@@ -290,15 +295,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: _socialButton(
-                                context: context,
-                                label: 'Google',
-                                icon: Icons.g_mobiledata,
-                                onTap: authState.status == AuthStatus.loading
-                                    ? () {}
-                                    : _onGoogleSignInPressed,
+                              child:  SocialButton(
+                                  text: 'Google',
+                                  icon: Icons.g_mobiledata,
+                                  onTap: isLoading ? () {} : _onGoogleTap,
+                                ),
                               ),
-                            ),
                             const SizedBox(width: 12),
                           ],
                         ),

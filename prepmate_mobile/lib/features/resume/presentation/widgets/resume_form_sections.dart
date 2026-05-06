@@ -373,10 +373,10 @@ class _ExperienceItemCardState extends State<ExperienceItemCard> {
 
   void _bindControllers() {
     _titleController = TextEditingController(
-      text: widget.item['title']?.toString() ?? '',
+      text: widget.item['position']?.toString() ?? widget.item['title']?.toString() ?? '',
     );
     _companyController = TextEditingController(
-      text: widget.item['company']?.toString() ?? '',
+      text: widget.item['name']?.toString() ?? widget.item['company']?.toString() ?? '',
     );
     _locationController = TextEditingController(
       text: widget.item['location']?.toString() ?? '',
@@ -390,7 +390,7 @@ class _ExperienceItemCardState extends State<ExperienceItemCard> {
     _summaryController = TextEditingController(
       text: widget.item['summary']?.toString() ?? '',
     );
-    final bullets = widget.item['bullets'];
+    final bullets = widget.item['highlights'] ?? widget.item['bullets'];
     final bulletText = bullets is List
         ? bullets.join(', ')
         : (bullets?.toString() ?? '');
@@ -398,13 +398,13 @@ class _ExperienceItemCardState extends State<ExperienceItemCard> {
   }
 
   void _syncControllers() {
-    _setText(_titleController, widget.item['title']);
-    _setText(_companyController, widget.item['company']);
+    _setText(_titleController, widget.item['position'] ?? widget.item['title']);
+    _setText(_companyController, widget.item['name'] ?? widget.item['company']);
     _setText(_locationController, widget.item['location']);
     _setText(_startController, widget.item['startDate']);
     _setText(_endController, widget.item['endDate']);
     _setText(_summaryController, widget.item['summary']);
-    final bullets = widget.item['bullets'];
+    final bullets = widget.item['highlights'] ?? widget.item['bullets'];
     final bulletText = bullets is List
         ? bullets.join(', ')
         : (bullets?.toString() ?? '');
@@ -443,13 +443,13 @@ class _ExperienceItemCardState extends State<ExperienceItemCard> {
             ),
             _Field(
               controller: _titleController,
-              label: 'Job title',
-              onChanged: (value) => _emit({'title': value}),
+              label: 'Job title / Position',
+              onChanged: (value) => _emit({'position': value, 'title': value}),
             ),
             _Field(
               controller: _companyController,
               label: 'Company',
-              onChanged: (value) => _emit({'company': value}),
+              onChanged: (value) => _emit({'name': value, 'company': value}),
             ),
             _Field(
               controller: _locationController,
@@ -483,9 +483,15 @@ class _ExperienceItemCardState extends State<ExperienceItemCard> {
             ),
             _Field(
               controller: _bulletsController,
-              label: 'Bullets comma separated',
+              label: 'Key highlights (comma separated)',
               maxLines: 3,
               onChanged: (value) => _emit({
+                'highlights': value
+                    .split(',')
+                    .map((entry) => entry.trim())
+                    .where((entry) => entry.isNotEmpty)
+                    .toList(),
+                // Keep legacy bullets key too for compat.
                 'bullets': value
                     .split(',')
                     .map((entry) => entry.trim())

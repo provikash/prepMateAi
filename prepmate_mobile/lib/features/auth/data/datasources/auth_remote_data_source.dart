@@ -4,11 +4,15 @@ import '../../domain/entities/user.dart';
 import '../models/user_model.dart';
 import '../../../../core/services/storage.dart';
 
+/// Exception thrown when user cancels Google Sign-In
+class _GoogleSignInCancelledException implements Exception {
+  @override
+  String toString() => 'User cancelled Google Sign-In';
+}
+
 class AuthRemoteDataSource {
   final Dio dio;
 
-  // google_sign_in v7 uses a singleton instance.
-  // Initialize is called lazily in signInWithGoogle().
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   bool _googleInitialized = false;
 
@@ -59,54 +63,66 @@ class AuthRemoteDataSource {
 
   // ─── Google Auth ──────────────────────────────────────────────────────────
 
-  /// Signs the user in with Google and exchanges the ID token for our backend
-  /// JWT tokens.  Works with google_sign_in v7.x.
   Future<User?> signInWithGoogle() async {
-    // Initialise the singleton once. This configures the OAuth client.
     if (!_googleInitialized) {
-      await _googleSignIn.initialize();
+      await _googleSignIn.initialize(
+        // Web OAuth 2.0 Client ID from Google Cloud Console.
+        // Required on Android so the plugin can mint a backend-verifiable idToken.
+        serverClientId:
+            '704944814931-bm2kaeef6tbf0p8s6aleriqsmo0o0ci6.apps.googleusercontent.com',
+      );
       _googleInitialized = true;
     }
 
-    // Trigger the native Google sign-in UI.
-    final GoogleSignInAccount account = await _googleSignIn.authenticate();
-    final GoogleSignInAuthentication auth = account.authentication;
-    final String? idToken = auth.idToken;
+    try {
+      final GoogleSignInAccount? account = await _googleSignIn.authenticate();
+      
+      // User cancelled the sign-in dialog
+      if (account == null) {
+        throw _GoogleSignInCancelledException();
+      }
+      
+      final GoogleSignInAuthentication auth = await account.authentication;
+      final String? idToken = auth.idToken;
 
-    if (idToken == null || idToken.isEmpty) {
-      throw Exception('Google sign-in failed: id_token is missing.');
-    }
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception('Google sign-in failed: idToken is missing.');
+      }
 
-    // Send the ID token to our backend for verification and JWT issuance.
-    final response = await dio.post(
-      'auth/google/',
-      data: {
-        'id_token': idToken,
-        'token': idToken, // belt-and-suspenders: accept both field names
-      },
-    );
+      final response = await dio.post(
+        'auth/google/',
+        data: {'id_token': idToken},
+      );
 
-    final data = response.data as Map<String, dynamic>;
-    final tokensMap = data['tokens'] as Map<String, dynamic>?;
-    final accessToken =
-        tokensMap?['access']?.toString() ??
-        data['access']?.toString() ??
-        data['access_token']?.toString();
-    final refreshToken =
-        tokensMap?['refresh']?.toString() ??
-        data['refresh']?.toString() ??
-        data['refresh_token']?.toString();
+      final data = response.data as Map<String, dynamic>;
+      final tokens = data['tokens'] as Map<String, dynamic>?;
+      final accessToken = tokens?['access']?.toString();
+      final refreshToken = tokens?['refresh']?.toString();
+      final userData = data['user'] as Map<String, dynamic>?;
 
-    if (accessToken != null && accessToken.isNotEmpty) {
+      if (accessToken == null || accessToken.isEmpty || userData == null) {
+        throw Exception('Google sign-in failed: backend response was invalid.');
+      }
+
       await TokenService.saveTokens(
         accessToken: accessToken,
         refreshToken: refreshToken,
       );
-    }
 
-    final userData = (data['user'] ?? data) as Map<String, dynamic>;
-    return UserModel.fromJson(userData);
+      return UserModel.fromJson(userData);
+    } on _GoogleSignInCancelledException {
+      rethrow;
+    } catch (error) {
+      final message = error.toString().toLowerCase();
+      if (message.contains('cancel') || message.contains('dismiss')) {
+        throw _GoogleSignInCancelledException();
+      }
+      throw Exception('Google sign-in failed: $error');
+    }
   }
+ 
+
+     
 
   // ─── OTP ─────────────────────────────────────────────────────────────────
 

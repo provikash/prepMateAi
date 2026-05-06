@@ -4,7 +4,11 @@ import 'dart:convert';
 import 'package:prepmate_mobile/core/services/storage.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://10.176.105.1:8000/api/v1/';
+  // ⚠️  Configure your backend URL here:
+  // For Android Emulator (default): http://10.0.2.2:8000/api/v1
+  // For Physical Device: http://<YOUR_MACHINE_IP>:8000/api/v1
+  // Example: http://192.168.1.100:8000/api/v1
+  static const String baseUrl = 'http://10.24.117.1:8000/api/v1';
 
   static Future<Map<String, dynamic>> registerUser(
     String email,

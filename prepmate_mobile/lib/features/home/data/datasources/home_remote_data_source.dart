@@ -69,7 +69,7 @@ class HomeRemoteDataSource {
       final response = await dio.post(
         'resumes/',
         data: {
-          'template': templateId,
+          'template_id': templateId,
           'title': title,
           'data': data,
           'metadata': metadata ?? {},
@@ -93,6 +93,14 @@ class HomeRemoteDataSource {
         data: {'title': title, 'data': data, 'metadata': metadata ?? {}},
       );
       return ResumeDetailModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteResume(String resumeId) async {
+    try {
+      await dio.delete('resumes/$resumeId/');
     } catch (e) {
       rethrow;
     }

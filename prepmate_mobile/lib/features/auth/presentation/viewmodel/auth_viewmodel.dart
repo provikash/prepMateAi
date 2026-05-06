@@ -164,9 +164,21 @@ class AuthViewModel extends Notifier<AuthState> {
         );
       }
     } catch (e) {
+      final errorMsg = e.toString();
+      
+      // Handle Google Sign-In cancellation gracefully
+      if (errorMsg.contains('cancelled') || errorMsg.contains('dismiss')) {
+        state = state.copyWith(
+          status: AuthStatus.unauthenticated,
+          hasCheckedSession: true,
+          clearError: true,
+        );
+        return;
+      }
+      
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: errorMsg,
         hasCheckedSession: true,
       );
     }

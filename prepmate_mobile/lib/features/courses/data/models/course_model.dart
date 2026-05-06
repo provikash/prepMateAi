@@ -72,7 +72,7 @@ class Course {
     );
   }
 
-  Course copyWith({bool? isOpened, required int progress}) {
+  Course copyWith({bool? isOpened, required int progress, required int progressPercentage, required String lessonInfo, required String remainingTime}) {
     return Course(
       id: id,
       title: title,

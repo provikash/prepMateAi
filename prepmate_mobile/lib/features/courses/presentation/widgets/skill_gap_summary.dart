@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:prepmate_mobile/features/resume_analyzer/presentation/providers/resume_analyzer_providers.dart';
 import '../providers/course_providers.dart';
 
 class SkillGapSummary extends ConsumerWidget {

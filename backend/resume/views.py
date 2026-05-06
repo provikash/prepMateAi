@@ -71,6 +71,27 @@ class ResumeViewSet(viewsets.ModelViewSet):
         # Prepare context — normalize data and inject has_* helper flags.
         context_data = ResumeRenderService.prepare_resume_context(resume.data)
 
+        # Ensure `basics` key is always available in the context for templates
+        # that follow JSON Resume schema (basics.name, basics.email, etc.).
+        raw_data = resume.data or {}
+        if "basics" not in context_data:
+            basics_from_data = raw_data.get("basics")
+            if isinstance(basics_from_data, dict):
+                context_data["basics"] = basics_from_data
+            else:
+                # Build basics from personal_info for backward compat templates.
+                pi = context_data.get("personal_info", {})
+                context_data["basics"] = {
+                    "name": pi.get("name", ""),
+                    "label": pi.get("label", pi.get("role", "")),
+                    "email": pi.get("email", ""),
+                    "phone": pi.get("phone", ""),
+                    "summary": pi.get("summary", ""),
+                    "url": pi.get("url", pi.get("website", "")),
+                    "location": {"city": pi.get("location", "")},
+                    "profiles": pi.get("profiles", []),
+                }
+
         # Inject inline CSS into the HTML if the template doesn't already have
         # a <style> block (WeasyPrint only reads inline/embedded styles).
         if inline_css and "<style" not in raw_html:
@@ -80,6 +101,9 @@ class ResumeViewSet(viewsets.ModelViewSet):
         try:
             django_template = Template(raw_html)
             html = django_template.render(Context({"resume": context_data}))
+            # Debug: print first 3000 chars of rendered HTML so you can open it in browser.
+            logger.debug("Rendered HTML (first 3000 chars):\n%s", html[:3000])
+            print("[PDF DEBUG] First 1000 chars of rendered HTML:\n", html[:1000])
         except Exception as exc:
             logger.exception("Template rendering failed for resume %s: %s", pk, exc)
             return Response(
@@ -87,8 +111,6 @@ class ResumeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # Debug: log the first 2000 chars of rendered HTML in DEBUG mode.
-        logger.debug("Rendered HTML (first 2000 chars):\n%s", html[:2000])
 
         # Generate PDF using WeasyPrint.
         try:
@@ -117,3 +139,7 @@ class ResumeViewSet(viewsets.ModelViewSet):
             content_type="application/pdf",
             headers={"Content-Disposition": f'inline; filename="resume_{resume.pk}.pdf"'},
         )
+
+    @action(detail=True, methods=["get"], url_path="export")
+    def export_pdf(self, request, pk=None):
+        return self.generate_pdf(request, pk=pk)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../config/theme.dart';
 import '../../../../core/widgets/app_card.dart';
@@ -299,6 +300,7 @@ class _ResumeStrip extends StatelessWidget {
               resumeId: resume.id,
               title: resume.title,
               thumbnailUrl: resume.thumbnailUrl,
+              pdfUrl: resume.pdfUrl,
               onTap: () => context.push('/resume/pdf/${resume.id}'),
             );
           },
@@ -366,12 +368,14 @@ class _ResumeItemCard extends StatelessWidget {
   final String resumeId;
   final String title;
   final String thumbnailUrl;
+  final String pdfUrl;
   final VoidCallback onTap;
 
   const _ResumeItemCard({
     required this.resumeId,
     required this.title,
     required this.thumbnailUrl,
+    required this.pdfUrl,
     required this.onTap,
   });
 
@@ -385,19 +389,32 @@ class _ResumeItemCard extends StatelessWidget {
         onTap: onTap,
         child: Column(
           children: [
-            Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.mutedBackground,
-                border: Border.all(color: colors.primary, width: 2),
-              ),
-              child: ClipOval(
-                child: thumbnailUrl.isEmpty
-                    ? Icon(Icons.description, color: colors.primary)
-                    : Image.network(thumbnailUrl, fit: BoxFit.cover),
-              ),
+            Stack(
+              children: [
+                Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colors.mutedBackground,
+                    border: Border.all(color: colors.primary, width: 2),
+                  ),
+                  child: ClipOval(
+                    child: thumbnailUrl.isEmpty
+                        ? Icon(Icons.description, color: colors.primary)
+                        : Image.network(thumbnailUrl, fit: BoxFit.cover),
+                  ),
+                ),
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: _ResumeCardMenu(
+                    resumeId: resumeId,
+                    title: title,
+                    pdfUrl: pdfUrl,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             SizedBox(
@@ -413,6 +430,108 @@ class _ResumeItemCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ResumeCardMenu extends ConsumerWidget {
+  final String resumeId;
+  final String title;
+  final String pdfUrl;
+
+  const _ResumeCardMenu({
+    required this.resumeId,
+    required this.title,
+    required this.pdfUrl,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
+
+    return PopupMenuButton<String>(
+      icon: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: colors.cardBackground.withValues(alpha: 0.96),
+          shape: BoxShape.circle,
+          border: Border.all(color: colors.border),
+        ),
+        child: Icon(Icons.more_horiz, size: 16, color: colors.textPrimary),
+      ),
+      onSelected: (value) async {
+        if (value == 'open') {
+          if (context.mounted) {
+            context.push('/resume/pdf/$resumeId');
+          }
+          return;
+        }
+
+        if (value == 'download') {
+          if (pdfUrl.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('PDF is not available yet.')),
+            );
+            return;
+          }
+
+          final launched = await launchUrl(
+            Uri.parse(pdfUrl),
+            mode: LaunchMode.externalApplication,
+          );
+          if (!launched && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to open PDF.')),
+            );
+          }
+          return;
+        }
+
+        if (value == 'delete') {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Delete resume?'),
+              content: Text('Delete "$title" permanently?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Delete'),
+                ),
+              ],
+            ),
+          );
+
+          if (confirmed != true) {
+            return;
+          }
+
+          try {
+            await ref.read(homeRemoteDataSourceProvider).deleteResume(resumeId);
+            ref.invalidate(resumeListProvider);
+            if (context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Resume deleted.')));
+            }
+          } catch (error) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to delete resume: $error')),
+              );
+            }
+          }
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: 'open', child: Text('Open PDF')),
+        PopupMenuItem(value: 'download', child: Text('Download PDF')),
+        PopupMenuItem(value: 'delete', child: Text('Delete')),
+      ],
     );
   }
 }
