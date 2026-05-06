@@ -74,8 +74,8 @@ class ResumeSerializer(serializers.ModelSerializer):
     template_id = serializers.PrimaryKeyRelatedField(
         queryset=ResumeTemplate.objects.filter(is_active=True),
         source="template",
-        required=False,
-        allow_null=True,
+        required=True,
+        allow_null=False,
         write_only=True,
     )
     template = serializers.PrimaryKeyRelatedField(

@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/created_resume_model.dart';
@@ -64,7 +64,9 @@ class ResumeRemoteDataSource {
       }
       throw Exception('Unexpected template format: ${data.runtimeType}');
     } catch (error) {
-      throw Exception('Failed to load template detail: ${_normalizeDioError(error)}');
+      throw Exception(
+        'Failed to load template detail: ${_normalizeDioError(error)}',
+      );
     }
   }
 
@@ -73,26 +75,25 @@ class ResumeRemoteDataSource {
     required Map<String, dynamic> data,
   }) async {
     try {
-      final personalInfo = (data['personal_info'] as Map<String, dynamic>?) ??
-          const <String, dynamic>{};
-      final resumeTitle = (personalInfo['name'] ??
-              data['name'] ??
-              data['title'] ??
-              'My Resume')
-          .toString();
+      final options = await _authorizedOptions();
+      if (options.headers?['Authorization'] == null) {
+        throw Exception('Missing auth token. Please sign in again.');
+      }
 
       final response = await dio.post(
         'resumes/',
         data: {
-          'template': templateId,
           'template_id': templateId,
           'data': data,
-          'title': resumeTitle,
         },
-        options: await _authorizedOptions(),
+        options: options,
       );
       return CreatedResumeModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (error) {
+      debugPrint('Resume save failed: ${error.response?.data}');
+      throw Exception('Failed to create resume: ${_normalizeDioError(error)}');
     } catch (error) {
+      debugPrint('Resume save failed: $error');
       throw Exception('Failed to create resume: ${_normalizeDioError(error)}');
     }
   }
@@ -141,6 +142,19 @@ class ResumeRemoteDataSource {
           .toList();
     } catch (error) {
       throw Exception('Failed to load resumes: ${_normalizeDioError(error)}');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getTemplates() async {
+    try {
+      final response = await dio.get('templates/');
+      final payload = response.data;
+      final list = payload is Map<String, dynamic>
+          ? (payload['results'] as List?) ?? const []
+          : payload as List? ?? const [];
+      return list.whereType<Map<String, dynamic>>().map((e) => e).toList();
+    } catch (error) {
+      throw Exception('Failed to load templates: ${_normalizeDioError(error)}');
     }
   }
 }

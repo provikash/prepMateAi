@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
 import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/gradient_button.dart';
 import '../../../../core/widgets/section_header.dart';
 import 'package:prepmate_mobile/features/home/data/models/dashboard_model.dart';
 import 'package:prepmate_mobile/features/home/data/models/resume_model.dart';
@@ -69,7 +68,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: IndexedStack(
         index: bottomNavIndex,
         children: const [
-          
           _HomeContent(),
           InterviewScreen(),
           AnalyzeScreen(),
@@ -139,19 +137,17 @@ class _HomeContent extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: _HeaderRow(onAddTap: () => context.push('/template')),
             ),
-           
           ),
-           SliverToBoxAdapter(child: SizedBox(height: 8)),
-          
+          SliverToBoxAdapter(child: SizedBox(height: 8)),
+
           SliverToBoxAdapter(
             child: SizedBox(
               height: 114,
               child: _ResumeStrip(resumesAsync: resumesAsync),
             ),
-
           ),
 
-           SliverToBoxAdapter(child: SizedBox(height: 18)),
+          SliverToBoxAdapter(child: SizedBox(height: 18)),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -159,7 +155,7 @@ class _HomeContent extends ConsumerWidget {
             ),
           ),
 
-           SliverToBoxAdapter(child: SizedBox(height: 18)),
+          SliverToBoxAdapter(child: SizedBox(height: 18)),
 
           SliverToBoxAdapter(
             child: Padding(
@@ -168,9 +164,8 @@ class _HomeContent extends ConsumerWidget {
             ),
           ),
 
-           SliverToBoxAdapter(child: SizedBox(height: 18)),
+          SliverToBoxAdapter(child: SizedBox(height: 18)),
 
-          
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
@@ -187,14 +182,14 @@ class _HomeContent extends ConsumerWidget {
               ),
             ),
           ),
-          
+
           SliverToBoxAdapter(
             child: SizedBox(
               height: 220,
               child: _TemplateStrip(templatesAsync: templatesAsync),
             ),
           ),
-          
+
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
         ],
       ),
@@ -209,8 +204,6 @@ class _HeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -219,7 +212,7 @@ class _HeaderRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 18,),
+                SizedBox(height: 18),
                 Text(
                   'PrepMate ✨',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -234,14 +227,12 @@ class _HeaderRow extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(height: 20.0,),
+          SizedBox(height: 20.0),
 
           Row(
             children: [
               _IconCircleButton(icon: Icons.notifications_none, onTap: () {}),
               const SizedBox(width: 18),
-             
-              
             ],
           ),
         ],
@@ -305,9 +296,10 @@ class _ResumeStrip extends StatelessWidget {
 
             final resume = resumes[index - 1];
             return _ResumeItemCard(
+              resumeId: resume.id,
               title: resume.title,
               thumbnailUrl: resume.thumbnailUrl,
-              onTap: () => context.push('/resume-view', extra: resume.id),
+              onTap: () => context.push('/resume/pdf/${resume.id}'),
             );
           },
         );
@@ -371,11 +363,13 @@ class _AddResumeItem extends StatelessWidget {
 }
 
 class _ResumeItemCard extends StatelessWidget {
+  final String resumeId;
   final String title;
   final String thumbnailUrl;
   final VoidCallback onTap;
 
   const _ResumeItemCard({
+    required this.resumeId,
     required this.title,
     required this.thumbnailUrl,
     required this.onTap,
@@ -385,36 +379,39 @@ class _ResumeItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 84,
-            height: 84,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: colors.mutedBackground,
-              border: Border.all(color: colors.primary, width: 2),
+    return Semantics(
+      label: 'Open resume $resumeId',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colors.mutedBackground,
+                border: Border.all(color: colors.primary, width: 2),
+              ),
+              child: ClipOval(
+                child: thumbnailUrl.isEmpty
+                    ? Icon(Icons.description, color: colors.primary)
+                    : Image.network(thumbnailUrl, fit: BoxFit.cover),
+              ),
             ),
-            child: ClipOval(
-              child: thumbnailUrl.isEmpty
-                  ? Icon(Icons.description, color: colors.primary)
-                  : Image.network(thumbnailUrl, fit: BoxFit.cover),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 78,
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: colors.textSecondary),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 78,
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: colors.textSecondary),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -469,24 +466,6 @@ class _GreetingRow extends StatelessWidget {
                     child: Icon(Icons.bolt, color: colors.primary, size: 20),
                   ),
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '1250',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleLarge?.copyWith(fontSize: 16),
-                      ),
-                      Text(
-                        'Prep Points',
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -629,7 +608,7 @@ class _TemplateStrip extends StatelessWidget {
           itemBuilder: (context, index) {
             final template = templates[index];
             return GestureDetector(
-              onTap: () => context.push('/template-detail', extra: template.id),
+              onTap: () => context.push('/resume/form', extra: template.id),
               child: SizedBox(
                 width: 154,
                 child: AppCard(
@@ -724,4 +703,3 @@ class _TagBadge extends StatelessWidget {
     );
   }
 }
-

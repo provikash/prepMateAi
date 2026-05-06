@@ -69,18 +69,22 @@
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/file_picker/example/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/file_picker/example/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/file_picker/example/build" />
+<<<<<<< HEAD
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/build" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/example/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/example/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/example/build" />
+=======
+>>>>>>> 97a3bceb04db1cb1afde6feb28f98eefa158d298
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/url_launcher_linux/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/url_launcher_linux/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/url_launcher_linux/build" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/url_launcher_linux/example/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/url_launcher_linux/example/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/url_launcher_linux/example/build" />
+<<<<<<< HEAD
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/windows/flutter/ephemeral/.plugin_symlinks/device_info_plus/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/windows/flutter/ephemeral/.plugin_symlinks/device_info_plus/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/windows/flutter/ephemeral/.plugin_symlinks/device_info_plus/build" />
@@ -123,6 +127,14 @@
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/example/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/example/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/example/build" />
+=======
+      <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/build" />
+      <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/example/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/example/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/prepmate_mobile/linux/flutter/ephemeral/.plugin_symlinks/share_plus/example/build" />
+>>>>>>> 97a3bceb04db1cb1afde6feb28f98eefa158d298
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

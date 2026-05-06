@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:prepmate_mobile/core/widgets/app_input_field.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
 import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 import 'package:prepmate_mobile/core/widgets/socialButton.dart';
-import 'package:prepmate_mobile/core/widgets/loading_button.dart';
 import 'package:prepmate_mobile/core/widgets/error_text.dart';
 
 import '../presentation/state/auth_state.dart';
@@ -33,6 +31,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signup() async {
+    if (!(_formkey.currentState?.validate() ?? false)) return;
+    await ref.read(authViewModelProvider.notifier).signup(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      passwordConfirm: _confirmPasswordController.text,
+    );
   }
 
   @override
@@ -260,8 +268,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     }
                     if (value != _passwordController.text) {
                       return 'Passwords do not match';
-                    return null;
                     }
+                    return null;
                   },
                 ),
                 const SizedBox(height: 32.0),
@@ -295,7 +303,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                 NeuButton(
                   isLoading: isLoading,
-                  onPressed: _SignupScreenState.new,
+                  onPressed: _signup,
                   text: 'Create Account',
                   icon: Icons.arrow_forward,
                 ),

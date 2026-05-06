@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("resume", "0013_refactor_vikash_template_structure"),
+        ("resume", "0001_initial"),
     ]
 
     operations = [

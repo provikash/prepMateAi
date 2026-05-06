@@ -27,6 +27,10 @@ final templateDetailProvider = FutureProvider.family<TemplateDetailModel, String
 
 final templateProvider = templateDetailProvider;
 
+final templatesListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(resumeRepositoryProvider).getTemplates();
+});
+
 class CreateResumeState {
   final bool isLoading;
   final CreatedResumeModel? data;

@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "theme": "professional",
+    "lastModified": "2026-03-12T00:00:00.000Z"
+  },
+  "basics": {
+    "name": "Thomas Davis",
+    "phone": "0411021021",
+    "label": "Full Stack Developer & AI Engineer",
+    "image": "https://avatars0.githubusercontent.com/u/416209?s=460&u=38f220a2c9c658141804f881c334c594eb1642ac&v=4",
+    "summary": "Full stack developer with 15+ years building products from the ground up at startups and open source. Recently focused on generative AI — building LLM-powered applications with Vercel AI SDK, designing MCP tool ecosystems, and creating AI agent infrastructure. Product-minded engineer who ships fast and prioritizes user feedback.",
+    "website": "https://ajaxdavis.dev",
+    "url": "https://ajaxdavis.dev",
+    "email": "thomasalwyndavis@gmail.com",
+    "location": {
+      "city": "Melbourne",
+      "countryCode": "AU"
+    },
+    "profiles": [
+      {
+        "username": "ajaxdavis",
+        "url": "https://twitter.com/ajaxdavis",
+        "network": "twitter"
+      },
+      {
+        "url": "https://github.com/thomasdavis",
+        "username": "thomasdavis",
+        "network": "github"
+      }
+    ]
+  },
+  "education": [
+    {
+      "endDate": "2009-12-12",
+      "startDate": "2008-02-12",
+      "area": "Software Engineering (incomplete)",
+      "studyType": "Bachelors",
+      "institution": "The University of Queensland"
+    }
+  ],
+  "references": [
+    {
+      "reference": "Thomas was hired as a lead developer and, upon the leaving of our co-founder took over as CTO of Earbits. Thomas is, hands down, one of those A Players you hear of companies dying to hire. He is incredibly smart, not just at code but about everything from classical music to Chinese language and culture. Thomas is great to work with and, as a well established contributor to open source projects and several successful ventures, commands the respect of engineers at all levels. I would suggest doing anything you can to have him on your team.",
+      "name": "Joey Flores, Co-founder and CEO of Earbits, Inc."
+    }
+  ],
+  "skills": [
+    {
+      "name": "AI & LLMs",
+      "level": "Advanced",
+      "keywords": [
+        "Vercel AI SDK",
+        "OpenAI API",
+        "Anthropic API",
+        "Google Gemini",
+        "Structured Outputs",
+        "Embeddings / Vector Search",
+        "RAG Pipelines",
+        "AI Agents",
+        "Model Context Protocol (MCP)",
+        "Prompt Engineering",
+        "LLM Training (from scratch)",
+        "Autograd / Tensor Operations"
+      ]
+    }
+  ]
+}

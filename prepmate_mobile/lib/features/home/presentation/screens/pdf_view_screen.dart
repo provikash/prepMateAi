@@ -10,9 +10,7 @@ class PdfViewScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final resumeFuture = ref
-        .read(homeRemoteDataSourceProvider)
-        .getResumeById(resumeId);
+    final resumeFuture = ref.read(homeRemoteDataSourceProvider).getResumeById(resumeId);
 
     return Scaffold(
       appBar: AppBar(
@@ -35,16 +33,15 @@ class PdfViewScreen extends ConsumerWidget {
           }
 
           final resume = snapshot.data;
-          if (resume == null ||
-              resume.pdfUrl == null ||
-              resume.pdfUrl!.isEmpty) {
+          final pdfUrl = resume?.pdfUrl;
+          if (resume == null || pdfUrl == null || pdfUrl.isEmpty) {
             return const Center(
               child: Text('PDF is not available for this resume yet.'),
             );
           }
 
           return SfPdfViewer.network(
-            resume.pdfUrl!,
+            pdfUrl,
             onDocumentLoadFailed: (details) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

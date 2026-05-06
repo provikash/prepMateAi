@@ -127,7 +127,7 @@ class FormSectionModel {
 
   factory FormSectionModel.fromJson(Map<String, dynamic> json) {
     final rawFields = (json['fields'] as List?) ?? const [];
-    final rawAiActions = (json['ai_actions'] as List?) ?? const [];
+    final rawAiActions = (json['ai_actions'] as List?) ?? (json['ai'] as List?) ?? const [];
 
     final typeStr = json['type'] as String? ?? 'single';
     SectionType type = SectionType.single;
@@ -156,12 +156,20 @@ class FormFieldModel {
   final String key;
   final String label;
   final String type; // e.g. text, textarea, list_object, etc.
+  final bool required;
+  final List<String> options;
+  final List<String> aiActions;
+  final String? help;
   final List<FormObjectFieldModel> objectFields;
 
   const FormFieldModel({
     required this.key,
     required this.label,
     required this.type,
+    this.required = false,
+    this.options = const [],
+    this.aiActions = const [],
+    this.help,
     this.objectFields = const [],
   });
 
@@ -172,6 +180,8 @@ class FormFieldModel {
     final rawObjectFields =
         (json['item_fields'] as List?) ?? (json['fields'] as List?) ?? const [];
     final type = json['type'] as String? ?? 'text';
+    final rawOptions = (json['options'] as List?) ?? const [];
+    final rawAiActions = (json['ai_actions'] as List?) ?? (json['ai'] as List?) ?? const [];
     final parsedObjectFields = rawObjectFields
         .whereType<Map<String, dynamic>>()
         .map(FormObjectFieldModel.fromJson)
@@ -186,6 +196,10 @@ class FormFieldModel {
       key: json['key'] as String? ?? '',
       label: json['label'] as String? ?? '',
       type: type,
+      required: json['required'] as bool? ?? false,
+      options: rawOptions.map((value) => value.toString()).toList(),
+      aiActions: rawAiActions.map((value) => value.toString()).toList(),
+      help: json['help'] as String?,
       objectFields: parsedObjectFields,
     );
   }

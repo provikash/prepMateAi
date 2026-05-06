@@ -3,6 +3,8 @@ from rest_framework.exceptions import NotFound, ValidationError
 
 from resume.models import Resume
 from resume.rendering import ResumeRenderService
+from django.core.files.base import ContentFile
+import os
 
 
 class PDFExportService:
@@ -43,4 +45,15 @@ class PDFExportService:
         except ImportError as exc:
             raise ValidationError("WeasyPrint is not installed in the current environment.") from exc
 
-        return HTML(string=html_content).write_pdf(), resume
+        pdf_bytes = HTML(string=html_content).write_pdf()
+
+        # Save PDF to resume.pdf_file so it's accessible via the model
+        try:
+            filename = f"resume_{resume.id}.pdf"
+            # overwrite existing file
+            resume.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
+        except Exception:
+            # If saving fails, continue returning bytes but log could be added
+            pass
+
+        return pdf_bytes, resume
