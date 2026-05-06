@@ -14,4 +14,4 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD uvicorn backend.asgi:application --host 0.0.0.0 --port $PORT
+CMD uvicorn core.asgi:application --host 0.0.0.0 --port $PORT
