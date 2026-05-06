@@ -31,10 +31,23 @@ class AuthViewSet(viewsets.ViewSet):
 
     def register(self, request):
         serializer = RegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as exc:
+            logger.error("Registration validation error: %s", exc, exc_info=True)
+            raise
 
-        user = serializer.save()
-        tokens = AuthService.issue_tokens(user)
+        try:
+            user = serializer.save()
+        except Exception as exc:
+            logger.error("User creation error: %s", exc, exc_info=True)
+            raise
+
+        try:
+            tokens = AuthService.issue_tokens(user)
+        except Exception as exc:
+            logger.error("Token generation error: %s", exc, exc_info=True)
+            raise
 
         return Response(
             {
