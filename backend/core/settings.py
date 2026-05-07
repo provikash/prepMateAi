@@ -3,6 +3,9 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
+import dj_database_url
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -30,14 +33,23 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 SECRET_KEY = 'django-insecure-y7x-w2#^(9(d%u6-a69&t06aa6-&m&q+hcsrn#86w5uzin9t4)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ['*']
+load_dotenv()
+
+DATABASES = {
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL"),
+        conn_max_age=600,
+        ssl_require=True,
+    )
+}
+
+ALLOWED_HOSTS = ['chubby-chameleon-tgnewvideo-0d9ca0c1.koyeb.app', 'localhost', '127.0.0.1']
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://d42766e5-fef3-4ab6-bed4-32d7ec32972c-00-2uqqnijv241bq.sisko.replit.dev',
-    'https://*.replit.dev',
-    'https://*.repl.co',
+    'https://chubby-chameleon-tgnewvideo-0d9ca0c1.koyeb.app',
+    'https://*.koyeb.app',
 ]
 
 
@@ -66,13 +78,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -112,8 +125,9 @@ GOOGLE_OAUTH_CLIENT_ID = os.environ.get(
     '123456789-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com'
 )
 
-DATABASES = {
-    "default": {
+# If DATABASE_URL env var is not set, use individual DB settings from .env
+if not os.getenv("DATABASE_URL"):
+    DATABASES["default"] = {
         "ENGINE": DB_ENGINE,
         "NAME": DB_NAME,
         "USER": DB_USER,
@@ -121,10 +135,8 @@ DATABASES = {
         "HOST": DB_HOST,
         "PORT": DB_PORT,
         "CONN_MAX_AGE": 60,
-        "OPTIONS": {
-        },
+        "OPTIONS": {},
     }
-}
 
 
 # Password validation
@@ -162,6 +174,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# Ensure a single MIDDLEWARE setting is used (defined above).
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

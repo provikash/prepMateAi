@@ -1,4 +1,4 @@
-// lib/config/dio_client.dart
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,9 +28,8 @@ final dioProvider = Provider<Dio>((ref) {
   
   final dio = Dio(
     BaseOptions(
-
       // ⚠️  Change this to your environment-specific URL.
-      baseUrl: 'http://10.53.236.93:8000/api/v1/',
+      baseUrl: 'https://chubby-chameleon-tgnewvideo-0d9ca0c1.koyeb.app/api/v1/',
 
       // Increased timeout to handle slower networks and backend responsiveness
       // Adjust based on your environment and expected response times
