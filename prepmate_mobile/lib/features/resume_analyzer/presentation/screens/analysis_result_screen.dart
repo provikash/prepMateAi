@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../config/theme.dart';
 import '../../data/models/resume_analysis_model.dart';
 
@@ -11,195 +10,83 @@ class AnalysisResultScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = AppColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppTheme.lightBackground,
+      backgroundColor: colors.screenBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+          icon: Icon(Icons.arrow_back, color: colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Analysis Result',
-          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Main Score Card
-            _buildScoreCard(),
-            const SizedBox(height: 24),
-
-            // Performance Metrics
-            const Text(
-              'Performance Metrics',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Metrics Row
-            Row(
-              children: [
-                Expanded(child: _buildMetricItem('ATS SCORE', analysis.atsScore, Colors.blue)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildMetricItem('SKILL MATCH', analysis.skillScore, Colors.teal)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildMetricItem('KEYWORDS', (analysis.keywordAnalysis.matchPercentage * 100).toInt(), Colors.orange)),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // ATS Breakdown
-            if (analysis.atsBreakdown.isNotEmpty) ...[
-              const Text(
-                'Score Breakdown',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1D2939)),
-              ),
-              const SizedBox(height: 12),
-              ...analysis.atsBreakdown.entries.map((entry) {
-                final score = (entry.value is num) ? entry.value.toDouble() : 0.0;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(entry.key.replaceAll('_', ' ').toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                          Text('${score.toInt()}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: score / 100,
-                        backgroundColor: Colors.grey.shade100,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary.withOpacity(0.7)),
-                        minHeight: 6,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-              const SizedBox(height: 24),
-            ],
-
-            // Strengths Section (Matched Skills & Matched Keywords)
+            _buildScoreOverview(colors, isDark),
+            const SizedBox(height: 32),
+            _buildMetricsGrid(colors, isDark),
+            const SizedBox(height: 32),
+            _buildBreakdownSection(colors, isDark),
+            const SizedBox(height: 32),
             _buildSection(
-              title: 'STRENGTHS',
-              icon: Icons.check_circle,
+              colors: colors,
+              isDark: isDark,
+              title: 'Strengths',
+              icon: Icons.auto_awesome,
               iconColor: Colors.green,
-              backgroundColor: const Color(0xFFF0FDF4),
-              items: [
-                ...analysis.matchedSkills.values.expand((e) => e).take(3).map((s) => 'Strong knowledge in $s'),
-                'Matched ${analysis.keywordAnalysis.matchedKeywords.length} key industry terms',
-                if (analysis.formatIssues.isEmpty) 'Excellent resume formatting and structure',
-              ],
+              items: _getStrengths(),
             ),
             const SizedBox(height: 16),
-
-            // Areas for Improvement (Missing Skills, Format Issues)
             _buildSection(
-              title: 'AREAS FOR IMPROVEMENT',
+              colors: colors,
+              isDark: isDark,
+              title: 'Improvements',
               icon: Icons.trending_up,
               iconColor: Colors.orange,
-              backgroundColor: const Color(0xFFFFFBEB),
-              items: [
-                if (analysis.missingSections.isNotEmpty) 
-                  'Missing sections: ${analysis.missingSections.join(", ")}',
-                ...analysis.missingSkills.values.expand((e) => e).take(2).map((s) => 'Consider adding $s to your skills'),
-                ...analysis.formatIssues.take(2),
-                ...analysis.contactIssues,
-              ],
+              items: _getImprovements(),
             ),
             const SizedBox(height: 32),
-
-            // Suggestions / AI Feedback
             if (analysis.suggestions.isNotEmpty) ...[
-              const Text(
-                'AI Suggestions',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              ...analysis.suggestions.map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.lightbulb_outline, size: 20, color: Colors.amber),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(s, style: const TextStyle(fontSize: 14, color: Colors.black87))),
-                  ],
+              Text(
+                'AI Recommendations',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
                 ),
-              )),
+              ),
+              const SizedBox(height: 16),
+              ...analysis.suggestions.map((s) => _buildSuggestionItem(s, colors)),
             ],
-
-            const SizedBox(height: 30),
-
-            // Action Button
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: AppTheme.buttonGradient,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: () {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  } else {
-                    context.go('/ats-analysis');
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: const Text(
-                  'Try Another Analysis',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildScoreCard() {
+  Widget _buildScoreOverview(AppColors colors, bool isDark) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? colors.cardBackground : colors.screenBackground,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: isDark ? AppTheme.darkShadow : AppTheme.lightShadow,
       ),
       child: Column(
         children: [
@@ -207,24 +94,32 @@ class AnalysisResultScreen extends ConsumerWidget {
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 140,
-                height: 140,
+                width: 160,
+                height: 160,
                 child: CircularProgressIndicator(
                   value: analysis.atsScore / 100,
                   strokeWidth: 12,
-                  backgroundColor: Colors.grey.shade100,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                  backgroundColor: colors.mutedBackground,
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
                 ),
               ),
               Column(
                 children: [
                   Text(
-                    '${analysis.atsScore}',
-                    style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF1D2939)),
+                    '${analysis.atsScore}%',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: colors.textPrimary,
+                    ),
                   ),
                   Text(
-                    '/ 100',
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+                    'ATS Score',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -232,112 +127,303 @@ class AnalysisResultScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            analysis.atsScore >= 80 ? 'Great Job!' : analysis.atsScore >= 60 ? 'Good Start!' : 'Needs Work',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1D2939)),
+            _getScoreMessage(),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: colors.textPrimary,
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            'Your resume is showing strong alignment with the ${analysis.jobRole} role. Keep optimizing to reach the top 10%.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.5),
+            'Target Role: ${analysis.jobRole}',
+            style: TextStyle(
+              fontSize: 14,
+              color: colors.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMetricItem(String label, int value, Color color) {
+  Widget _buildMetricsGrid(AppColors colors, bool isDark) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildMetricCard(
+            'Skill Match',
+            '${analysis.skillScore}%',
+            analysis.skillScore / 100,
+            Colors.teal,
+            colors,
+            isDark,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildMetricCard(
+            'Keywords',
+            '${(analysis.keywordAnalysis.matchPercentage * 100).toInt()}%',
+            analysis.keywordAnalysis.matchPercentage,
+            Colors.orange,
+            colors,
+            isDark,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricCard(String label, String value, double progress,
+      Color color, AppColors colors, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? colors.cardBackground : colors.screenBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: isDark ? AppTheme.darkShadow : AppTheme.lightShadow,
       ),
       child: Column(
         children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
           Stack(
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 50,
-                height: 50,
+                height: 48,
+                width: 48,
                 child: CircularProgressIndicator(
-                  value: value / 100,
-                  strokeWidth: 4,
-                  backgroundColor: Colors.grey.shade50,
+                  value: progress,
+                  strokeWidth: 5,
+                  backgroundColor: color.withOpacity(0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
               ),
               Text(
-                '$value%',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                value,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 0.5),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildBreakdownSection(AppColors colors, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'ATS Factors',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: colors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? colors.cardBackground : colors.screenBackground,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isDark ? AppTheme.darkShadow : AppTheme.lightShadow,
+          ),
+          child: Column(
+            children: analysis.atsBreakdown.entries.map((e) {
+              final val = (e.value as num).toDouble();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          e.key.replaceAll('_', ' ').toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          '${val.toInt()}%',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: val / 100,
+                      backgroundColor: colors.mutedBackground,
+                      valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSection({
+    required AppColors colors,
+    required bool isDark,
     required String title,
     required IconData icon,
     required Color iconColor,
-    required Color backgroundColor,
     required List<String> items,
   }) {
     if (items.isEmpty) return const SizedBox.shrink();
-    
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: iconColor, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? colors.cardBackground : colors.screenBackground,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isDark ? AppTheme.darkShadow : AppTheme.lightShadow,
+          ),
+          child: Column(
+            children: items
+                .map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.circle, size: 6, color: iconColor,).paddingOnly(top: 6, right: 10),
+                          Expanded(
+                            child: Text(
+                              item,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colors.textSecondary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestionItem(String text, AppColors colors) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        color: colors.primarySoft.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.primary.withOpacity(0.1)),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: iconColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: iconColor,
-                  letterSpacing: 0.5,
-                ),
+          Icon(Icons.lightbulb_outline, size: 20, color: colors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                color: colors.textPrimary,
+                height: 1.4,
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...items.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.check_circle, color: iconColor.withOpacity(0.5), size: 16),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    item,
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF344054), height: 1.4),
-                  ),
-                ),
-              ],
             ),
-          )),
+          ),
         ],
       ),
+    );
+  }
+
+  String _getScoreMessage() {
+    if (analysis.atsScore >= 80) return 'Excellent Match!';
+    if (analysis.atsScore >= 60) return 'Good Match!';
+    return 'Needs Improvement';
+  }
+
+  List<String> _getStrengths() {
+    final strengths = <String>[];
+    if (analysis.keywordAnalysis.matchPercentage > 0.7) {
+      strengths.add('Strong keyword alignment with the job role.');
+    }
+    if (analysis.matchedSkills.isNotEmpty) {
+      final skills = analysis.matchedSkills.values.expand((e) => e).take(3).join(', ');
+      strengths.add('High proficiency in key skills: $skills.');
+    }
+    if (analysis.formatIssues.isEmpty) {
+      strengths.add('Professional resume structure and formatting.');
+    }
+    return strengths;
+  }
+
+  List<String> _getImprovements() {
+    final improvements = <String>[];
+    if (analysis.missingSections.isNotEmpty) {
+      improvements.add('Consider adding: ${analysis.missingSections.join(", ")}.');
+    }
+    if (analysis.missingSkills.isNotEmpty) {
+      final skills = analysis.missingSkills.values.expand((e) => e).take(3).join(', ');
+      improvements.add('Highly recommended to add skills: $skills.');
+    }
+    improvements.addAll(analysis.formatIssues);
+    return improvements;
+  }
+}
+
+extension on Widget {
+  Widget paddingOnly({double top = 0, double right = 0}) {
+    return Padding(
+      padding: EdgeInsets.only(top: top, right: right),
+      child: this,
     );
   }
 }

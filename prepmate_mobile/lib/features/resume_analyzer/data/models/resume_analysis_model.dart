@@ -12,6 +12,7 @@ class ResumeAnalysisModel {
   final Map<String, dynamic> atsBreakdown;
   final String jobRole;
   final String? resumeId;
+  final String resumeTitle;
   final DateTime createdAt;
 
   ResumeAnalysisModel({
@@ -28,6 +29,7 @@ class ResumeAnalysisModel {
     required this.atsBreakdown,
     required this.jobRole,
     this.resumeId,
+    this.resumeTitle = 'Uploaded Resume',
     required this.createdAt,
   });
 
@@ -50,6 +52,7 @@ class ResumeAnalysisModel {
       atsBreakdown: json['ats_breakdown'] ?? {},
       jobRole: json['job_role'] ?? '',
       resumeId: json['resume_id']?.toString(),
+      resumeTitle: json['resume_title']?.toString() ?? 'Uploaded Resume',
       createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
     );
   }

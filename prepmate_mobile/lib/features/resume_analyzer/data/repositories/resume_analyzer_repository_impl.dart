@@ -19,7 +19,7 @@ class ResumeAnalyzerRepositoryImpl implements ResumeAnalyzerRepository {
     if (file != null) {
       formData.files.add(
         MapEntry(
-          'file',
+          'uploaded_file',
           await MultipartFile.fromFile(
             file.path,
             filename: file.path.split('/').last,

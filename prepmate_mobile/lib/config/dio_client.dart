@@ -30,7 +30,7 @@ final dioProvider = Provider<Dio>((ref) {
     BaseOptions(
 
       // ⚠️  Change this to your environment-specific URL.
-      baseUrl: 'http://10.203.119.93:8000/api/v1/',
+      baseUrl: 'http://10.53.236.93:8000/api/v1/',
 
       // Increased timeout to handle slower networks and backend responsiveness
       // Adjust based on your environment and expected response times

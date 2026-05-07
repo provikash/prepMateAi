@@ -4,11 +4,14 @@ import '../../../../config/dio_client.dart';
 import '../../data/models/resume_analysis_model.dart';
 import '../../data/repositories/resume_analyzer_repository_impl.dart';
 import '../../domain/repositories/resume_analyzer_repository.dart';
+import '../../../resume/presentation/providers/resume_providers.dart';
 
 final resumeAnalyzerRepositoryProvider = Provider<ResumeAnalyzerRepository>((ref) {
   final dio = ref.watch(dioProvider);
   return ResumeAnalyzerRepositoryImpl(dio);
 });
+
+final resumeListProvider = storedResumesProvider;
 
 // State classes
 class AsyncState<T> {

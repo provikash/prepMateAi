@@ -21,7 +21,7 @@ import 'package:prepmate_mobile/features/resume/presentation/screens/ai_input_sc
 import 'package:prepmate_mobile/features/resume/presentation/screens/ai_result_screen.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/data/models/resume_analysis_model.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/history_screen.dart';
-import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/result_screen.dart';
+import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analysis_result_screen.dart';
 import 'package:prepmate_mobile/features/splash/screens/splash_screen.dart';
 import 'package:prepmate_mobile/core/services/auth_token_manager.dart';
 
@@ -129,7 +129,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/ats-result',
         builder: (context, state) {
           final analysis = state.extra as ResumeAnalysisModel;
-          return ResultScreen(analysis: analysis);
+          return AnalysisResultScreen(analysis: analysis);
         },
       ),
       GoRoute(
