@@ -38,6 +38,9 @@ class AnalyzeResumeRequestSerializer(serializers.Serializer):
         if not resume_id and not uploaded_file:
             raise serializers.ValidationError("Provide either resume_id or uploaded_file.")
 
+        if resume_id and uploaded_file:
+            raise serializers.ValidationError("Provide only one source: either resume_id or uploaded_file.")
+
         return attrs
 
 
@@ -61,6 +64,12 @@ class ResumeAnalysisHistorySerializer(serializers.ModelSerializer):
         ]
 
 
+class ResumeSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    pdf_url = serializers.CharField(allow_null=True)
+
+
 class ResumeAnalysisResponseSerializer(serializers.Serializer):
     analysis_id = serializers.UUIDField()
     ats_score = serializers.IntegerField()
@@ -75,4 +84,5 @@ class ResumeAnalysisResponseSerializer(serializers.Serializer):
     ats_breakdown = serializers.DictField()
     job_role = serializers.CharField()
     resume_id = serializers.UUIDField(allow_null=True)
+    resume_title = serializers.CharField(allow_blank=True, required=False)
     created_at = serializers.DateTimeField()

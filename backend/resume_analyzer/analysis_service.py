@@ -1,3 +1,5 @@
+import logging
+import traceback
 from rest_framework.exceptions import NotFound, ValidationError
 
 from resume.models import Resume
@@ -11,6 +13,8 @@ from .keyword_engine import KeywordAnalysisEngine
 from .models import ResumeAnalysis
 from .parser import ResumeParser
 from .skill_gap_engine import SkillGapEngine
+
+logger = logging.getLogger(__name__)
 
 
 class ResumeAnalyzerService:
@@ -53,99 +57,113 @@ class ResumeAnalyzerService:
 
     @staticmethod
     def build_analysis_payload(instance: ResumeAnalysis) -> dict:
-        data = instance.analysis_data or {}
+        resume = instance.resume
         return {
             "analysis_id": str(instance.id),
             "ats_score": instance.ats_score,
             "skill_score": instance.skill_score,
-            "missing_sections": data.get("missing_sections", []),
-            "missing_skills": data.get("missing_skills", {}),
-            "matched_skills": data.get("matched_skills", {}),
-            "keyword_analysis": data.get("keyword_analysis", {}),
-            "format_issues": data.get("format_issues", []),
-            "contact_issues": data.get("contact_issues", []),
-            "suggestions": data.get("suggestions", []),
-            "ats_breakdown": data.get("ats_breakdown", {}),
+            "missing_sections": instance.missing_sections,
+            "missing_skills": instance.missing_skills,
+            "matched_skills": instance.matched_skills,
+            "keyword_analysis": instance.keyword_analysis,
+            "format_issues": instance.format_issues,
+            "contact_issues": instance.contact_issues,
+            "suggestions": instance.suggestions,
+            "ats_breakdown": instance.ats_breakdown,
             "job_role": instance.job_role,
-            "resume_id": str(instance.resume_id) if instance.resume_id else None,
+            "resume_id": str(resume.id) if resume else None,
+            "resume_title": resume.title if resume else "Uploaded Resume",
             "created_at": instance.created_at,
         }
 
     @staticmethod
     def analyze(*, user, job_role: str, resume_id=None, uploaded_file=None) -> dict:
-        job_role_cleaned = (job_role or "").strip()
-        if not job_role_cleaned:
-            raise ValidationError({"job_role": "job_role is required."})
+        try:
+            job_role_cleaned = (job_role or "").strip()
+            if not job_role_cleaned:
+                raise ValidationError({"job_role": "job_role is required."})
 
-        resume_obj = None
-        raw_text = ""
+            resume_obj = None
+            raw_text = ""
 
-        if resume_id:
-            try:
-                resume_obj = Resume.objects.select_related("template").get(id=resume_id, user=user)
-            except Resume.DoesNotExist as exc:
-                raise NotFound("Resume not found for this user.") from exc
+            if resume_id:
+                try:
+                    resume_obj = Resume.objects.select_related("template").get(id=resume_id, user=user)
+                except Resume.DoesNotExist as exc:
+                    raise NotFound("Resume not found for this user.") from exc
 
-            structured_data = ResumeValidationService.normalize_resume_data(resume_obj.data)
-            ResumeValidationService.validate_resume_data(structured_data)
-            raw_text = ResumeAnalyzerService._resume_text_from_structured(structured_data)
-        elif uploaded_file:
-            structured_data, raw_text = ResumeParser.parse_uploaded_pdf(uploaded_file, job_role_cleaned)
-            structured_data = ResumeValidationService.normalize_resume_data(structured_data)
-        else:
-            raise ValidationError("Provide either resume_id or uploaded_file.")
+                structured_data = ResumeValidationService.normalize_resume_data(resume_obj.data)
+                ResumeValidationService.validate_resume_data(structured_data)
+                raw_text = ResumeAnalyzerService._resume_text_from_structured(structured_data)
+            elif uploaded_file:
+                structured_data, raw_text = ResumeParser.parse_uploaded_pdf(uploaded_file, job_role_cleaned)
+                structured_data = ResumeValidationService.normalize_resume_data(structured_data)
+            else:
+                raise ValidationError("Provide either resume_id or uploaded_file.")
 
-        missing_sections = ResumeAnalyzerService._missing_sections(structured_data)
-        skill_result = SkillGapEngine.evaluate(structured_data, job_role_cleaned)
+            missing_sections = ResumeAnalyzerService._missing_sections(structured_data)
+            skill_result = SkillGapEngine.evaluate(structured_data, job_role_cleaned)
 
-        keyword_analysis = KeywordAnalysisEngine.analyze(
-            structured_data=structured_data,
-            raw_text=raw_text,
-            job_role=job_role_cleaned,
-            role_skills=skill_result.get("role_skills", {}),
-        )
+            keyword_analysis = KeywordAnalysisEngine.analyze(
+                structured_data=structured_data,
+                raw_text=raw_text,
+                job_role=job_role_cleaned,
+                role_skills=skill_result.get("role_skills", {}),
+            )
 
-        format_issues = ResumeFormatAnalyzer.analyze(raw_text=raw_text, structured_data=structured_data)
-        contact_issues = ContactValidator.validate(structured_data.get("personal_info") or {})
+            format_issues = ResumeFormatAnalyzer.analyze(raw_text=raw_text, structured_data=structured_data)
+            contact_issues = ContactValidator.validate(structured_data.get("personal_info") or {})
 
-        ats_result = ATSScoringEngine.calculate(
-            keyword_match_percentage=keyword_analysis.get("match_percentage", 0),
-            missing_sections=missing_sections,
-            format_issues=format_issues,
-            contact_issues=contact_issues,
-            structured_data=structured_data,
-        )
+            ats_result = ATSScoringEngine.calculate(
+                keyword_match_percentage=keyword_analysis.get("match_percentage", 0),
+                missing_sections=missing_sections,
+                format_issues=format_issues,
+                contact_issues=contact_issues,
+                structured_data=structured_data,
+            )
 
-        base_analysis_data = {
-            "missing_sections": missing_sections,
-            "missing_skills": skill_result.get("missing_skills", {}),
-            "matched_skills": skill_result.get("matched_skills", {}),
-            "format_issues": format_issues,
-            "contact_issues": contact_issues,
-            "keyword_analysis": keyword_analysis,
-            "suggestions": [],
-            "ats_breakdown": ats_result.get("breakdown", {}),
-            "parsed_resume": structured_data,
-        }
+            base_analysis_data = {
+                "missing_sections": missing_sections,
+                "missing_skills": skill_result.get("missing_skills", {}),
+                "matched_skills": skill_result.get("matched_skills", {}),
+                "format_issues": format_issues,
+                "contact_issues": contact_issues,
+                "keyword_analysis": keyword_analysis,
+                "suggestions": [],
+                "ats_breakdown": ats_result.get("breakdown", {}),
+                "parsed_resume": structured_data,
+            }
 
-        suggestions = AIImprovementEngine.generate_suggestions(
-            structured_data=structured_data,
-            analysis_data=base_analysis_data,
-            job_role=job_role_cleaned,
-        )
-        base_analysis_data["suggestions"] = suggestions
+            suggestions = AIImprovementEngine.generate_suggestions(
+                structured_data=structured_data,
+                analysis_data=base_analysis_data,
+                job_role=job_role_cleaned,
+            )
 
-        analysis_instance = ResumeAnalysis.objects.create(
-            user=user,
-            resume=resume_obj,
-            uploaded_file=uploaded_file if uploaded_file else None,
-            job_role=job_role_cleaned,
-            ats_score=ats_result["ats_score"],
-            skill_score=skill_result["skill_score"],
-            analysis_data=base_analysis_data,
-        )
+            analysis_instance = ResumeAnalysis.objects.create(
+                user=user,
+                resume=resume_obj,
+                uploaded_file=uploaded_file if uploaded_file else None,
+                job_role=job_role_cleaned,
+                ats_score=ats_result["ats_score"],
+                skill_score=skill_result["skill_score"],
+                missing_sections=missing_sections,
+                missing_skills=skill_result.get("missing_skills", {}),
+                matched_skills=skill_result.get("matched_skills", {}),
+                keyword_analysis=keyword_analysis,
+                format_issues=format_issues,
+                contact_issues=contact_issues,
+                suggestions=suggestions,
+                ats_breakdown=ats_result.get("breakdown", {}),
+            )
 
-        return ResumeAnalyzerService.build_analysis_payload(analysis_instance)
+            return ResumeAnalyzerService.build_analysis_payload(analysis_instance)
+        except (ValidationError, NotFound):
+            raise
+        except Exception as e:
+            logger.error(f"Error analyzing resume: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise ValidationError({"detail": f"Analysis failed: {str(e)}"})
 
     @staticmethod
     def get_analysis_or_404(*, user, analysis_id):

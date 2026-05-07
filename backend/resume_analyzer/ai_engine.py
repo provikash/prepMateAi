@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 import re
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 class AIImprovementEngine:
@@ -14,7 +17,7 @@ class AIImprovementEngine:
             "provider": os.getenv("AI_PROVIDER", "gemini").strip().lower(),
             "timeout": int(os.getenv("AI_TIMEOUT_SECONDS", str(AIImprovementEngine.DEFAULT_TIMEOUT_SECONDS))),
             "gemini_api_key": os.getenv("GEMINI_API_KEY", "").strip(),
-            "gemini_model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip(),
+            "gemini_model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash").strip(),
             "openai_api_key": os.getenv("OPENAI_API_KEY", "").strip(),
             "openai_model": os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip(),
         }
@@ -76,12 +79,23 @@ class AIImprovementEngine:
     @staticmethod
     def _call_gemini(prompt: str, config: dict) -> str:
         if not config["gemini_api_key"]:
+            logger.error("Gemini API key is missing.")
             return ""
 
+        # Use v1 as default but allowing fallback or specific versions
+        api_version = os.getenv("GEMINI_API_VERSION", "v1beta").strip()
+        model_name = config["gemini_model"]
+
+        # Standardize model name if it looks like a typo (e.g., 2.5 -> 1.5)
+        if "2.5" in model_name:
+            logger.warning(f"Suspected model name typo: {model_name}. Attempting with gemini-1.5-flash.")
+            model_name = "gemini-1.5-flash"
+
         url = (
-            "https://generativelanguage.googleapis.com/v1beta/"
-            f"models/{config['gemini_model']}:generateContent?key={config['gemini_api_key']}"
+            f"https://generativelanguage.googleapis.com/{api_version}/"
+            f"models/{model_name}:generateContent?key={config['gemini_api_key']}"
         )
+
         payload = {
             "generationConfig": {
                 "temperature": 0.2,
@@ -91,19 +105,29 @@ class AIImprovementEngine:
                 {
                     "parts": [
                         {
-                            "text": "You are a strict JSON generator. Return valid JSON only.\\n\\n" + prompt
+                            "text": "You are a strict JSON generator. Return valid JSON only.\n\n" + prompt
                         }
                     ]
                 }
             ],
         }
 
-        response = requests.post(url, json=payload, timeout=config["timeout"])
-        if response.status_code >= 400:
-            return ""
+        try:
+            response = requests.post(url, json=payload, timeout=config["timeout"])
+            if response.status_code != 200:
+                logger.error(f"Gemini API Error {response.status_code}: {response.text}")
+                return ""
 
-        body = response.json()
-        return body.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            body = response.json()
+            candidates = body.get("candidates", [])
+            if not candidates:
+                logger.warning("Gemini returned no candidates.")
+                return ""
+
+            return candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+        except Exception as e:
+            logger.error(f"Gemini Request Exception: {str(e)}")
+            return ""
 
     @staticmethod
     def _call_provider(prompt: str) -> dict:

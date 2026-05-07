@@ -3,13 +3,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from resume.models import Resume
 from .analysis_service import ResumeAnalyzerService
 from .models import ResumeAnalysis
 from .serializers import (
     AnalyzeResumeRequestSerializer,
     ReanalyzeRequestSerializer,
-    ResumeAnalysisHistorySerializer,
     ResumeAnalysisResponseSerializer,
+    ResumeSerializer,
 )
 
 
@@ -31,12 +32,36 @@ class ResumeAnalyzeAPIView(APIView):
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
-class ResumeAnalysisHistoryAPIView(generics.ListAPIView):
+class ResumeAnalysisHistoryAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = ResumeAnalysisHistorySerializer
 
-    def get_queryset(self):
-        return ResumeAnalysis.objects.filter(user=self.request.user).order_by("-created_at")
+    def get(self, request):
+        analyses = ResumeAnalysis.objects.filter(user=request.user).order_by("-created_at")
+        payload = [ResumeAnalyzerService.build_analysis_payload(item) for item in analyses]
+        response_serializer = ResumeAnalysisResponseSerializer(payload, many=True)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class ResumeListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        resumes = Resume.objects.filter(user=request.user).order_by("-updated_at")
+        result = []
+        for resume in resumes:
+            pdf_url = None
+            if resume.pdf_file:
+                try:
+                    pdf_url = request.build_absolute_uri(resume.pdf_file.url)
+                except Exception:
+                    pdf_url = None
+            result.append({
+                "id": resume.id,
+                "title": resume.title,
+                "pdf_url": pdf_url,
+            })
+        serializer = ResumeSerializer(result, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ResumeAnalysisDetailAPIView(APIView):

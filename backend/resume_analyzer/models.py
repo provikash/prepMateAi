@@ -1,8 +1,6 @@
 import uuid
-
 from django.conf import settings
 from django.db import models
-
 
 class ResumeAnalysis(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -26,7 +24,17 @@ class ResumeAnalysis(models.Model):
     job_role = models.CharField(max_length=120)
     ats_score = models.PositiveSmallIntegerField(default=0)
     skill_score = models.PositiveSmallIntegerField(default=0)
-    analysis_data = models.JSONField(default=dict)
+
+    # Analysis Details
+    missing_sections = models.JSONField(default=list)
+    missing_skills = models.JSONField(default=dict)
+    matched_skills = models.JSONField(default=dict)
+    keyword_analysis = models.JSONField(default=dict)
+    format_issues = models.JSONField(default=list)
+    contact_issues = models.JSONField(default=list)
+    suggestions = models.JSONField(default=list)
+    ats_breakdown = models.JSONField(default=dict)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
