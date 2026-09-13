@@ -10,7 +10,7 @@ class TemplateListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ResumeTemplate
-        fields = ["id", "title", "category", "thumbnail", "thumbnail_url"]
+        fields = ["id", "title", "slug", "description", "category", "version", "thumbnail", "thumbnail_url", "is_active"]
         read_only_fields = fields
 
     def get_thumbnail_url(self, obj):
@@ -31,14 +31,16 @@ class TemplateDetailSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "slug",
+            "description",
             "category",
+            "version",
             "thumbnail",
             "thumbnail_url",
             "form_schema",
             "preview_image",
-            "html_structure",
-            "css",
             "metadata",
+            "is_active",
             "created_at",
             "updated_at",
         ]

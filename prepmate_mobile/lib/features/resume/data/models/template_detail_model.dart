@@ -33,11 +33,11 @@ class TemplateDetailModel {
     if (sectionsList.isEmpty) {
       // Basics
       final basicsFields = <FormFieldModel>[];
-      basicsFields.add(FormFieldModel(key: 'basics.name', label: 'Full Name', type: 'text'));
-      basicsFields.add(FormFieldModel(key: 'basics.email', label: 'Email', type: 'text'));
-      basicsFields.add(FormFieldModel(key: 'basics.phone', label: 'Phone', type: 'text'));
-      basicsFields.add(FormFieldModel(key: 'basics.label', label: 'Job Title', type: 'text'));
-      basicsFields.add(FormFieldModel(key: 'basics.summary', label: 'Summary', type: 'textarea'));
+      basicsFields.add(FormFieldModel(key: 'name', label: 'Full Name', type: 'text'));
+      basicsFields.add(FormFieldModel(key: 'email', label: 'Email', type: 'text'));
+      basicsFields.add(FormFieldModel(key: 'phone', label: 'Phone', type: 'text'));
+      basicsFields.add(FormFieldModel(key: 'label', label: 'Job Title', type: 'text'));
+      basicsFields.add(FormFieldModel(key: 'summary', label: 'Summary', type: 'textarea'));
 
       sectionsList.add(FormSectionModel(
         title: 'Personal Information',

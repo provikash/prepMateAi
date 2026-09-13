@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils.text import slugify
 
 from core.models import BaseModel
 from resume.thumbnail_utils import (
@@ -14,6 +15,10 @@ from resume.thumbnail_utils import (
 
 class ResumeTemplate(BaseModel):
     name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=120, unique=True)
+    description = models.TextField(blank=True, default="")
+    theme_identifier = models.SlugField(max_length=120, default="professional")
+    version = models.PositiveIntegerField(default=1)
     category = models.CharField(max_length=60, default="general")
     preview_image = models.ImageField(upload_to="templates/previews/", blank=True, null=True)
     html_structure = models.TextField()
@@ -22,6 +27,14 @@ class ResumeTemplate(BaseModel):
     is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name) or "template"
+            candidate = base
+            suffix = 2
+            while type(self).objects.exclude(pk=self.pk).filter(slug=candidate).exists():
+                candidate = f"{base}-{suffix}"
+                suffix += 1
+            self.slug = candidate
         super().save(*args, **kwargs)
 
         if self.preview_image:
@@ -65,7 +78,8 @@ class Resume(BaseModel):
         blank=True,
         related_name="resumes",
     )
-    data = models.JSONField()
+    template_version = models.PositiveIntegerField(default=1)
+    data = models.JSONField(default=dict)
     metadata = models.JSONField(default=dict, blank=True)
 
     def save(self, *args, **kwargs):

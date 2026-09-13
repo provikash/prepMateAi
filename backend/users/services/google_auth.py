@@ -83,36 +83,14 @@ class GoogleTokenVerifier:
         if not id_token:
             raise GoogleTokenVerificationError('id_token is required')
 
-        # Method 1: Verify with audience using Firebase's verification
+        from .google_oauth import verify_google_id_token, GoogleTokenError
         try:
-            if google_id_token and google_requests:
-                idinfo = google_id_token.verify_firebase_token(
-                    id_token, 
-                    google_requests.Request()
-                )
-                logger.info(f'✓ Token verified via Firebase (user: {idinfo.get("email")})')
-                return idinfo
-        except Exception as e:
-            logger.warning(f'Firebase token verification failed: {e}')
-
-        # Method 2: Fallback - decode without strict verification (for dev)
-        try:
-            import google.auth.jwt as google_jwt
-            idinfo = google_jwt.decode(
-                id_token, 
-                certs_url=None,  # Skip cert verification
-                verify=False      # Skip signature verification
-            )
-            logger.warning(
-                '⚠ Token decoded WITHOUT verification (dev mode). '
-                f'User: {idinfo.get("email")}'
-            )
-            return idinfo
-        except Exception as e:
-            logger.error(f'Token decoding failed: {e}')
-            raise GoogleTokenVerificationError(
-                f'Invalid Google token: {str(e)}'
-            )
+            claims = verify_google_id_token(id_token)
+            if claims.get("email_verified") is not True:
+                raise GoogleTokenVerificationError("Verified email is required.")
+            return claims
+        except GoogleTokenError:
+            raise GoogleTokenVerificationError("Invalid Google token.") from None
 
     def verify_and_authenticate_user(
         self, 
@@ -152,9 +130,14 @@ class GoogleTokenVerifier:
             defaults={
                 'name': name,
                 'is_verified': email_verified,
-                'usable_password': False,  # Google auth only
             }
         )
+
+        if not user.is_active or user.deleted_at:
+            raise GoogleTokenVerificationError("Account is not eligible for authentication.")
+        if created:
+            user.set_unusable_password()
+            user.save(update_fields=["password"])
 
         # Step 4: Update existing user info if needed
         if not created:

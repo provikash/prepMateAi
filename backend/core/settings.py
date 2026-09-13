@@ -30,7 +30,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-y7x-w2#^(9(d%u6-a69&t06aa6-&m&q+hcsrn#86w5uzin9t4)'
+SECRET_KEY = os.getenv("SECRET_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
@@ -89,7 +89,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'core.urls'
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [v.strip() for v in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if v.strip()]
 
 TEMPLATES = [
     {
@@ -188,7 +189,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK ={
     'DEFAULT_AUTHENTICATION_CLASSES' :(
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'users.authentication.AccountJWTAuthentication',
         
         
     ),
@@ -214,8 +215,9 @@ REST_FRAMEWORK ={
 
 AUTH_USER_MODEL ='users.User'
 SIMPLE_JWT ={
-  'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-  'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+  'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15"))),
+  'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "7"))),
+    'CHECK_REVOKE_TOKEN': True,
     'ROTATE_REFRESH_TOKENS':True,
     'BLACKLIST_AFTER_ROTATION':True,
     'UPDATE_LAST_LOGIN':True,
@@ -261,3 +263,44 @@ LOGGING = {
         },
     },
 }
+
+# Account settings remain in core to preserve existing deployment entry points.
+OTP_LENGTH = int(os.getenv("OTP_LENGTH", "6"))
+OTP_EXPIRY_SECONDS = int(os.getenv("OTP_EXPIRY_SECONDS", "600"))
+OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
+OTP_RESEND_COOLDOWN_SECONDS = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "60"))
+OTP_ISSUE_WINDOW_SECONDS = int(os.getenv("OTP_ISSUE_WINDOW_SECONDS", "600"))
+OTP_MAX_ISSUES = int(os.getenv("OTP_MAX_ISSUES", "3"))
+AUTH_THROTTLE_RATES = {
+    "register": "5/min", "login": "10/min", "refresh": "20/min",
+    "verify": "10/min", "resend": "3/min", "reset_request": "3/min",
+    "reset_confirm": "10/min", "logout": "10/min", "change_password": "5/min",
+    "deactivate": "5/min", "account": "5/min", "me": "60/min",
+}
+for scope in AUTH_THROTTLE_RATES:
+    AUTH_THROTTLE_RATES[scope] = os.getenv("AUTH_RATE_" + scope.upper(), AUTH_THROTTLE_RATES[scope])
+ALLOWED_HOSTS = [v.strip() for v in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if v.strip()]
+CSRF_TRUSTED_ORIGINS = [v.strip() for v in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if v.strip()]
+CACHES = {"default": {"BACKEND": os.getenv("CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache"), "LOCATION": os.getenv("CACHE_LOCATION", "prepmate-auth")}}
+# Default deployment mode is production. Development and tests explicitly opt out.
+PRODUCTION = os.getenv("DJANGO_ENV", "production") == "production"
+if PRODUCTION:
+    from django.core.exceptions import ImproperlyConfigured
+    if DEBUG or len(SECRET_KEY) < 50 or len(set(SECRET_KEY)) < 5 or SECRET_KEY.startswith("django-insecure-"):
+        raise ImproperlyConfigured("Production requires DEBUG=False and a strong environment SECRET_KEY.")
+    if not os.getenv("ALLOWED_HOSTS") or "*" in ALLOWED_HOSTS:
+        raise ImproperlyConfigured("Production requires an explicit ALLOWED_HOSTS allowlist.")
+    if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
+        raise ImproperlyConfigured("Production requires PostgreSQL.")
+    if CACHES["default"]["BACKEND"] != "django.core.cache.backends.db.DatabaseCache":
+        raise ImproperlyConfigured("Production requires shared DatabaseCache; run createcachetable.")
+    if EMAIL_BACKEND != "django.core.mail.backends.smtp.EmailBackend":
+        raise ImproperlyConfigured("Production requires SMTP email delivery; console/file backends expose OTPs.")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"

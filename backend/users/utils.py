@@ -1,5 +1,5 @@
 import logging
-import random
+import secrets
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_otp() -> str:
-    return str(random.randint(100000, 999999))
+    return str(secrets.randbelow(900000) + 100000)
 
 
 def send_otp_email(email: str, otp: str) -> int:

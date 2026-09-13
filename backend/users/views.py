@@ -1,12 +1,14 @@
 import logging
-import random
 
 from rest_framework import status, viewsets
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from .serializers import GuardedTokenRefreshSerializer, RefreshInputSerializer
+from .api import AccountResponseMixin
+from .throttles import AuthIPThrottle, AuthIdentityThrottle
+from .services.account_service import AccountService
 
 from resume.models import Resume
 from resume_analyzer.models import ResumeAnalysis
@@ -26,37 +28,17 @@ from .models import UserProfile
 logger = logging.getLogger(__name__)
 
 
-class AuthViewSet(viewsets.ViewSet):
+class AuthViewSet(AccountResponseMixin, viewsets.ViewSet):
+    authentication_classes = []
+    throttle_classes = [AuthIPThrottle, AuthIdentityThrottle]
     permission_classes = [AllowAny]
 
     def register(self, request):
         serializer = RegisterSerializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception as exc:
-            logger.error("Registration validation error: %s", exc, exc_info=True)
-            raise
-
-        try:
-            user = serializer.save()
-        except Exception as exc:
-            logger.error("User creation error: %s", exc, exc_info=True)
-            raise
-
-        try:
-            tokens = AuthService.issue_tokens(user)
-        except Exception as exc:
-            logger.error("Token generation error: %s", exc, exc_info=True)
-            raise
-
-        return Response(
-            {
-                "message": "User registered successfully.",
-                "user": UserSummarySerializer(user).data,
-                "tokens": tokens,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        serializer.is_valid(raise_exception=True)
+        user = AccountService.register(serializer)
+        summary = UserSummarySerializer(user).data
+        return Response({"success": True, "message": "Registration successful. Please verify your email.", "user": summary, "data": {"user": summary}}, status=201)
 
     def login(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -67,7 +49,7 @@ class AuthViewSet(viewsets.ViewSet):
             password=serializer.validated_data["password"],
         )
 
-        if not user:
+        if not user or not user.is_verified or user.deleted_at:
             return Response(
                 {"detail": "Invalid email or password."},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -77,6 +59,8 @@ class AuthViewSet(viewsets.ViewSet):
 
         return Response(
             {
+                "success": True,
+                "data": {**tokens, "user": UserSummarySerializer(user).data},
                 "message": "Login successful.",
                 "user": UserSummarySerializer(user).data,
                 "tokens": tokens,
@@ -85,12 +69,14 @@ class AuthViewSet(viewsets.ViewSet):
         )
 
     def refresh(self, request):
-        serializer = TokenRefreshSerializer(data=request.data)
+        input_serializer = RefreshInputSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        serializer = GuardedTokenRefreshSerializer(data=input_serializer.validated_data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
-class GoogleAuthView(APIView):
+class GoogleAuthView(AccountResponseMixin, APIView):
     """
     POST /api/v1/auth/google/
     Body: { "id_token": "<Google ID token from client>" }
@@ -100,6 +86,9 @@ class GoogleAuthView(APIView):
     """
 
     permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [AuthIPThrottle, AuthIdentityThrottle]
+    auth_scope = "login"
 
     def post(self, request):
         serializer = GoogleAuthSerializer(data=request.data)
@@ -108,13 +97,13 @@ class GoogleAuthView(APIView):
         try:
             idinfo = verify_google_id_token(serializer.validated_data["id_token"])
         except GoogleTokenError as exc:
-            logger.warning("Google token verification failed: %s", exc)
+            logger.warning("Google token verification failed.")
             return Response(
                 {"detail": "Invalid or expired Google token."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         except Exception as exc:
-            logger.exception("Unexpected Google token verification error: %s", exc)
+            logger.error("Google token verification unavailable.")
             return Response(
                 {"detail": "Could not verify Google token."},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -124,7 +113,7 @@ class GoogleAuthView(APIView):
         name = idinfo.get("name", "") or idinfo.get("email", "").split("@")[0]
         picture = idinfo.get("picture") or ""
 
-        if not email:
+        if not email or idinfo.get("email_verified") is not True:
             return Response(
                 {"detail": "Could not retrieve email from Google token."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -142,6 +131,10 @@ class GoogleAuthView(APIView):
                 "is_verified": True,
             },
         )
+
+        if created:
+            user.set_unusable_password()
+            user.save(update_fields=["password"])
 
         updates = []
         if not user.name and name:
@@ -170,7 +163,7 @@ class GoogleAuthView(APIView):
         )
 
 
-class ProfileViewSet(viewsets.ViewSet):
+class ProfileViewSet(AccountResponseMixin, viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def me(self, request):
@@ -187,7 +180,7 @@ class ProfileViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class UserProfileRetrieveUpdateView(RetrieveUpdateAPIView):
+class UserProfileRetrieveUpdateView(AccountResponseMixin, RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer
 

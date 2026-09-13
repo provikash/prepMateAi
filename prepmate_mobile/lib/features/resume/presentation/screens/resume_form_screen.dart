@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
-import '../../data/models/template_detail_model.dart';
-import '../providers/resume_providers.dart';
 import '../../../../core/providers/form_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
-import '../widgets/resume_form_sections.dart';
+import '../../data/models/template_detail_model.dart';
+import '../providers/resume_builder_provider.dart';
+import '../providers/resume_providers.dart';
+import '../widgets/resume_step_indicator.dart';
 import '../widgets/schema_form_section.dart';
-import '../widgets/resume_widgets.dart';
 
+/// The route keeps its original name so all existing template-selection links
+/// remain valid. Its content is now a backend-schema-driven, step-by-step
+/// resume builder.
 class ResumeFormScreen extends ConsumerStatefulWidget {
   final String? templateId;
 
@@ -21,15 +24,14 @@ class ResumeFormScreen extends ConsumerStatefulWidget {
 }
 
 class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
-  String? _appliedTemplateId;
+  final _formKey = GlobalKey<FormState>();
+  String? _configuredTemplateId;
   bool _profilePrefilled = false;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(profileProvider.notifier).loadProfile());
-    // Prefill basics from profile on the very first build.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _prefillProfile());
   }
 
   void _prefillProfile() {
@@ -39,15 +41,11 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
     _profilePrefilled = true;
     ref.read(resumeFormProvider.notifier).prefillFromProfile({
       'full_name': user.fullName,
-      'name': user.fullName,
       'email': user.email,
-      'phone': user.phoneNumber,
       'phone_number': user.phoneNumber,
       'location': user.location,
-      'job_title': user.title,
       'title': user.title,
       'bio': user.bio,
-      'summary': user.bio,
       'linkedin': user.linkedin,
       'github': user.github,
     });
@@ -55,316 +53,193 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final profileState = ref.watch(profileProvider);
+    final profile = ref.watch(profileProvider);
     final templateAsync = widget.templateId == null
         ? null
         : ref.watch(templateDetailProvider(widget.templateId!));
-    final colors = AppColors.of(context);
 
-    if (profileState.user != null && !_profilePrefilled) {
+    if (profile.user != null && !_profilePrefilled) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _prefillProfile());
     }
 
-    final template = templateAsync?.valueOrNull;
-    if (template != null && _appliedTemplateId != template.id) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _applyTemplateSchema(template);
-      });
+    if (templateAsync == null) {
+      return _noTemplate(context);
     }
-
-    return Scaffold(
-      backgroundColor: colors.screenBackground,
-      appBar: AppBar(
-        backgroundColor: colors.screenBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colors.textPrimary),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          template?.title ?? 'My Resume',
-          style: TextStyle(
-            color: colors.textPrimary,
-            // fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: templateAsync == null
-          ? _buildContent(context, template: null)
-          : templateAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => _buildError(error.toString()),
-              data: (template) => _buildContent(context, template: template),
-            ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.all(16),
-        child: AIButton(
-          text: 'AI Assistant',
-          onPressed: () => context.push('/resume/ai-assistant'),
-        ),
-      ),
+    return templateAsync.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) => Scaffold(body: _error(context, error.toString())),
+      data: (template) {
+        if (_configuredTemplateId != template.id) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || _configuredTemplateId == template.id) return;
+            ref.read(resumeBuilderProvider.notifier).configure(template);
+            _configuredTemplateId = template.id;
+          });
+        }
+        return _builder(context, template);
+      },
     );
   }
 
-  Widget _buildContent(BuildContext context, {TemplateDetailModel? template}) {
-    final controls = _buildSchemaControls(template);
-    final selectedTemplateId = template?.id ?? widget.templateId;
-    final sections = template?.sections ?? const <FormSectionModel>[];
-    final hasTemplateSections = sections.isNotEmpty;
-    final visible = ref.watch(resumeFormProvider).visibleSections;
-    final showAll = template == null;
+  Widget _noTemplate(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Create Resume')),
+    body: _error(context, 'Select a resume template before starting the builder.'),
+  );
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      children: [
-        if (template != null)
-          _TemplateHeader(template: template)
-        else
-          _TemplateHeader(template: null),
-        const SizedBox(height: 8),
-        if (hasTemplateSections)
-          ...sections.map(
-            (section) => SchemaFormSection(
-              section: section,
-              aiActions:
-                  controls[section.key.toLowerCase()] ?? section.aiActions,
-              onAiAction: (action) => _openAiAction(context, [action]),
-              onAiPressed: () => _openAiAction(
-                context,
-                controls[section.key.toLowerCase()] ?? section.aiActions,
-              ),
-            ),
-          )
-        else ...[
-          if (showAll || visible.contains('basics')) const BasicInfoSection(),
-          if (showAll || visible.contains('summary'))
-            SummarySection(
-              aiActions: controls['summary'] ?? const [],
-              onAiPressed: () =>
-                  _openAiAction(context, controls['summary'] ?? const []),
-            ),
-          if (showAll || visible.contains('experience'))
-            ExperienceSection(
-              aiActions: controls['experience'] ?? const [],
-              onAiPressed: () =>
-                  _openAiAction(context, controls['experience'] ?? const []),
-            ),
-          if (showAll || visible.contains('skills'))
-            SkillsSection(
-              aiActions: controls['skills'] ?? const [],
-              onAiPressed: () =>
-                  _openAiAction(context, controls['skills'] ?? const []),
-            ),
-        ],
+  Widget _error(BuildContext context, String message) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(message, textAlign: TextAlign.center),
         const SizedBox(height: 16),
-        ElevatedButton.icon(
-          onPressed: () => _saveResume(context, selectedTemplateId),
-          icon: const Icon(Icons.save_outlined),
-          label: const Text('Save Resume'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+        FilledButton(onPressed: () => context.pop(), child: const Text('Go back')),
+      ]),
+    ),
+  );
+
+  Widget _builder(BuildContext context, TemplateDetailModel template) {
+    final colors = AppColors.of(context);
+    final builder = ref.watch(resumeBuilderProvider);
+    final section = builder.currentSection;
+    if (section == null) return Scaffold(body: _error(context, 'This template has no editable sections.'));
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (!didPop && await _confirmExit(context) && mounted) context.pop();
+      },
+      child: Scaffold(
+        backgroundColor: colors.screenBackground,
+        appBar: AppBar(
+          backgroundColor: colors.screenBackground,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () async {
+              if (await _confirmExit(context) && mounted) context.pop();
+            },
+          ),
+          title: Text(builder.title),
+          actions: [
+            Center(child: Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Text('${builder.currentStep + 1}/${builder.totalSteps}'),
+            )),
+          ],
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(children: [
+              ResumeStepIndicator(
+                currentStep: builder.currentStep,
+                totalSteps: builder.totalSteps,
+                onStepTapped: (index) => ref.read(resumeBuilderProvider.notifier).goToStep(index),
+              ),
+              const SizedBox(height: 18),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(section.title, style: Theme.of(context).textTheme.titleLarge),
+              ),
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(_descriptionFor(section), style: TextStyle(color: colors.textSecondary)),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: ListView(children: [
+                    SchemaFormSection(
+                      key: ValueKey('${section.key}-${builder.currentStep}'),
+                      section: section,
+                      aiActions: section.aiActions,
+                      onAiAction: (action) => _openAiAction(context, action),
+                      onAiPressed: section.aiActions.isEmpty
+                          ? null
+                          : () => _openAiAction(context, section.aiActions.first),
+                    ),
+                  ]),
+                ),
+              ),
+              if (builder.errorMessage != null) Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(builder.errorMessage!, style: const TextStyle(color: Colors.red)),
+              ),
+              Row(children: [
+                if (builder.currentStep > 0)
+                  Expanded(child: OutlinedButton(onPressed: builder.isSaving ? null : () => ref.read(resumeBuilderProvider.notifier).previousStep(), child: const Text('Back'))),
+                if (builder.currentStep > 0) const SizedBox(width: 12),
+                Expanded(child: FilledButton(
+                  onPressed: builder.isSaving ? null : () => _continue(template),
+                  child: builder.isSaving
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(builder.currentStep == builder.totalSteps - 1 ? 'Save & Preview' : 'Continue'),
+                )),
+              ]),
+            ]),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildError(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(error, textAlign: TextAlign.center),
       ),
     );
   }
 
-  void _applyTemplateSchema(TemplateDetailModel template) {
-    final notifier = ref.read(resumeFormProvider.notifier);
-    final visible = <String>{};
-    final actions = <String, List<String>>{};
-
-    for (final section in template.sections) {
-      final key = section.key.toLowerCase();
-      final actionList = section.aiActions
-          .map((action) => action.toLowerCase())
-          .toList();
-
-      visible.add(key);
-
-      if (key == 'basics' ||
-          _hasField(section, 'name') ||
-          _hasField(section, 'email') ||
-          _hasField(section, 'phone')) {
-        visible.add('basics');
-        continue;
-      }
-
-      if (key == 'summary' || _hasField(section, 'summary')) {
-        visible.add('summary');
-        if (actionList.isNotEmpty) {
-          actions['summary'] = [...?actions['summary'], ...actionList];
-        }
-      }
-
-      if (key == 'experience') {
-        visible.add('experience');
-        if (actionList.isNotEmpty) {
-          actions['experience'] = [...?actions['experience'], ...actionList];
-        }
-      }
-
-      if (key == 'skills') {
-        visible.add('skills');
-        if (actionList.isNotEmpty) {
-          actions['skills'] = [...?actions['skills'], ...actionList];
-        }
-      }
+  String _descriptionFor(FormSectionModel section) {
+    if (section.type == SectionType.repeatable || section.type == SectionType.list) {
+      return 'Add as many entries as you need. You can edit or remove them at any time.';
     }
-
-    notifier.applySchema(visibleSections: visible, sectionActions: actions);
-    _appliedTemplateId = template.id;
+    return 'Complete this section before continuing.';
   }
 
-  Map<String, List<String>> _buildSchemaControls(
-    TemplateDetailModel? template,
-  ) {
-    if (template == null) {
-      return const {
-        'summary': ['generate_summary', 'improve_section'],
-        'experience': ['generate_bullets'],
-        'skills': ['suggest_skills'],
-      };
+  Future<void> _continue(TemplateDetailModel template) async {
+    if (!(_formKey.currentState?.validate() ?? true)) return;
+    final notifier = ref.read(resumeBuilderProvider.notifier);
+    final builder = ref.read(resumeBuilderProvider);
+    if (builder.currentStep < builder.totalSteps - 1) {
+      notifier.nextStep();
+      return;
     }
 
-    final controls = <String, List<String>>{};
-    for (final section in template.sections) {
-      final actions = section.aiActions
-          .map((action) => action.toLowerCase())
-          .toList();
-      if (section.key.toLowerCase() == 'basics' ||
-          _hasField(section, 'summary')) {
-        controls['summary'] = [...?controls['summary'], ...actions];
-      }
-      if (section.key.toLowerCase() == 'experience') {
-        controls['experience'] = [...?controls['experience'], ...actions];
-      }
-      if (section.key.toLowerCase() == 'skills') {
-        controls['skills'] = [...?controls['skills'], ...actions];
-      }
+    final form = ref.read(resumeFormProvider);
+    final name = form.basics['name']?.toString().trim() ?? '';
+    notifier.setSaving(true);
+    final created = await ref.read(createResumeProvider.notifier).submit(
+      templateId: template.id,
+      title: name.isEmpty ? '${template.title} Resume' : "$name's Resume",
+      formData: form.data,
+    );
+    notifier.setSaving(false);
+    if (!mounted) return;
+    if (created == null) {
+      notifier.setError(ref.read(createResumeProvider).error ?? 'Failed to save resume. Your draft is still available.');
+      return;
     }
-    return controls;
+    ref.invalidate(storedResumesProvider);
+    context.go('/resume/pdf/${created.id}');
   }
 
-  bool _hasField(FormSectionModel section, String fieldKey) {
-    return section.fields.any(
-          (field) => field.key.toLowerCase() == fieldKey.toLowerCase(),
-        ) ||
-        section.fields.any(
-          (field) => field.objectFields.any(
-            (item) => item.key.toLowerCase() == fieldKey.toLowerCase(),
-          ),
-        );
-  }
-
-  void _openAiAction(BuildContext context, List<String> actions) {
-    if (actions.isEmpty) return;
-
-    final action = actions.first;
-    final route = switch (action) {
+  void _openAiAction(BuildContext context, String action) {
+    final route = switch (action.toLowerCase()) {
       'generate_summary' => '/resume/ai-input/summary',
       'improve_section' => '/resume/ai-input/improve',
       'suggest_skills' => '/resume/ai-input/skills',
       'generate_bullets' => '/resume/ai-input/bullets',
       _ => '/resume/ai-assistant',
     };
-
     context.push(route);
   }
 
-  Future<void> _saveResume(BuildContext context, String? templateId) async {
-    if (templateId == null || templateId.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Select a template first.')));
-      return;
-    }
-
-    final messenger = ScaffoldMessenger.of(context);
-    final router = GoRouter.of(context);
-    final form = ref.read(resumeFormProvider);
-
-    // Derive a human-readable title from the name field so the backend
-    // serializer's required `title` field is always satisfied.
-    final basicsName = (form.basics['name'] as String? ?? '').trim();
-    final resumeTitle = basicsName.isNotEmpty
-        ? '$basicsName\'s Resume'
-        : 'My Resume';
-
-    final created = await ref
-        .read(createResumeProvider.notifier)
-        .submit(
-          templateId: templateId,
-          title: resumeTitle,
-          formData: form.data,
-        );
-
-    if (!mounted) return;
-
-    if (created != null) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Resume saved successfully.')),
-      );
-      router.go('/home');
-    } else {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Failed to save resume.')),
-      );
-    }
-  }
+  Future<bool> _confirmExit(BuildContext context) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Leave resume builder?'),
+          content: const Text('Your current draft will remain in this session, but it has not been saved to the server yet.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Stay')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Leave')),
+          ],
+        ),
+      ) ?? false;
 }
-
-class _TemplateHeader extends StatelessWidget {
-  final TemplateDetailModel? template;
-
-  const _TemplateHeader({required this.template});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            template?.title ?? 'Resume Builder',
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Schema-driven sections with AI autofill.',
-            style: TextStyle(color: colors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-}
-//             // 'Schema-driven sections with AI autofill.',
-//             style: TextStyle(color: colors.textSecondary),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }

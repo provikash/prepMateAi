@@ -192,7 +192,7 @@ class _RepeatableSchemaSectionState extends ConsumerState<_RepeatableSchemaSecti
                           ),
                         ],
                       ),
-                      ...widget.section.fields.map((field) {
+                      ..._entryFields(widget.section).map((field) {
                         final value = entry.value[field.key];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
@@ -233,11 +233,29 @@ class _RepeatableSchemaSectionState extends ConsumerState<_RepeatableSchemaSecti
 
   Map<String, dynamic> _emptyItem(FormSectionModel section) {
     final item = <String, dynamic>{};
-    for (final field in section.fields) {
-      item[field.key] = field.isList || field.isListObject ? <dynamic>[] : '';
+    for (final field in _entryFields(section)) {
+      item[field.key] = field.isList ? <dynamic>[] : '';
     }
     return item;
   }
+
+  /// A repeatable schema can describe an entry as a `list_object` field. Once
+  /// the section owns the list, its object fields are the fields for every
+  /// individual card.
+  List<FormFieldModel> _entryFields(FormSectionModel section) => [
+        for (final field in section.fields)
+          if (field.isListObject)
+            ...field.objectFields.map(
+              (itemField) => FormFieldModel(
+                key: itemField.key,
+                label: itemField.label,
+                type: 'text',
+                required: field.required,
+              ),
+            )
+          else
+            field,
+      ];
 }
 
 class _SchemaFieldInput extends StatefulWidget {
@@ -296,6 +314,9 @@ class _SchemaFieldInputState extends State<_SchemaFieldInput> {
             .map((option) => DropdownMenuItem(value: option, child: Text(option)))
             .toList(),
         onChanged: (value) => widget.onChanged(value ?? ''),
+        validator: (value) => field.required && (value == null || value.trim().isEmpty)
+            ? '${field.label} is required'
+            : null,
       );
     }
 
@@ -310,12 +331,15 @@ class _SchemaFieldInputState extends State<_SchemaFieldInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
+        TextFormField(
           controller: widget.controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
           decoration: InputDecoration(labelText: label, helperText: helper),
           onChanged: widget.onChanged,
+          validator: (value) => field.required && (value == null || value.trim().isEmpty)
+              ? '${field.label} is required'
+              : null,
         ),
         if (widget.aiActions.isNotEmpty) ...[
           const SizedBox(height: 8),

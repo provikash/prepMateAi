@@ -1,0 +1,10 @@
+{
+  "name": "Professional",
+  "slug": "professional",
+  "version": 1,
+  "schema": "jsonresume",
+  "supported_sections": [
+    "basics", "work", "projects", "education", "awards", "certificates",
+    "publications", "volunteer", "languages", "skills", "interests", "references"
+  ]
+}

@@ -1,4 +1,3 @@
-from django.template import Context, Template
 from rest_framework.exceptions import NotFound, ValidationError
 
 from resume.models import Resume
@@ -20,19 +19,7 @@ class PDFExportService:
         if not resume.template:
             raise ValidationError("Resume does not have an assigned template.")
 
-        normalized_data = ResumeRenderService.prepare_resume_context(resume.data)
-        personal_info = normalized_data.get("personal_info", {})
-        template = Template(resume.template.html_structure)
-        context = Context(
-            {
-                "resume": normalized_data,
-                **normalized_data,
-                "name": personal_info.get("name", ""),
-                "resume_title": resume.title,
-                "user": resume.user,
-            }
-        )
-        return template.render(context)
+        return ResumeRenderService.render_resume(resume.data, resume.template, resume_title=resume.title)
 
     @staticmethod
     def generate_pdf_bytes(resume_id, user):
