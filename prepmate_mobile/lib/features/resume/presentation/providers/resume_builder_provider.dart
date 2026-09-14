@@ -12,6 +12,9 @@ class ResumeBuilderState {
   final int currentStep;
   final bool isSaving;
   final String? errorMessage;
+  final String? savedResumeId;
+  final String saveStatus;
+  final Set<int> completedSteps;
 
   const ResumeBuilderState({
     this.templateId,
@@ -20,11 +23,14 @@ class ResumeBuilderState {
     this.currentStep = 0,
     this.isSaving = false,
     this.errorMessage,
+    this.savedResumeId,
+    this.saveStatus = 'Not saved',
+    this.completedSteps = const {},
   });
 
   int get totalSteps => steps.length;
   FormSectionModel? get currentSection =>
-      steps.isEmpty ? null : steps[currentStep.clamp(0, steps.length - 1) as int];
+      steps.isEmpty ? null : steps[currentStep.clamp(0, steps.length - 1)];
 
   ResumeBuilderState copyWith({
     String? templateId,
@@ -34,6 +40,9 @@ class ResumeBuilderState {
     bool? isSaving,
     String? errorMessage,
     bool clearError = false,
+    String? savedResumeId,
+    String? saveStatus,
+    Set<int>? completedSteps,
   }) => ResumeBuilderState(
     templateId: templateId ?? this.templateId,
     title: title ?? this.title,
@@ -41,6 +50,9 @@ class ResumeBuilderState {
     currentStep: currentStep ?? this.currentStep,
     isSaving: isSaving ?? this.isSaving,
     errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+    savedResumeId: savedResumeId ?? this.savedResumeId,
+    saveStatus: saveStatus ?? this.saveStatus,
+    completedSteps: completedSteps ?? this.completedSteps,
   );
 }
 
@@ -63,13 +75,19 @@ class ResumeBuilderNotifier extends StateNotifier<ResumeBuilderState> {
 
   void nextStep() {
     if (state.currentStep < state.totalSteps - 1) {
-      state = state.copyWith(currentStep: state.currentStep + 1, clearError: true);
+      state = state.copyWith(
+        currentStep: state.currentStep + 1,
+        clearError: true,
+      );
     }
   }
 
   void previousStep() {
     if (state.currentStep > 0) {
-      state = state.copyWith(currentStep: state.currentStep - 1, clearError: true);
+      state = state.copyWith(
+        currentStep: state.currentStep - 1,
+        clearError: true,
+      );
     }
   }
 
@@ -79,11 +97,31 @@ class ResumeBuilderNotifier extends StateNotifier<ResumeBuilderState> {
     }
   }
 
-  void setSaving(bool value) => state = state.copyWith(isSaving: value);
+  void setSaving(bool value) => state = state.copyWith(
+    isSaving: value,
+    saveStatus: value ? 'Saving…' : state.saveStatus,
+  );
+
+  void setSaved(String resumeId, {required bool draft}) =>
+      state = state.copyWith(
+        isSaving: false,
+        savedResumeId: resumeId,
+        saveStatus: draft ? 'Draft saved' : 'Saved',
+        clearError: true,
+      );
 
   void setError(String? message) => state = state.copyWith(
+    isSaving: false,
     errorMessage: message,
+    saveStatus: message == null ? state.saveStatus : 'Could not save',
     clearError: message == null,
+  );
+
+  void setSavedWithNewerChanges(String resumeId) => state = state.copyWith(
+    isSaving: false,
+    savedResumeId: resumeId,
+    saveStatus: 'Saved; newer changes are not saved',
+    clearError: true,
   );
 }
 

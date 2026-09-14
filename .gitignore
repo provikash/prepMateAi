@@ -66,6 +66,11 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+# Reproducible resume/template render output (not user uploads)
+backend/media/resumes/pdfs/
+backend/media/resumes/thumbnails/
+backend/media/templates/previews/
+
 # Flask stuff:
 instance/
 .webassets-cache

@@ -3,7 +3,9 @@ from rest_framework.exceptions import NotFound, ValidationError
 from resume.models import Resume
 from resume.rendering import ResumeRenderService
 from django.core.files.base import ContentFile
-import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PDFExportService:
@@ -40,7 +42,6 @@ class PDFExportService:
             # overwrite existing file
             resume.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
         except Exception:
-            # If saving fails, continue returning bytes but log could be added
-            pass
+            logger.exception("PDF was generated but could not be saved for resume %s", resume.id)
 
         return pdf_bytes, resume

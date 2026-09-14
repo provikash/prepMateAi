@@ -26,11 +26,15 @@ class _DynamicListObjectFieldState extends State<DynamicListObjectField> {
   @override
   void initState() {
     super.initState();
-    _items = widget.initialItems.map((item) => Map<String, String>.from(item)).toList();
+    _items = widget.initialItems
+        .map((item) => Map<String, String>.from(item))
+        .toList();
   }
 
   void _notifyChange() {
-    widget.onChanged(_items.map((item) => Map<String, String>.from(item)).toList());
+    widget.onChanged(
+      _items.map((item) => Map<String, String>.from(item)).toList(),
+    );
   }
 
   void _addEntry() {

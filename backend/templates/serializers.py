@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import ResumeTemplate
+from resume.json_resume import canonical_form_schema
 
 
 class TemplateListSerializer(serializers.ModelSerializer):
@@ -57,4 +58,4 @@ class TemplateDetailSerializer(serializers.ModelSerializer):
         if not isinstance(metadata, dict):
             return {}
         form_schema = metadata.get("form_schema")
-        return form_schema if isinstance(form_schema, dict) else {}
+        return form_schema if isinstance(form_schema, dict) and form_schema.get("sections") else canonical_form_schema()

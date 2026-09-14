@@ -35,7 +35,8 @@ class _GenerateSummaryInputScreenState
     final colors = AppColors.of(context);
 
     ref.listen(aiProvider, (previous, next) {
-      if (next.status == AIStatus.loading && previous?.status != AIStatus.loading) {
+      if (next.status == AIStatus.loading &&
+          previous?.status != AIStatus.loading) {
         context.push('/resume/ai-result');
       }
     });
@@ -95,27 +96,27 @@ class _GenerateSummaryInputScreenState
               text: 'Generate Summary',
               isLoading: aiState.status == AIStatus.loading,
               onPressed: () {
-                ref
-                    .read(aiProvider.notifier)
-                    .submitAIAction('generate_summary', {
-                      // Backend expects: role (str), skills (List<str>),
-                      // experience (List<str>), target_job_description (str)
-                      'role': _jobRoleController.text.trim(),
-                      'skills': _skillsController.text
-                          .split(',')
-                          .map((s) => s.trim())
-                          .where((s) => s.isNotEmpty)
-                          .toList(),
-                      'experience': _highlightsController.text.trim().isEmpty
-                          ? <String>[]
-                          : _highlightsController.text
+                ref.read(aiProvider.notifier).submitAIAction(
+                  'generate_summary',
+                  {
+                    // Backend expects: role (str), skills (List<str>),
+                    // experience (List<str>), target_job_description (str)
+                    'role': _jobRoleController.text.trim(),
+                    'skills': _skillsController.text
+                        .split(',')
+                        .map((s) => s.trim())
+                        .where((s) => s.isNotEmpty)
+                        .toList(),
+                    'experience': _highlightsController.text.trim().isEmpty
+                        ? <String>[]
+                        : _highlightsController.text
                               .split('\n')
                               .map((s) => s.trim())
                               .where((s) => s.isNotEmpty)
                               .toList(),
-                      'target_job_description':
-                          _jdController.text.trim(),
-                    });
+                    'target_job_description': _jdController.text.trim(),
+                  },
+                );
               },
             ),
           ],
@@ -257,7 +258,8 @@ class _ImproveSectionInputScreenState
     final colors = AppColors.of(context);
 
     ref.listen(aiProvider, (previous, next) {
-      if (next.status == AIStatus.loading && previous?.status != AIStatus.loading) {
+      if (next.status == AIStatus.loading &&
+          previous?.status != AIStatus.loading) {
         context.push('/resume/ai-result');
       }
     });
@@ -448,7 +450,8 @@ class _SuggestSkillsInputScreenState
     final aiState = ref.watch(aiProvider);
     final colors = AppColors.of(context);
     ref.listen(aiProvider, (previous, next) {
-      if (next.status == AIStatus.loading && previous?.status != AIStatus.loading) {
+      if (next.status == AIStatus.loading &&
+          previous?.status != AIStatus.loading) {
         context.push('/resume/ai-result');
       }
     });
@@ -615,7 +618,8 @@ class _GenerateBulletsInputScreenState
     final aiState = ref.watch(aiProvider);
     final colors = AppColors.of(context);
     ref.listen(aiProvider, (previous, next) {
-      if (next.status == AIStatus.loading && previous?.status != AIStatus.loading) {
+      if (next.status == AIStatus.loading &&
+          previous?.status != AIStatus.loading) {
         context.push('/resume/ai-result');
       }
     });
@@ -680,23 +684,20 @@ class _GenerateBulletsInputScreenState
               text: 'Generate Bullets',
               isLoading: aiState.status == AIStatus.loading,
               onPressed: () {
-                ref.read(aiProvider.notifier).submitAIAction(
-                  'generate_bullets',
-                  {
-                    // Backend expects: experience (List<{job_title, company, ...}>)
-                    'experience': [
-                      {
-                        'job_title': 'Role',
-                        'company': 'Company',
-                        'responsibilities': _detailsController.text
-                            .split('\n')
-                            .map((s) => s.trim())
-                            .where((s) => s.isNotEmpty)
-                            .toList(),
-                      }
-                    ],
-                  },
-                );
+                ref.read(aiProvider.notifier).submitAIAction('generate_bullets', {
+                  // Backend expects: experience (List<{job_title, company, ...}>)
+                  'experience': [
+                    {
+                      'job_title': 'Role',
+                      'company': 'Company',
+                      'responsibilities': _detailsController.text
+                          .split('\n')
+                          .map((s) => s.trim())
+                          .where((s) => s.isNotEmpty)
+                          .toList(),
+                    },
+                  ],
+                });
               },
             ),
           ],

@@ -4,7 +4,8 @@ class ChipInput extends StatefulWidget {
   final List<String> initial;
   final ValueChanged<List<String>> onChanged;
 
-  const ChipInput({Key? key, required this.initial, required this.onChanged}) : super(key: key);
+  const ChipInput({Key? key, required this.initial, required this.onChanged})
+    : super(key: key);
 
   @override
   State<ChipInput> createState() => _ChipInputState();
@@ -38,15 +39,30 @@ class _ChipInputState extends State<ChipInput> {
         Wrap(
           spacing: 8,
           runSpacing: 6,
-          children: _items.map((s) => Chip(label: Text(s), onDeleted: () => setState(() { _items.remove(s); widget.onChanged(_items); }))).toList(),
+          children: _items
+              .map(
+                (s) => Chip(
+                  label: Text(s),
+                  onDeleted: () => setState(() {
+                    _items.remove(s);
+                    widget.onChanged(_items);
+                  }),
+                ),
+              )
+              .toList(),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: TextField(controller: _ctrl, decoration: const InputDecoration(hintText: 'Add skill'))),
+            Expanded(
+              child: TextField(
+                controller: _ctrl,
+                decoration: const InputDecoration(hintText: 'Add skill'),
+              ),
+            ),
             IconButton(icon: const Icon(Icons.add), onPressed: _add),
           ],
-        )
+        ),
       ],
     );
   }

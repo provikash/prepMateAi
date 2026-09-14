@@ -5,9 +5,17 @@ import 'package:prepmate_mobile/core/widgets/neu_text_field.dart';
 
 import 'package:prepmate_mobile/features/auth/presentation/state/auth_state.dart';
 import 'package:prepmate_mobile/features/auth/presentation/viewmodel/auth_viewmodel.dart';
+import 'package:go_router/go_router.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
-  const ResetPasswordScreen({super.key});
+  final String email;
+  final String otp;
+
+  const ResetPasswordScreen({
+    super.key,
+    required this.email,
+    required this.otp,
+  });
 
   @override
   ConsumerState<ResetPasswordScreen> createState() =>
@@ -24,6 +32,33 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   bool has8Char = false;
   bool hasSpecial = false;
   bool hasUppercase = false;
+
+  @override
+  void dispose() {
+    passwordController.dispose();
+    confirmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updatePassword() async {
+    final password = passwordController.text;
+    if (password != confirmController.text) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match.')));
+      return;
+    }
+    if (!has8Char || !hasUppercase || !hasSpecial) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please meet all password requirements.')),
+      );
+      return;
+    }
+    final success = await ref
+        .read(authProvider.notifier)
+        .resetPassword(widget.email, widget.otp, password);
+    if (success && mounted) context.go('/password-changed');
+  }
 
   void checkPassword(String password) {
     setState(() {
@@ -98,6 +133,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               controller: passwordController,
               isPassword: true,
               hint: 'Enter new password',
+              onChanged: checkPassword,
             ),
 
             const SizedBox(height: 20),
@@ -164,7 +200,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             // ),
             NeuButton(
               isLoading: authState.status == AuthStatus.loading,
-              onPressed: () {},
+              onPressed: _updatePassword,
               text: 'Update Password',
             ),
 

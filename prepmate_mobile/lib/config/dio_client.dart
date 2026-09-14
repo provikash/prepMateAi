@@ -1,10 +1,10 @@
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../core/services/auth_token_manager.dart';
+import 'api_config.dart';
 
 // ─── Providers ───────────────────────────────────────────────────────────────
 
@@ -25,11 +25,11 @@ final dioProvider = Provider<Dio>((ref) {
   // For Physical Device: http://<YOUR_MACHINE_IP>:8000/api/v1/
   // Example: http://192.168.1.100:8000/api/v1/
   // const baseUrl = 'htthttp://10.203.119.93:8000//api/v1/';
-  
+
   final dio = Dio(
     BaseOptions(
       // ⚠️  Change this to your environment-specific URL.
-      baseUrl: 'https://chubby-chameleon-tgnewvideo-0d9ca0c1.koyeb.app/api/v1/',
+      baseUrl: apiBaseUrl,
 
       // Increased timeout to handle slower networks and backend responsiveness
       // Adjust based on your environment and expected response times
@@ -125,8 +125,21 @@ void _logError(DioException error) {
 /// Removes known sensitive keys so tokens never appear in logs.
 dynamic _scrubSensitiveFields(dynamic data) {
   if (data is Map<String, dynamic>) {
-    const sensitive = {'password', 'refresh', 'access', 'token', 'id_token'};
-    return data.map((k, v) => MapEntry(k, sensitive.contains(k) ? '***' : v));
+    const sensitive = {
+      'password',
+      'refresh',
+      'access',
+      'token',
+      'id_token',
+      'data',
+    };
+    return data.map(
+      (key, value) => MapEntry(
+        key,
+        sensitive.contains(key) ? '***' : _scrubSensitiveFields(value),
+      ),
+    );
   }
+  if (data is List) return data.map(_scrubSensitiveFields).toList();
   return data;
 }

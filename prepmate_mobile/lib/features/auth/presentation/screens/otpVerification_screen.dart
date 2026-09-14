@@ -3,14 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinput/pinput.dart';
 import 'package:prepmate_mobile/core/widgets/neo_button.dart';
+import 'package:go_router/go_router.dart';
 
 import '../state/auth_state.dart';
 import '../viewmodel/auth_viewmodel.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String email;
+  final String flow;
 
-  const OtpVerificationScreen({super.key, required this.email});
+  const OtpVerificationScreen({
+    super.key,
+    required this.email,
+    this.flow = 'register',
+  });
 
   @override
   ConsumerState<OtpVerificationScreen> createState() =>
@@ -31,6 +37,10 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
 
   void startTimer() {
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (secondsRemaining == 0) {
         timer.cancel();
       } else {
@@ -58,9 +68,20 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
       return;
     }
 
+    if (widget.flow == 'reset') {
+      if (!mounted) return;
+      context.pushReplacement(
+        '/reset-password',
+        extra: {'email': widget.email, 'otp': otp},
+      );
+      return;
+    }
     await ref
         .read(authViewModelProvider.notifier)
-        .verifyOtp(widget.email, otp, "register");
+        .verifyOtp(widget.email, otp, 'register');
+    if (!mounted) return;
+    final state = ref.read(authViewModelProvider);
+    if (state.status == AuthStatus.success) context.go('/login');
   }
 
   @override
@@ -156,7 +177,14 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 const Text("Didn't receive code? "),
                 secondsRemaining == 0
                     ? GestureDetector(
-                        onTap: () {
+                        onTap: () async {
+                          final notifier = ref.read(
+                            authViewModelProvider.notifier,
+                          );
+                          final sent = widget.flow == 'reset'
+                              ? await notifier.forgotPassword(widget.email)
+                              : await notifier.resendVerification(widget.email);
+                          if (!mounted || !sent) return;
                           setState(() {
                             secondsRemaining = 59;
                           });

@@ -23,6 +23,21 @@ class ResumeRepositoryImpl implements ResumeRepository {
   }) => remote.createResume(templateId: templateId, title: title, data: data);
 
   @override
+  Future<CreatedResumeModel> saveResume({
+    String? resumeId,
+    required String templateId,
+    required String title,
+    required Map<String, dynamic> data,
+    required bool draft,
+  }) => remote.saveResume(
+    resumeId: resumeId,
+    templateId: templateId,
+    title: title,
+    data: data,
+    draft: draft,
+  );
+
+  @override
   Future<String> getResumePdfUrl(String id) => remote.getResumePdfUrl(id);
 
   @override

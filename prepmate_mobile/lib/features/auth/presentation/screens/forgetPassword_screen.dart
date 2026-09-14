@@ -24,15 +24,27 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     final email = emailController.text.trim();
 
-    await ref.read(authViewModelProvider.notifier).forgotPassword(email);
+    final sent = await ref
+        .read(authViewModelProvider.notifier)
+        .forgotPassword(email);
 
-    final state = ref.read(authViewModelProvider);
+    if (sent) {
+      if (!mounted) return;
 
-    if (state.status != AuthStatus.error) {
-      if (!context.mounted) return;
-
-      context.push("/verify-otp?flow=reset&email=$email", extra: email);
+      context.push(
+        Uri(
+          path: '/verify-otp',
+          queryParameters: {'flow': 'reset', 'email': email},
+        ).toString(),
+        extra: email,
+      );
     }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
   }
 
   @override

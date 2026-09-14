@@ -30,20 +30,36 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+DJANGO_ENV = os.getenv("DJANGO_ENV", "production")
 SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not SECRET_KEY and DJANGO_ENV != "production":
+    SECRET_KEY = "django-insecure-local-development-only-change-me"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
 load_dotenv()
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=True,
-    )
-}
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            database_url,
+            conn_max_age=600,
+            ssl_require=DJANGO_ENV == "production",
+        )
+    }
+else:
+    database_name = os.getenv("DB_NAME", "db.sqlite3")
+    DATABASES = {
+        "default": {
+            "ENGINE": os.getenv(
+                "DB_ENGINE",
+                "django.db.backends.sqlite3",
+            ),
+            "NAME": BASE_DIR / database_name,
+        }
+    }
 
 ALLOWED_HOSTS = ['chubby-chameleon-tgnewvideo-0d9ca0c1.koyeb.app', 'localhost', '127.0.0.1']
 
@@ -283,7 +299,7 @@ ALLOWED_HOSTS = [v.strip() for v in os.getenv("ALLOWED_HOSTS", "localhost,127.0.
 CSRF_TRUSTED_ORIGINS = [v.strip() for v in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if v.strip()]
 CACHES = {"default": {"BACKEND": os.getenv("CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache"), "LOCATION": os.getenv("CACHE_LOCATION", "prepmate-auth")}}
 # Default deployment mode is production. Development and tests explicitly opt out.
-PRODUCTION = os.getenv("DJANGO_ENV", "production") == "production"
+PRODUCTION = DJANGO_ENV == "production"
 if PRODUCTION:
     from django.core.exceptions import ImproperlyConfigured
     if DEBUG or len(SECRET_KEY) < 50 or len(set(SECRET_KEY)) < 5 or SECRET_KEY.startswith("django-insecure-"):

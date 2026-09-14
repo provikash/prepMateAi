@@ -1,10 +1,13 @@
 import json
+import logging
 from pathlib import Path
 
 from django.template.loader import render_to_string
 from rest_framework.exceptions import ValidationError
 
 from .json_resume import prepare_context
+
+logger = logging.getLogger(__name__)
 
 
 class ResumeRenderingError(ValidationError):
@@ -16,7 +19,19 @@ class ThemeRegistry:
         "professional": {
             "template": "resume_themes/professional/template.html",
             "metadata": Path(__file__).parent / "templates" / "resume_themes" / "professional" / "metadata.json",
-        }
+        },
+        "thomas-slate": {
+            "template": "resume_themes/thomas_slate/template.html",
+            "metadata": Path(__file__).parent / "templates" / "resume_themes" / "thomas_slate" / "metadata.json",
+        },
+        "thomas-desert-modern": {
+            "template": "resume_themes/thomas_desert_modern/template.html",
+            "metadata": Path(__file__).parent / "templates" / "resume_themes" / "thomas_desert_modern" / "metadata.json",
+        },
+        "thomas-navy-sidebar": {
+            "template": "resume_themes/thomas_navy_sidebar/template.html",
+            "metadata": Path(__file__).parent / "templates" / "resume_themes" / "thomas_navy_sidebar" / "metadata.json",
+        },
     }
 
     @classmethod
@@ -40,6 +55,10 @@ class ResumeRenderService:
     def render_resume(cls, resume_data, template, *, resume_title=""):
         theme = ThemeRegistry.resolve(template)
         context = cls.prepare_resume_context(resume_data)
+        logger.debug(
+            "Final normalized resume JSON before PDF/HTML rendering: %s",
+            json.dumps(context, ensure_ascii=False, sort_keys=True, default=str),
+        )
         try:
             html = render_to_string(theme["template"], {"resume": context, "resume_title": resume_title})
         except Exception as exc:

@@ -4,12 +4,15 @@ class ResumeFormState {
   final Map<String, dynamic> data;
   final Set<String> visibleSections;
   final Map<String, List<String>> sectionActions;
+  final int revision;
 
   Map<String, dynamic> get basics =>
       Map<String, dynamic>.from(data['basics'] as Map? ?? const {});
 
   List<Map<String, dynamic>> get experienceItems =>
-      List<Map<String, dynamic>>.from(data['work'] as List? ?? data['experience'] as List? ?? const []);
+      List<Map<String, dynamic>>.from(
+        data['work'] as List? ?? data['experience'] as List? ?? const [],
+      );
 
   List<String> get skills {
     final raw = data['skills'];
@@ -22,29 +25,35 @@ class ResumeFormState {
     return const [];
   }
 
-  String get summary => (data['basics'] as Map?)?['summary'] as String? ?? data['summary'] as String? ?? '';
+  String get summary =>
+      (data['basics'] as Map?)?['summary'] as String? ??
+      data['summary'] as String? ??
+      '';
 
   Map<String, dynamic> sectionMap(String key) =>
-    Map<String, dynamic>.from(data[key] as Map? ?? const {});
+      Map<String, dynamic>.from(data[key] as Map? ?? const {});
 
   List<Map<String, dynamic>> sectionItems(String key) =>
-    List<Map<String, dynamic>>.from(data[key] as List? ?? const []);
+      List<Map<String, dynamic>>.from(data[key] as List? ?? const []);
 
   const ResumeFormState({
     required this.data,
     this.visibleSections = const {'basics', 'summary', 'experience', 'skills'},
     this.sectionActions = const {},
+    this.revision = 0,
   });
 
   ResumeFormState copyWith({
     Map<String, dynamic>? data,
     Set<String>? visibleSections,
     Map<String, List<String>>? sectionActions,
+    int? revision,
   }) {
     return ResumeFormState(
       data: data ?? this.data,
       visibleSections: visibleSections ?? this.visibleSections,
       sectionActions: sectionActions ?? this.sectionActions,
+      revision: revision ?? this.revision,
     );
   }
 }
@@ -77,7 +86,9 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
 
   List<Map<String, dynamic>> get experienceItems =>
       List<Map<String, dynamic>>.from(
-        state.data['work'] as List? ?? state.data['experience'] as List? ?? const [],
+        state.data['work'] as List? ??
+            state.data['experience'] as List? ??
+            const [],
       );
 
   List<String> get skills {
@@ -91,10 +102,10 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     return const [];
   }
 
-    Map<String, dynamic> sectionMap(String key) =>
+  Map<String, dynamic> sectionMap(String key) =>
       Map<String, dynamic>.from(state.data[key] as Map? ?? const {});
 
-    List<Map<String, dynamic>> sectionItems(String key) =>
+  List<Map<String, dynamic>> sectionItems(String key) =>
       List<Map<String, dynamic>>.from(state.data[key] as List? ?? const []);
 
   void applySchema({
@@ -112,7 +123,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     current.addAll(patch);
     final nextData = Map<String, dynamic>.from(state.data);
     nextData['basics'] = current;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void updateBasicField(String key, String value) => updateBasics({key: value});
@@ -123,7 +134,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     current['summary'] = text;
     final nextData = Map<String, dynamic>.from(state.data);
     nextData['basics'] = current;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void updateSectionField(String sectionKey, String fieldKey, dynamic value) {
@@ -131,7 +142,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     final section = sectionMap(sectionKey);
     section[fieldKey] = value;
     nextData[sectionKey] = section;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void addSectionItem(String sectionKey, Map<String, dynamic> item) {
@@ -139,10 +150,14 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     final items = sectionItems(sectionKey);
     items.add(Map<String, dynamic>.from(item));
     nextData[sectionKey] = items;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
-  void updateSectionItem(String sectionKey, int index, Map<String, dynamic> patch) {
+  void updateSectionItem(
+    String sectionKey,
+    int index,
+    Map<String, dynamic> patch,
+  ) {
     final items = sectionItems(sectionKey);
     if (index < 0 || index >= items.length) return;
     final item = Map<String, dynamic>.from(items[index]);
@@ -150,7 +165,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     items[index] = item;
     final nextData = Map<String, dynamic>.from(state.data);
     nextData[sectionKey] = items;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void removeSectionItem(String sectionKey, int index) {
@@ -159,7 +174,19 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     items.removeAt(index);
     final nextData = Map<String, dynamic>.from(state.data);
     nextData[sectionKey] = items;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
+  }
+
+  void reorderSectionItem(String sectionKey, int from, int to) {
+    final items = sectionItems(sectionKey);
+    if (from < 0 || from >= items.length || to < 0 || to >= items.length) {
+      return;
+    }
+    final item = items.removeAt(from);
+    items.insert(to, item);
+    final nextData = Map<String, dynamic>.from(state.data);
+    nextData[sectionKey] = items;
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void addExperience([Map<String, dynamic>? item]) {
@@ -168,7 +195,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
       item ??
           {
             'position': '',
-            'name': '',   // company name per JSON Resume
+            'name': '', // company name per JSON Resume
             'startDate': '',
             'endDate': '',
             'summary': '',
@@ -178,7 +205,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     final nextData = Map<String, dynamic>.from(state.data);
     // Store in `work` (JSON Resume standard key).
     nextData['work'] = list;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void updateExperience(int index, Map<String, dynamic> patch) {
@@ -189,7 +216,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     list[index] = item;
     final nextData = Map<String, dynamic>.from(state.data);
     nextData['work'] = list;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void removeExperience(int index) {
@@ -198,7 +225,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     list.removeAt(index);
     final nextData = Map<String, dynamic>.from(state.data);
     nextData['work'] = list;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void addSkill(String skill) {
@@ -207,12 +234,14 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     final raw = state.data['skills'];
     final List<dynamic> list = raw is List ? List<dynamic>.from(raw) : [];
     // Support both plain string list and {name, keywords} object list.
-    final names = list.map((e) => e is Map ? e['name']?.toString() ?? '' : e.toString()).toList();
+    final names = list
+        .map((e) => e is Map ? e['name']?.toString() ?? '' : e.toString())
+        .toList();
     if (!names.contains(trimmed)) {
       list.add({'name': trimmed, 'level': '', 'keywords': <String>[]});
       final nextData = Map<String, dynamic>.from(state.data);
       nextData['skills'] = list;
-      state = state.copyWith(data: nextData);
+      state = state.copyWith(data: nextData, revision: state.revision + 1);
     }
   }
 
@@ -226,7 +255,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     });
     final nextData = Map<String, dynamic>.from(state.data);
     nextData['skills'] = list;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   void replaceSkills(List<String> values) {
@@ -235,7 +264,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
         .where((value) => value.trim().isNotEmpty)
         .map((name) => {'name': name, 'level': '', 'keywords': <String>[]})
         .toList();
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
   /// Pre-fills the basics section from the authenticated user's profile.
@@ -283,13 +312,18 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
 
   void _prefillSocialProfiles(Map<String, dynamic> profile) {
     final nextData = Map<String, dynamic>.from(state.data);
-    final basicsMap = Map<String, dynamic>.from(nextData['basics'] as Map? ?? {});
+    final basicsMap = Map<String, dynamic>.from(
+      nextData['basics'] as Map? ?? {},
+    );
     final profiles = List<dynamic>.from(basicsMap['profiles'] as List? ?? []);
 
     void addProfileIfMissing(String network, String? url) {
       if (url == null || url.trim().isEmpty) return;
       final alreadyExists = profiles.any(
-        (p) => p is Map && (p['network'] as String? ?? '').toLowerCase() == network.toLowerCase(),
+        (p) =>
+            p is Map &&
+            (p['network'] as String? ?? '').toLowerCase() ==
+                network.toLowerCase(),
       );
       if (!alreadyExists) {
         profiles.add({'network': network, 'username': url, 'url': url});
@@ -301,7 +335,7 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
 
     basicsMap['profiles'] = profiles;
     nextData['basics'] = basicsMap;
-    state = state.copyWith(data: nextData);
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 }
 

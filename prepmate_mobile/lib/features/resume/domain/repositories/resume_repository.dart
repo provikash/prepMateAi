@@ -14,6 +14,14 @@ abstract class ResumeRepository {
     required Map<String, dynamic> data,
   });
 
+  Future<CreatedResumeModel> saveResume({
+    String? resumeId,
+    required String templateId,
+    required String title,
+    required Map<String, dynamic> data,
+    required bool draft,
+  });
+
   Future<String> getResumePdfUrl(String id);
 
   Future<Uint8List> getResumePdfBytes(String id);

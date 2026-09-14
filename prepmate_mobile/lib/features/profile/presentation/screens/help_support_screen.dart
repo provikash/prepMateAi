@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:prepmate_mobile/config/theme.dart';
-import '../../../../config/dio_client.dart';
 
 class HelpSupportScreen extends ConsumerStatefulWidget {
   const HelpSupportScreen({super.key});
@@ -13,7 +12,6 @@ class HelpSupportScreen extends ConsumerStatefulWidget {
 class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
   final _messageController = TextEditingController();
   String _selectedCategory = 'Account & Profile';
-  bool _isLoading = false;
 
   final List<String> _categories = [
     'Getting Started',
@@ -38,43 +36,15 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-
-    try {
-      final dio = ref.read(dioProvider);
-      // Assuming you have a support endpoint. If not, this is where you'd send to your backend
-      // which then sends the email. Directly sending emails from a mobile app usually requires
-      // a backend or a service like EmailJS / SendGrid.
-
-      await dio.post(
-        'support/tickets/',
-        data: {
-          'category': _selectedCategory,
-          'message': _messageController.text,
-        },
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Support ticket submitted successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to submit: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Support ticket submission is not available yet. '
+          'Your message has not been sent.',
+        ),
+        backgroundColor: Colors.orange,
+      ),
+    );
   }
 
   @override
@@ -186,8 +156,10 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                         isExpanded: true,
                         dropdownColor: colors.cardBackground,
                         style: TextStyle(color: colors.textPrimary),
-                        icon: Icon(Icons.keyboard_arrow_down,
-                            color: colors.textSecondary),
+                        icon: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: colors.textSecondary,
+                        ),
                         items: _categories.map((String category) {
                           return DropdownMenuItem<String>(
                             value: category,
@@ -228,7 +200,8 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                           decoration: InputDecoration(
                             hintText: 'Write your message here...',
                             hintStyle: TextStyle(
-                                color: colors.textSecondary.withOpacity(0.5)),
+                              color: colors.textSecondary.withOpacity(0.5),
+                            ),
                             contentPadding: const EdgeInsets.all(16),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
@@ -266,7 +239,7 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submitSupportTicket,
+                        onPressed: _submitSupportTicket,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -274,17 +247,14 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white)
-                            : const Text(
-                                'Submit',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
+                        child: const Text(
+                          'Submit',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                     ),
                   ),

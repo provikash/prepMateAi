@@ -1,6 +1,7 @@
 from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import ModelViewSet
 from django.shortcuts import get_object_or_404
+from uuid import UUID
 
 from .models import ResumeTemplate
 from .serializers import TemplateDetailSerializer, TemplateListSerializer
@@ -26,6 +27,11 @@ class TemplateViewSet(ModelViewSet):
     def get_object(self):
         value = self.kwargs[self.lookup_field]
         queryset = self.filter_queryset(self.get_queryset())
-        obj = get_object_or_404(queryset, pk=value) if str(value).isdigit() else get_object_or_404(queryset, slug=value)
+        try:
+            UUID(str(value))
+        except (TypeError, ValueError, AttributeError):
+            obj = get_object_or_404(queryset, slug=value)
+        else:
+            obj = get_object_or_404(queryset, pk=value)
         self.check_object_permissions(self.request, obj)
         return obj

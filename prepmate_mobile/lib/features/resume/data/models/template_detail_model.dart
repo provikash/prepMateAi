@@ -33,72 +33,105 @@ class TemplateDetailModel {
     if (sectionsList.isEmpty) {
       // Basics
       final basicsFields = <FormFieldModel>[];
-      basicsFields.add(FormFieldModel(key: 'name', label: 'Full Name', type: 'text'));
-      basicsFields.add(FormFieldModel(key: 'email', label: 'Email', type: 'text'));
-      basicsFields.add(FormFieldModel(key: 'phone', label: 'Phone', type: 'text'));
-      basicsFields.add(FormFieldModel(key: 'label', label: 'Job Title', type: 'text'));
-      basicsFields.add(FormFieldModel(key: 'summary', label: 'Summary', type: 'textarea'));
+      basicsFields.add(
+        FormFieldModel(key: 'name', label: 'Full Name', type: 'text'),
+      );
+      basicsFields.add(
+        FormFieldModel(key: 'email', label: 'Email', type: 'text'),
+      );
+      basicsFields.add(
+        FormFieldModel(key: 'phone', label: 'Phone', type: 'text'),
+      );
+      basicsFields.add(
+        FormFieldModel(key: 'label', label: 'Job Title', type: 'text'),
+      );
+      basicsFields.add(
+        FormFieldModel(key: 'summary', label: 'Summary', type: 'textarea'),
+      );
 
-      sectionsList.add(FormSectionModel(
-        title: 'Personal Information',
-        key: 'basics',
-        type: SectionType.single,
-        aiActions: const [],
-        fields: basicsFields,
-      ));
+      sectionsList.add(
+        FormSectionModel(
+          title: 'Personal Information',
+          key: 'basics',
+          type: SectionType.single,
+          aiActions: const [],
+          fields: basicsFields,
+        ),
+      );
 
-      // Work / Experience
-      sectionsList.add(FormSectionModel(
-        title: 'Work Experience',
-        key: 'experience',
-        type: SectionType.repeatable,
-        aiActions: const [],
-        fields: [
-          FormFieldModel(
-            key: 'experience',
-            label: 'Experience',
-            type: 'list_object',
-            objectFields: const [
-              FormObjectFieldModel(key: 'title', label: 'Job Title'),
-              FormObjectFieldModel(key: 'company', label: 'Company'),
-              FormObjectFieldModel(key: 'startDate', label: 'Start Date'),
-              FormObjectFieldModel(key: 'endDate', label: 'End Date'),
-              FormObjectFieldModel(key: 'summary', label: 'Description'),
-            ],
-          ),
-        ],
-      ));
+      // Canonical work section; fallback submissions must not use aliases.
+      sectionsList.add(
+        FormSectionModel(
+          title: 'Work Experience',
+          key: 'work',
+          type: SectionType.repeatable,
+          aiActions: const [],
+          fields: [
+            FormFieldModel(
+              key: 'work',
+              label: 'Experience',
+              type: 'list_object',
+              objectFields: const [
+                FormObjectFieldModel(key: 'position', label: 'Job Title'),
+                FormObjectFieldModel(key: 'name', label: 'Company'),
+                FormObjectFieldModel(key: 'startDate', label: 'Start Date'),
+                FormObjectFieldModel(key: 'endDate', label: 'End Date'),
+                FormObjectFieldModel(key: 'summary', label: 'Description'),
+              ],
+            ),
+          ],
+        ),
+      );
 
-      // Skills
-      sectionsList.add(FormSectionModel(
-        title: 'Skills',
-        key: 'skills',
-        type: SectionType.single,
-        aiActions: const [],
-        fields: [FormFieldModel(key: 'skills', label: 'Skills', type: 'list')],
-      ));
+      // Canonical skills are an array of objects.
+      sectionsList.add(
+        FormSectionModel(
+          title: 'Skills',
+          key: 'skills',
+          type: SectionType.repeatable,
+          aiActions: const [],
+          fields: const [
+            FormFieldModel(
+              key: 'skills',
+              label: 'Skills',
+              type: 'list_object',
+              objectFields: [
+                FormObjectFieldModel(key: 'name', label: 'Category'),
+                FormObjectFieldModel(key: 'level', label: 'Level'),
+                FormObjectFieldModel(
+                  key: 'keywords',
+                  label: 'Skills',
+                  type: 'list',
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
 
       // Education
-      sectionsList.add(FormSectionModel(
-        title: 'Education',
-        key: 'education',
-        type: SectionType.repeatable,
-        aiActions: const [],
-        fields: [
-          FormFieldModel(
-            key: 'education',
-            label: 'Education',
-            type: 'list_object',
-            objectFields: const [
-              FormObjectFieldModel(key: 'institution', label: 'Institution'),
-              FormObjectFieldModel(key: 'area', label: 'Area of Study'),
-              FormObjectFieldModel(key: 'studyType', label: 'Degree'),
-              FormObjectFieldModel(key: 'startDate', label: 'Start Date'),
-              FormObjectFieldModel(key: 'endDate', label: 'End Date'),
-            ],
-          ),
-        ],
-      ));
+      sectionsList.add(
+        FormSectionModel(
+          title: 'Education',
+          key: 'education',
+          type: SectionType.repeatable,
+          aiActions: const [],
+          fields: [
+            FormFieldModel(
+              key: 'education',
+              label: 'Education',
+              type: 'list_object',
+              objectFields: const [
+                FormObjectFieldModel(key: 'institution', label: 'Institution'),
+                FormObjectFieldModel(key: 'area', label: 'Area of Study'),
+                FormObjectFieldModel(key: 'studyType', label: 'Degree'),
+                FormObjectFieldModel(key: 'startDate', label: 'Start Date'),
+                FormObjectFieldModel(key: 'endDate', label: 'End Date'),
+              ],
+            ),
+          ],
+        ),
+      );
     }
 
     return TemplateDetailModel(
@@ -127,7 +160,8 @@ class FormSectionModel {
 
   factory FormSectionModel.fromJson(Map<String, dynamic> json) {
     final rawFields = (json['fields'] as List?) ?? const [];
-    final rawAiActions = (json['ai_actions'] as List?) ?? (json['ai'] as List?) ?? const [];
+    final rawAiActions =
+        (json['ai_actions'] as List?) ?? (json['ai'] as List?) ?? const [];
 
     final typeStr = json['type'] as String? ?? 'single';
     SectionType type = SectionType.single;
@@ -181,7 +215,8 @@ class FormFieldModel {
         (json['item_fields'] as List?) ?? (json['fields'] as List?) ?? const [];
     final type = json['type'] as String? ?? 'text';
     final rawOptions = (json['options'] as List?) ?? const [];
-    final rawAiActions = (json['ai_actions'] as List?) ?? (json['ai'] as List?) ?? const [];
+    final rawAiActions =
+        (json['ai_actions'] as List?) ?? (json['ai'] as List?) ?? const [];
     final parsedObjectFields = rawObjectFields
         .whereType<Map<String, dynamic>>()
         .map(FormObjectFieldModel.fromJson)
@@ -208,13 +243,31 @@ class FormFieldModel {
 class FormObjectFieldModel {
   final String key;
   final String label;
+  final String type;
+  final bool required;
+  final String? help;
+  final List<String> aiActions;
 
-  const FormObjectFieldModel({required this.key, required this.label});
+  const FormObjectFieldModel({
+    required this.key,
+    required this.label,
+    this.type = 'text',
+    this.required = false,
+    this.help,
+    this.aiActions = const [],
+  });
 
   factory FormObjectFieldModel.fromJson(Map<String, dynamic> json) {
     return FormObjectFieldModel(
       key: json['key'] as String? ?? '',
       label: json['label'] as String? ?? 'Value',
+      type: json['type'] as String? ?? 'text',
+      required: json['required'] as bool? ?? false,
+      help: json['help'] as String?,
+      aiActions:
+          ((json['ai_actions'] as List?) ?? (json['ai'] as List?) ?? const [])
+              .map((value) => value.toString())
+              .toList(),
     );
   }
 }

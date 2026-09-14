@@ -373,10 +373,16 @@ class _ExperienceItemCardState extends State<ExperienceItemCard> {
 
   void _bindControllers() {
     _titleController = TextEditingController(
-      text: widget.item['position']?.toString() ?? widget.item['title']?.toString() ?? '',
+      text:
+          widget.item['position']?.toString() ??
+          widget.item['title']?.toString() ??
+          '',
     );
     _companyController = TextEditingController(
-      text: widget.item['name']?.toString() ?? widget.item['company']?.toString() ?? '',
+      text:
+          widget.item['name']?.toString() ??
+          widget.item['company']?.toString() ??
+          '',
     );
     _locationController = TextEditingController(
       text: widget.item['location']?.toString() ?? '',

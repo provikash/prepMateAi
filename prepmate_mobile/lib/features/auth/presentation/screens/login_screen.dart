@@ -50,7 +50,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Fluttertoast.showToast(msg: next.infoMessage!);
           ref.read(authProvider.notifier).clearMessages();
         }
-        context.go("/home");
+        final intended = GoRouterState.of(context).uri.queryParameters['from'];
+        context.go(intended ?? '/home');
       } else if (next.status == AuthStatus.error &&
           next.errorMessage != null &&
           next.errorMessage != previous?.errorMessage) {
@@ -265,7 +266,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           hint: 'Enter your password',
                           prefixIcon: Icons.lock_outline,
                           isPassword: true,
-                          validator: (String? value) {},
+                          validator: (String? value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 18),
                         SignInButton(

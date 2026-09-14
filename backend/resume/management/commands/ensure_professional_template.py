@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 
 from resume.models import ResumeTemplate
+from resume.json_resume import canonical_form_schema
 
 
 class Command(BaseCommand):
@@ -15,7 +16,7 @@ class Command(BaseCommand):
                 "theme_identifier": "professional",
                 "version": 1,
                 "category": "professional",
-                "metadata": {"schema": "jsonresume"},
+                "metadata": {"schema": "jsonresume", "form_schema": canonical_form_schema()},
                 "is_active": True,
             },
         )

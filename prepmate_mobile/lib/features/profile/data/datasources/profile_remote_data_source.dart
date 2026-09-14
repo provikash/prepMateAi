@@ -9,6 +9,18 @@ class ProfileRemoteDataSource {
 
   ProfileRemoteDataSource(this.dio);
 
+  Map<String, dynamic> _dataMap(dynamic payload) {
+    if (payload is! Map) return <String, dynamic>{};
+    final mapped = Map<String, dynamic>.from(payload);
+    final data = mapped['data'];
+    return data is Map ? Map<String, dynamic>.from(data) : mapped;
+  }
+
+  Future<Map<String, dynamic>> _summary() async {
+    final response = await dio.get('auth/me/');
+    return _dataMap(response.data);
+  }
+
   String _normalizeError(Object error) {
     if (error is DioException) {
       if (error.type == DioExceptionType.connectionError ||
@@ -32,9 +44,11 @@ class ProfileRemoteDataSource {
   Future<UserModel> getProfile() async {
     try {
       final profileResponse = await dio.get('profile/');
+      final summary = await _summary();
 
       final merged = <String, dynamic>{
-        ...(profileResponse.data as Map<String, dynamic>),
+        ...summary,
+        ..._dataMap(profileResponse.data),
       };
       return UserModel.fromJson(merged);
     } catch (error) {
@@ -45,12 +59,9 @@ class ProfileRemoteDataSource {
   Future<UserModel> updateProfile(Map<String, dynamic> data) async {
     try {
       final response = await dio.patch('profile/', data: data);
-      final summaryResponse = await dio.get('profile/');
+      final summary = await _summary();
 
-      final merged = <String, dynamic>{
-        ...(summaryResponse.data as Map<String, dynamic>),
-        ...(response.data as Map<String, dynamic>),
-      };
+      final merged = <String, dynamic>{...summary, ..._dataMap(response.data)};
       return UserModel.fromJson(merged);
     } catch (error) {
       throw Exception('Failed to update profile: ${_normalizeError(error)}');
@@ -64,15 +75,14 @@ class ProfileRemoteDataSource {
       });
 
       final response = await dio.patch('profile/', data: formData);
-      final summaryResponse = await dio.get('profile/');
+      final summary = await _summary();
 
-      final merged = <String, dynamic>{
-        ...(summaryResponse.data as Map<String, dynamic>),
-        ...(response.data as Map<String, dynamic>),
-      };
+      final merged = <String, dynamic>{...summary, ..._dataMap(response.data)};
       return UserModel.fromJson(merged);
     } catch (error) {
-      throw Exception('Failed to upload profile image: ${_normalizeError(error)}');
+      throw Exception(
+        'Failed to upload profile image: ${_normalizeError(error)}',
+      );
     }
   }
 }

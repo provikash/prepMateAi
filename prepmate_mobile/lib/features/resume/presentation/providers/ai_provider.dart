@@ -161,5 +161,4 @@ class AINotifier extends StateNotifier<AIState> {
         break;
     }
   }
-
 }

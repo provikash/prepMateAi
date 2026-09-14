@@ -18,6 +18,10 @@ abstract class AuthRepository {
 
   Future<bool> forgotPassword(String email);
 
+  Future<bool> resetPassword(String email, String otp, String newPassword);
+
+  Future<bool> resendVerification(String email);
+
   Future<User?> getProfile();
 
   Future<User?> updateProfile(User user);

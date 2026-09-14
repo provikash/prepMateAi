@@ -39,10 +39,10 @@ class AIResultScreen extends ConsumerWidget {
       body: aiState.status == AIStatus.loading
           ? _buildPollingState()
           : aiState.status == AIStatus.success
-              ? _buildSuccessState(context, ref, aiState)
-              : aiState.status == AIStatus.error
-                  ? _buildErrorState(aiState.errorMessage ?? 'Unknown error')
-                  : _buildErrorState('No AI action has been submitted yet.'),
+          ? _buildSuccessState(context, ref, aiState)
+          : aiState.status == AIStatus.error
+          ? _buildErrorState(aiState.errorMessage ?? 'Unknown error')
+          : _buildErrorState('No AI action has been submitted yet.'),
     );
   }
 
@@ -84,9 +84,10 @@ class AIResultScreen extends ConsumerWidget {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppColors.of(context).primary,),
+              color: AppColors.of(context).primary,
             ),
-          
+          ),
+
           const SizedBox(height: 8),
           Text(
             _subtitleForAction(aiState.action),
@@ -209,11 +210,7 @@ class AIResultScreen extends ConsumerWidget {
         color: Color(0xFFE0F2F1),
         shape: BoxShape.circle,
       ),
-      child: const Icon(
-        Icons.check_circle,
-        color: Color(0xFF00796B),
-        size: 48,
-      ),
+      child: const Icon(Icons.check_circle, color: Color(0xFF00796B), size: 48),
     );
   }
 

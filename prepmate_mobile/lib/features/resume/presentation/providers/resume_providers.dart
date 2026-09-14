@@ -11,19 +11,17 @@ import '../../data/repositories/resume_repository_impl.dart';
 import '../../domain/repositories/resume_repository.dart';
 
 final resumeRemoteDataSourceProvider = Provider<ResumeRemoteDataSource>((ref) {
-  return ResumeRemoteDataSource(
-    dio: ref.watch(dioProvider),
-    secureStorage: ref.watch(secureStorageProvider),
-  );
+  return ResumeRemoteDataSource(dio: ref.watch(dioProvider));
 });
 
 final resumeRepositoryProvider = Provider<ResumeRepository>((ref) {
   return ResumeRepositoryImpl(ref.watch(resumeRemoteDataSourceProvider));
 });
 
-final templateDetailProvider = FutureProvider.family<TemplateDetailModel, String>((ref, templateId) {
-  return ref.watch(resumeRepositoryProvider).getTemplateDetail(templateId);
-});
+final templateDetailProvider =
+    FutureProvider.family<TemplateDetailModel, String>((ref, templateId) {
+      return ref.watch(resumeRepositoryProvider).getTemplateDetail(templateId);
+    });
 
 final templateProvider = templateDetailProvider;
 
@@ -36,11 +34,7 @@ class CreateResumeState {
   final CreatedResumeModel? data;
   final String? error;
 
-  const CreateResumeState({
-    this.isLoading = false,
-    this.data,
-    this.error,
-  });
+  const CreateResumeState({this.isLoading = false, this.data, this.error});
 
   CreateResumeState copyWith({
     bool? isLoading,
@@ -81,13 +75,17 @@ class CreateResumeNotifier extends StateNotifier<CreateResumeState> {
   }
 }
 
-final createResumeProvider = StateNotifierProvider<CreateResumeNotifier, CreateResumeState>((ref) {
-  return CreateResumeNotifier(ref.watch(resumeRepositoryProvider));
-});
+final createResumeProvider =
+    StateNotifierProvider<CreateResumeNotifier, CreateResumeState>((ref) {
+      return CreateResumeNotifier(ref.watch(resumeRepositoryProvider));
+    });
 
 final resumeProvider = createResumeProvider;
 
-final pdfViewerProvider = FutureProvider.family<Uint8List, String>((ref, resumeId) {
+final pdfViewerProvider = FutureProvider.family<Uint8List, String>((
+  ref,
+  resumeId,
+) {
   return ref.watch(resumeRepositoryProvider).getResumePdfBytes(resumeId);
 });
 

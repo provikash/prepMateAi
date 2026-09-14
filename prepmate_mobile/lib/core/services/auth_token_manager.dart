@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/storage.dart';
 import '../../features/auth/presentation/viewmodel/auth_viewmodel.dart';
+import '../../config/api_config.dart';
 
 // ─── Provider ───────────────────────────────────────────────────────────────
 
@@ -34,16 +35,16 @@ class AuthTokenManager {
   // ⚠️  Configure your backend URL here (must match dio_client.dart):
   // For Android Emulator (default): http://10.0.2.2:8000/api/v1/
   // For Physical Device: http://<YOUR_MACHINE_IP>:8000/api/v1/
-  static const String _baseUrl = 'http://10.24.117.1:8000/api/v1/';
   static const Duration _refreshWindow = Duration(minutes: 2);
 
   final Ref _ref;
+  Future<String?>? _refreshInFlight;
 
   // Separate Dio instance used only for the refresh call so we don't
   // accidentally trigger the main interceptor recursively.
   final Dio _refreshDio = Dio(
     BaseOptions(
-      baseUrl: _baseUrl,
+      baseUrl: apiBaseUrl,
       connectTimeout: const Duration(seconds: 12),
       receiveTimeout: const Duration(seconds: 12),
       headers: {
@@ -70,10 +71,7 @@ class AuthTokenManager {
 
   /// Saves tokens.  Refresh token is only updated when non-null/non-empty
   /// so an access-only refresh response never wipes the refresh token.
-  Future<void> saveTokens({
-    required String accessToken,
-    String? refreshToken,
-  }) {
+  Future<void> saveTokens({required String accessToken, String? refreshToken}) {
     return TokenService.saveTokens(
       accessToken: accessToken,
       refreshToken: refreshToken,
@@ -93,6 +91,8 @@ class AuthTokenManager {
         path.contains('auth/register') ||
         path.contains('auth/refresh') ||
         path.contains('auth/google') ||
+        path.contains('auth/verify-email') ||
+        path.contains('auth/password-reset') ||
         path.contains('auth/forgot-password') ||
         path.contains('verify-otp') ||
         path.contains('verify-login-otp');
@@ -147,8 +147,10 @@ class AuthTokenManager {
       if (data is Map<String, dynamic>) {
         final exp = data['exp'];
         if (exp is int) {
-          return DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true)
-              .toLocal();
+          return DateTime.fromMillisecondsSinceEpoch(
+            exp * 1000,
+            isUtc: true,
+          ).toLocal();
         }
         if (exp is String) {
           final parsed = int.tryParse(exp);
@@ -173,6 +175,18 @@ class AuthTokenManager {
   /// Returns the new access token on success, or `null` on failure.
   /// Does **not** call [handleUnauthorized] itself — the caller decides.
   Future<String?> refreshAccessToken({String? refreshToken}) async {
+    final active = _refreshInFlight;
+    if (active != null) return active;
+    final operation = _performRefresh(refreshToken: refreshToken);
+    _refreshInFlight = operation;
+    try {
+      return await operation;
+    } finally {
+      if (identical(_refreshInFlight, operation)) _refreshInFlight = null;
+    }
+  }
+
+  Future<String?> _performRefresh({String? refreshToken}) async {
     final token = refreshToken ?? await getRefreshToken();
     if (token == null || token.isEmpty) return null;
 
@@ -216,7 +230,9 @@ class AuthTokenManager {
   Future<void> handleUnauthorized() async {
     await clearTokens();
     // Notify Riverpod state.
-    _ref.read(authViewModelProvider.notifier).logout();
+    _ref
+        .read(authViewModelProvider.notifier)
+        .forceLogout(message: 'Session expired. Please sign in again.');
     // Also notify raw stream listeners (e.g., navigation outside widget tree).
     _logoutController.add(null);
   }
@@ -271,7 +287,7 @@ class AuthTokenManager {
       extra: {
         ...requestOptions.extra,
         'auth_retry': true, // Prevent infinite retry loop
-        'skipAuth': true,   // Bypass the onRequest interceptor
+        'skipAuth': true, // Bypass the onRequest interceptor
       },
     );
 
@@ -298,10 +314,7 @@ class AuthTokenManager {
 
   // ─── Token extraction helpers ────────────────────────────────────────────
 
-  String? _extractAccessToken(
-    Map<String, dynamic> payload,
-    dynamic tokens,
-  ) {
+  String? _extractAccessToken(Map<String, dynamic> payload, dynamic tokens) {
     if (tokens is Map<String, dynamic>) {
       final access = tokens['access'] ?? tokens['access_token'];
       if (access != null) return access.toString();
@@ -310,10 +323,7 @@ class AuthTokenManager {
     return fallback?.toString();
   }
 
-  String? _extractRefreshToken(
-    Map<String, dynamic> payload,
-    dynamic tokens,
-  ) {
+  String? _extractRefreshToken(Map<String, dynamic> payload, dynamic tokens) {
     if (tokens is Map<String, dynamic>) {
       final refresh = tokens['refresh'] ?? tokens['refresh_token'];
       if (refresh != null) return refresh.toString();

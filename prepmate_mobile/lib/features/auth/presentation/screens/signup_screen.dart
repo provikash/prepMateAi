@@ -61,7 +61,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (next.status == AuthStatus.success && next.email != null) {
         context.push('/verify-otp', extra: next.email);
       } else if (next.status == AuthStatus.authenticated) {
-        context.go('/home');
+        final intended = GoRouterState.of(context).uri.queryParameters['from'];
+        context.go(intended ?? '/home');
       }
     });
 
@@ -285,8 +286,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             ),
                             isPassword: true,
                             controller: _passwordController,
-                          
-            
+
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter a password';
@@ -308,10 +308,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             ),
                             isPassword: true,
                             controller: _confirmPasswordController,
-  
-                    
-                             
-                            
+
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please confirm your password';

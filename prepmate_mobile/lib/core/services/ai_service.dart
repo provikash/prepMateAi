@@ -5,10 +5,18 @@ class AIService {
 
   AIService(this.dio);
 
-  Future<Map<String, dynamic>> submit(String action, Map<String, dynamic> payload) async {
+  Future<Map<String, dynamic>> submit(
+    String action,
+    Map<String, dynamic> payload, {
+    CancelToken? cancelToken,
+  }) async {
     // action values: generate-summary, improve-section, suggest-skills, generate-bullets
-    final endpoint = '/ai/$action/';
-    final response = await dio.post(endpoint, data: payload);
+    final endpoint = 'ai/$action/';
+    final response = await dio.post(
+      endpoint,
+      data: payload,
+      cancelToken: cancelToken,
+    );
     return Map<String, dynamic>.from(response.data as Map<String, dynamic>);
   }
 }

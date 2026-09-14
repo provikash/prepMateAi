@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:prepmate_mobile/features/auth/presentation/viewmodel/auth_viewmodel.dart';
 
@@ -38,7 +37,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _controller.forward();
 
-    _startFlow();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _startFlow();
+    });
   }
 
   Future<void> _startFlow() async {
@@ -79,10 +80,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             scale: _scaleAnimation,
             child: Hero(
               tag: 'app_logo',
-              child: SvgPicture.asset(
-                'assets/logos/app_icon_1024.svg',
-                width: 160,
-              ),
+              child: Image.asset('assets/logos/light_1024.png', width: 160),
             ),
           ),
         ),

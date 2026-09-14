@@ -127,7 +127,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _ProfileItem(
                   icon: Icons.security_outlined,
                   title: 'Change Password',
-                  onTap: () {},
+                  onTap: () => context.push('/forgot-password'),
                 ),
               ],
             ),
@@ -139,7 +139,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   icon: Icons.description,
                   title: 'My Resumes',
                   onTap: () {
-                    // Navigate to resume management
+                    context.push('/home');
                   },
                 ),
                 _ProfileItem(
@@ -153,7 +153,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   icon: Icons.school_outlined,
                   title: 'Learning Progress',
                   onTap: () {
-                    // Navigate to courses/learning
+                    context.push('/courses');
                   },
                 ),
               ],
@@ -193,9 +193,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: TextButton(
-                  onPressed: () {
-                    ref.read(authProvider.notifier).logout();
-                    context.go('/login');
+                  onPressed: () async {
+                    await ref.read(authProvider.notifier).logout();
+                    if (context.mounted) context.go('/login');
                   },
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFFFF5F5),

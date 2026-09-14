@@ -10,6 +10,7 @@ class NeuTextField extends StatefulWidget {
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
   final TextCapitalization capitalization;
+  final ValueChanged<String>? onChanged;
 
   const NeuTextField({
     super.key,
@@ -20,6 +21,7 @@ class NeuTextField extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.validator,
     this.capitalization = TextCapitalization.none,
+    this.onChanged,
   });
 
   @override
@@ -50,6 +52,7 @@ class _NeuTextFieldState extends State<NeuTextField> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextFormField(
         controller: widget.controller,
+        onChanged: widget.onChanged,
         keyboardType: widget.keyboardType,
         validator: widget.validator,
         textCapitalization: widget.capitalization,

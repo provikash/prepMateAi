@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.template import Context, Template
 from pathlib import Path
+from io import BytesIO
+import pdfplumber
 
 from resume.models import ResumeTemplate
 from resume.rendering import ResumeRenderService
@@ -113,6 +115,44 @@ class ResumeSerializerValidationTests(TestCase):
         self.assertTrue(serializer.is_valid(), serializer.errors)
         self.assertIn("skills", serializer.validated_data["data"])
         self.assertGreater(len(serializer.validated_data["data"]["skills"]), 0)
+
+    def test_canonical_nested_types_return_field_level_errors(self):
+        serializer = ResumeSerializer(
+            data={
+                "title": "Invalid nested data",
+                "template": self.template.id,
+                "data": {
+                    "basics": {
+                        "name": "Alice",
+                        "email": "alice@example.com",
+                        "location": "Colombo",
+                        "profiles": [{"network": "GitHub", "url": 42}],
+                    },
+                    "work": [{"name": "Acme", "position": "Engineer", "startDate": "January 2024", "highlights": {"value": "Built APIs"}}],
+                },
+            }
+        )
+
+        self.assertFalse(serializer.is_valid())
+        errors = serializer.errors["data"]
+        self.assertIn("basics", errors)
+        self.assertIn("location", errors["basics"])
+        self.assertIn("profiles", errors["basics"])
+
+    def test_unknown_nested_fields_are_preserved_instead_of_silently_dropped(self):
+        payload = {
+            "basics": {"name": "Alice", "customHeadline": "Platform specialist"},
+            "references": [],
+        }
+        serializer = ResumeSerializer(
+            data={"title": "Extensible", "template": self.template.id, "data": payload}
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(
+            serializer.validated_data["data"]["basics"]["customHeadline"],
+            "Platform specialist",
+        )
 
 
 class ResumeNormalizationAndRenderTests(TestCase):
@@ -367,6 +407,34 @@ class CanonicalJsonResumeRenderingTests(TestCase):
         self.assertNotIn("javascript:", html)
         self.assertNotIn("data:text", html)
 
+    def test_wholly_empty_optional_rows_are_removed_before_required_validation(self):
+        prepared = ResumeRenderService.prepare_resume_context({
+            **empty_resume(),
+            "basics": {"name": "Minimal"},
+            "education": [{"institution": "", "studyType": "", "courses": []}],
+            "work": [{"name": "", "position": "", "highlights": []}],
+        })
+        self.assertEqual(prepared["education"], [])
+        self.assertEqual(prepared["work"], [])
+
+    def test_all_thomas_themes_render_normalized_resume_data(self):
+        data = {
+            **empty_resume(),
+            "basics": {"name": "Theme Candidate", "email": "theme@example.com", "summary": "Focused engineer."},
+            "work": [{"name": "Acme", "position": "Engineer", "startDate": "2024", "highlights": ["Shipped"]}],
+        }
+        for identifier in ("thomas-slate", "thomas-desert-modern", "thomas-navy-sidebar"):
+            with self.subTest(identifier=identifier):
+                template = ResumeTemplate.objects.create(
+                    name=identifier, slug=f"{identifier}-test", theme_identifier=identifier,
+                    version=1, html_structure="", is_active=True,
+                )
+                html = ResumeRenderService.render_resume(data, template)
+                self.assertIn("Theme Candidate", html)
+                self.assertIn("theme@example.com", html)
+                self.assertIn("Acme", html)
+                self.assertIn("Shipped", html)
+
 
 class ResumeRenderingApiTests(TestCase):
     def setUp(self):
@@ -406,6 +474,24 @@ class ResumeRenderingApiTests(TestCase):
         created = Resume.objects.get(pk=response.data["id"])
         self.assertEqual(created.data, empty_resume())
 
+    def test_incomplete_draft_can_be_saved_but_cannot_be_finalized(self):
+        self.client.force_authenticate(self.user)
+        payload = {
+            "title": "Draft",
+            "template_id": self.template.pk,
+            "metadata": {"status": "draft"},
+            "data": {**empty_resume(), "work": [{"position": "Engineer"}]},
+        }
+        draft = self.client.post("/api/v1/resumes/", payload, format="json")
+        self.assertEqual(draft.status_code, 201, draft.data)
+        final = self.client.patch(
+            f"/api/v1/resumes/{draft.data['id']}/",
+            {"metadata": {"status": "complete"}, "data": payload["data"]},
+            format="json",
+        )
+        self.assertEqual(final.status_code, 400)
+        self.assertIn("basics", final.data["data"])
+
     def test_template_api_exposes_safe_active_metadata_by_slug(self):
         inactive = ResumeTemplate.objects.create(name="Hidden", slug="hidden", theme_identifier="professional", version=1, html_structure="secret", css="secret", is_active=False)
         response = self.client.get("/api/v1/resume-templates/")
@@ -417,3 +503,78 @@ class ResumeRenderingApiTests(TestCase):
         self.assertEqual(detail.data["slug"], self.template.slug)
         self.assertNotIn("html_structure", detail.data)
         self.assertNotIn("css", detail.data)
+        section_keys = [section["key"] for section in detail.data["form_schema"]["sections"]]
+        self.assertEqual(
+            section_keys,
+            ["basics", "work", "education", "skills", "projects", "certificates", "languages", "awards", "volunteer", "publications", "interests", "references"],
+        )
+
+    def test_template_detail_accepts_uuid_used_by_flutter_gallery(self):
+        response = self.client.get(f"/api/v1/templates/{self.template.pk}/")
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["id"], str(self.template.pk))
+        self.assertEqual(response.data["slug"], self.template.slug)
+        self.assertTrue(response.data["form_schema"]["sections"])
+
+    def test_complete_payload_is_preserved_and_every_section_reaches_pdf(self):
+        long_summary = "Platform engineer focused on reliable systems. " * 80
+        payload = {
+            "basics": {
+                "name": "Complete Candidate", "label": "Staff Engineer", "email": "complete@example.com",
+                "phone": "+1 555 0100", "url": "example.com", "summary": long_summary,
+                "location": {"address": "42 Sentinel Road", "city": "Colombo", "region": "Western", "postalCode": "00100", "countryCode": "LK"},
+                "profiles": [{"network": "GitHub", "username": "complete", "url": "github.com/complete"}],
+            },
+            "work": [
+                {"name": "Current Corp", "position": "Lead Engineer", "url": "work.example.test", "startDate": "2023-01", "endDate": None, "location": "Remote", "summary": "Leads platform delivery.", "highlights": ["Improved reliability", "Mentored engineers"]},
+                {"company": "Legacy Ltd", "title": "Software Engineer", "start_date": "2020-01", "end_date": "2022-12", "responsibilities": ["Built payment services", "Reduced latency"]},
+            ],
+            "education": [{"institution": "State University", "url": "education.example.test", "studyType": "BSc", "area": "Computer Science", "score": "First Class", "startDate": "2016", "endDate": "2019", "location": "Kandy Campus", "courses": ["Algorithms", "Databases"]}],
+            "skills": [{"name": "Backend", "level": "Advanced", "keywords": ["Python", "Django"]}, {"name": "Mobile", "keywords": ["Flutter", "Dart"]}],
+            "projects": [{"name": "PrepMate", "description": "Resume platform", "roles": ["Architect"], "highlights": ["Generated accessible PDFs"], "url": "project.example.test", "startDate": "2022-02", "endDate": "2024-04"}, {"name": "Observatory", "description": "Monitoring suite", "roles": ["Maintainer"], "highlights": ["Processed millions of events"]}],
+            "certificates": [{"title": "Cloud Professional", "issuer": "Cloud Org", "issue_date": "2024-03", "credential_url": "example.com/cert", "description": "Advanced cloud certification"}],
+            "languages": [{"language": "English", "fluency": "Professional"}],
+            "awards": [{"title": "Engineering Award", "awarder": "Tech Guild", "date": "2024", "summary": "For technical leadership"}],
+            "volunteer": [{"organization": "Code Club", "position": "Mentor", "url": "volunteer.example.test", "startDate": "2021", "endDate": None, "summary": "Taught programming", "highlights": ["Supported 40 students"]}],
+            "publications": [{"name": "Reliable PDF Pipelines", "publisher": "Engineering Journal", "releaseDate": "2025-02", "url": "example.com/paper", "summary": "Rendering research"}],
+            "interests": [{"name": "Open Source", "keywords": ["Accessibility"]}],
+            "references": [{"name": "Reference Person", "reference": "Strongly recommended"}],
+        }
+        self.client.force_authenticate(self.user)
+        response = self.client.post("/api/v1/resumes/", {"title": "Complete", "template_id": self.template.pk, "data": payload}, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        created = Resume.objects.get(pk=response.data["id"])
+        self.assertEqual(created.data["work"][0]["endDate"], None)
+        self.assertEqual(created.data["work"][1]["name"], "Legacy Ltd")
+        self.assertEqual(created.data["work"][1]["position"], "Software Engineer")
+        self.assertEqual(created.data["work"][1]["highlights"], ["Built payment services", "Reduced latency"])
+        self.assertEqual(created.data["certificates"][0]["issuer"], "Cloud Org")
+        self.assertEqual(created.data["certificates"][0]["summary"], "Advanced cloud certification")
+
+        expected = [
+            "Complete Candidate", "Staff Engineer", "complete@example.com", "+1 555 0100",
+            "example.com", "42 Sentinel Road", "Colombo", "Western", "00100", "LK",
+            "GitHub", "complete", "github.com/complete",
+            "Current Corp", "Lead Engineer", "work.example.test", "Remote", "Present",
+            "Leads platform delivery", "Improved reliability", "Legacy Ltd", "Built payment services",
+            "State University", "education.example.test", "BSc", "Computer Science", "First Class",
+            "Kandy Campus", "Algorithms", "Backend", "Advanced", "Python", "PrepMate",
+            "Resume platform", "project.example.test", "Architect", "Generated accessible PDFs",
+            "Cloud Professional", "Cloud Org", "example.com/cert", "Advanced cloud certification", "English", "Professional",
+            "Engineering Award", "Tech Guild", "technical leadership", "Code Club", "Mentor",
+            "volunteer.example.test", "Taught programming", "Supported 40 students",
+            "Reliable PDF Pipelines", "Engineering Journal", "example.com/paper", "Rendering research", "Open Source",
+            "Accessibility", "Reference Person", "Strongly recommended",
+        ]
+        preview = self.client.post(f"/api/v1/resumes/{created.pk}/render/", {}, format="json")
+        self.assertEqual(preview.status_code, 200, preview.data)
+        for value in expected:
+            self.assertIn(value, preview.data["html"])
+
+        pdf = self.client.get(f"/api/v1/resumes/{created.pk}/pdf/")
+        self.assertEqual(pdf.status_code, 200)
+        with pdfplumber.open(BytesIO(pdf.content)) as document:
+            pdf_text = "\n".join(page.extract_text() or "" for page in document.pages)
+            self.assertGreaterEqual(len(document.pages), 2)
+        for value in expected:
+            self.assertIn(value, pdf_text)

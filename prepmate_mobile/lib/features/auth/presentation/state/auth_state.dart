@@ -38,13 +38,14 @@ class AuthState {
     bool? hasCheckedSession,
     bool clearError = false,
     bool clearInfo = false,
+    bool clearUser = false,
   }) {
     return AuthState(
       status: status ?? this.status,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       infoMessage: clearInfo ? null : (infoMessage ?? this.infoMessage),
       email: email ?? this.email,
-      user: user ?? this.user,
+      user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
       hasCheckedSession: hasCheckedSession ?? this.hasCheckedSession,
     );

@@ -134,7 +134,9 @@ class ResumeSerializer(serializers.ModelSerializer):
     def validate_data(self, value):
         if self.instance is not None and self.partial:
             value = deep_merge(self.instance.data or empty_resume(), value)
-        return validate_and_normalize(value)
+        metadata = self.initial_data.get("metadata", {})
+        is_draft = isinstance(metadata, dict) and metadata.get("status") == "draft"
+        return validate_and_normalize(value, strict=not is_draft)
 
     def validate(self, attrs):
         initial = self.initial_data

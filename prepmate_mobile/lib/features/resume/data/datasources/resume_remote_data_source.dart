@@ -1,28 +1,43 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/created_resume_model.dart';
 import '../models/resume_model.dart';
 import '../models/template_detail_model.dart';
 
+enum ResumeSaveFailureKind {
+  validation,
+  authentication,
+  connection,
+  timeout,
+  server,
+  unknown,
+}
+
+class ResumeSaveException implements Exception {
+  const ResumeSaveException({
+    required this.kind,
+    required this.message,
+    this.statusCode,
+    this.fieldErrors = const {},
+  });
+
+  final ResumeSaveFailureKind kind;
+  final String message;
+  final int? statusCode;
+  final Map<String, String> fieldErrors;
+
+  @override
+  String toString() => message;
+}
+
 class ResumeRemoteDataSource {
   final Dio dio;
-  final FlutterSecureStorage secureStorage;
 
-  ResumeRemoteDataSource({required this.dio, required this.secureStorage});
-
-  Future<Options> _authorizedOptions() async {
-    final token = await secureStorage.read(key: 'access_token');
-    final headers = <String, dynamic>{};
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-    return Options(headers: headers);
-  }
+  ResumeRemoteDataSource({required this.dio});
 
   String _normalizeDioError(Object error) {
     if (error is DioException) {
@@ -43,6 +58,9 @@ class ResumeRemoteDataSource {
         if (data['message'] != null) {
           return data['message'].toString();
         }
+        return data.entries
+            .map((entry) => '${entry.key}: ${entry.value}')
+            .join('\n');
       }
       return error.message ?? 'Network error';
     }
@@ -51,10 +69,7 @@ class ResumeRemoteDataSource {
 
   Future<TemplateDetailModel> getTemplateDetail(String id) async {
     try {
-      final response = await dio.get(
-        'templates/$id/',
-        options: await _authorizedOptions(),
-      );
+      final response = await dio.get('templates/$id/');
       final data = response.data;
       if (data is Map<String, dynamic>) {
         return TemplateDetailModel.fromJson(data);
@@ -77,18 +92,25 @@ class ResumeRemoteDataSource {
     required Map<String, dynamic> data,
   }) async {
     try {
-      final options = await _authorizedOptions();
-      if (options.headers?['Authorization'] == null) {
-        throw Exception('Missing auth token. Please sign in again.');
-      }
-
       // Build a proper JSON Resume payload. The `data` map already contains
       // the section keys (basics, work, education, projects, skills).
       // We pass it verbatim as the `data` field; the backend normalises it.
+      if (kDebugMode) {
+        final sectionCounts = <String, Object?>{
+          for (final entry in data.entries)
+            entry.key: entry.value is List
+                ? (entry.value as List).length
+                : entry.value is Map
+                ? (entry.value as Map).keys.toList()
+                : entry.value.runtimeType.toString(),
+        };
+        debugPrint(
+          '[Resume Save] redacted payload summary: ${jsonEncode(sectionCounts)}',
+        );
+      }
       final response = await dio.post(
         'resumes/',
         data: {'template_id': templateId, 'title': title, 'data': data},
-        options: options,
       );
       return CreatedResumeModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (error) {
@@ -102,6 +124,109 @@ class ResumeRemoteDataSource {
     }
   }
 
+  Future<CreatedResumeModel> saveResume({
+    String? resumeId,
+    required String templateId,
+    required String title,
+    required Map<String, dynamic> data,
+    required bool draft,
+  }) async {
+    try {
+      final payload = {
+        'template_id': templateId,
+        'title': title,
+        'data': data,
+        'metadata': {'status': draft ? 'draft' : 'complete'},
+      };
+      final response = resumeId == null
+          ? await dio.post('resumes/', data: payload)
+          : await dio.patch('resumes/$resumeId/', data: payload);
+      return CreatedResumeModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (error) {
+      throw _saveException(error);
+    } on FormatException {
+      throw const ResumeSaveException(
+        kind: ResumeSaveFailureKind.server,
+        message: 'The server returned an invalid save response. Please retry.',
+      );
+    }
+  }
+
+  ResumeSaveException _saveException(DioException error) {
+    final statusCode = error.response?.statusCode;
+    final data = error.response?.data;
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return const ResumeSaveException(
+        kind: ResumeSaveFailureKind.timeout,
+        message: 'Saving timed out. Check your connection and try again.',
+      );
+    }
+    if (error.type == DioExceptionType.connectionError ||
+        error.error is SocketException) {
+      return const ResumeSaveException(
+        kind: ResumeSaveFailureKind.connection,
+        message: 'Cannot reach the server. Check the API address and network.',
+      );
+    }
+    if (statusCode == 400) {
+      final fields = _flattenErrors(data);
+      return ResumeSaveException(
+        kind: ResumeSaveFailureKind.validation,
+        statusCode: statusCode,
+        fieldErrors: fields,
+        message: fields.isEmpty
+            ? 'The resume contains invalid fields. Review the form and retry.'
+            : 'Please correct ${fields.entries.first.key}: ${fields.entries.first.value}',
+      );
+    }
+    if (statusCode == 401) {
+      return const ResumeSaveException(
+        kind: ResumeSaveFailureKind.authentication,
+        statusCode: 401,
+        message:
+            'Your session expired. Sign in again; your form data is still here.',
+      );
+    }
+    if (statusCode != null && statusCode >= 500) {
+      return ResumeSaveException(
+        kind: ResumeSaveFailureKind.server,
+        statusCode: statusCode,
+        message:
+            'The server could not save the resume. Please try again shortly.',
+      );
+    }
+    return ResumeSaveException(
+      kind: ResumeSaveFailureKind.unknown,
+      statusCode: statusCode,
+      message: 'Could not save the resume. Please try again.',
+    );
+  }
+
+  Map<String, String> _flattenErrors(dynamic value, [String path = '']) {
+    final result = <String, String>{};
+    if (value is Map) {
+      for (final entry in value.entries) {
+        final entryKey = entry.key.toString();
+        final key = path.isEmpty && entryKey == 'data'
+            ? ''
+            : path.isEmpty
+            ? entryKey
+            : '$path.$entryKey';
+        result.addAll(_flattenErrors(entry.value, key));
+      }
+    } else if (value is List) {
+      for (var index = 0; index < value.length; index++) {
+        final key = path.isEmpty ? '[$index]' : '$path[$index]';
+        result.addAll(_flattenErrors(value[index], key));
+      }
+    } else if (value != null) {
+      result[path.isEmpty ? 'resume' : path] = value.toString();
+    }
+    return result;
+  }
+
   Future<String> getResumePdfUrl(String id) async {
     final base = dio.options.baseUrl;
     return '$base/resumes/$id/pdf/'.replaceAll('//resumes', '/resumes');
@@ -111,10 +236,7 @@ class ResumeRemoteDataSource {
     try {
       final response = await dio.get<List<int>>(
         'resumes/$id/pdf/',
-        options: Options(
-          headers: (await _authorizedOptions()).headers,
-          responseType: ResponseType.bytes,
-        ),
+        options: Options(responseType: ResponseType.bytes),
       );
       final bytes = response.data;
       if (bytes == null || bytes.isEmpty) {
@@ -132,7 +254,7 @@ class ResumeRemoteDataSource {
 
   Future<void> deleteResume(String id) async {
     try {
-      await dio.delete('resumes/$id/', options: await _authorizedOptions());
+      await dio.delete('resumes/$id/');
     } catch (error) {
       throw Exception('Failed to delete resume: ${_normalizeDioError(error)}');
     }
@@ -140,10 +262,7 @@ class ResumeRemoteDataSource {
 
   Future<List<ResumeModel>> getResumes() async {
     try {
-      final response = await dio.get(
-        'resumes/',
-        options: await _authorizedOptions(),
-      );
+      final response = await dio.get('resumes/');
       final payload = response.data;
       final list = payload is Map<String, dynamic>
           ? (payload['results'] as List?) ?? const []

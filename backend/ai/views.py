@@ -44,6 +44,8 @@ class ImproveSectionView(APIView):
 			text=serializer.validated_data["text"],
 			section_name=serializer.validated_data["section_name"],
 		)
+		if result.get("status") == "error":
+			return Response(result, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 		return Response(result, status=status.HTTP_200_OK)
 
 
@@ -73,4 +75,6 @@ class GenerateBulletsView(APIView):
 		serializer.is_valid(raise_exception=True)
 
 		result = generate_bullets(experience=serializer.validated_data["experience"])
+		if result.get("status") == "error":
+			return Response(result, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 		return Response(result, status=status.HTTP_200_OK)
