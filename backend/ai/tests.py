@@ -2,6 +2,13 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
+from django.test import SimpleTestCase
+from .services.gemini_service import GeminiService
+
+
+class GeminiResponseTests(SimpleTestCase):
+    def test_accepts_json_inside_markdown_fences(self):
+        self.assertEqual(GeminiService._parse_json('```json\n{"summary":"hello"}\n```'), {'summary': 'hello'})
 
 
 class ResumeAIEndpointTests(APITestCase):

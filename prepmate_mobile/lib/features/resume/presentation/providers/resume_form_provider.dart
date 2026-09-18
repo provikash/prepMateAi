@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/datasources/resume_remote_data_source.dart';
-import 'resume_providers.dart';
 
 final resumeFormStateProvider =
     StateNotifierProvider.autoDispose<

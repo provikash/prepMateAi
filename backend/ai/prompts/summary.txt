@@ -12,6 +12,7 @@ Output requirements:
 - Focus on role alignment, measurable impact, and core strengths.
 - Avoid first-person pronouns.
 - Keep ATS-friendly wording and relevant keywords.
+- Use only facts present in Candidate data. Never invent employers, dates, skills, metrics, credentials, or achievements.
 
 Return valid JSON only, with this exact schema:
 {"summary": "..."}

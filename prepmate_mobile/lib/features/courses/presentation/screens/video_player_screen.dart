@@ -21,7 +21,7 @@
 //   void initState() {
 //     super.initState();
 //     final videoId = YoutubePlayer.convertUrlToId(widget.course.url);
-    
+
 //     _controller = YoutubePlayerController(
 //       initialVideoId: videoId ?? '',
 //       flags: const YoutubePlayerFlags(

@@ -1,3 +1,4 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
@@ -34,7 +35,7 @@ class UserProfileWidget extends ConsumerWidget {
           ),
         ],
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoading()),
       error: (error, stack) =>
           Center(child: Text('Error loading profile: $error')),
     );

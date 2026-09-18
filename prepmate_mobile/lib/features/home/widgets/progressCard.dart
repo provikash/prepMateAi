@@ -1,3 +1,4 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
@@ -124,7 +125,7 @@ class ProgressCard extends ConsumerWidget {
             ),
           ],
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoading()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );

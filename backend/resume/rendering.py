@@ -56,8 +56,9 @@ class ResumeRenderService:
         theme = ThemeRegistry.resolve(template)
         context = cls.prepare_resume_context(resume_data)
         logger.debug(
-            "Final normalized resume JSON before PDF/HTML rendering: %s",
-            json.dumps(context, ensure_ascii=False, sort_keys=True, default=str),
+            "Rendering resume theme=%s sections=%s",
+            getattr(template, "theme_identifier", ""),
+            sorted(key for key, value in context.items() if value),
         )
         try:
             html = render_to_string(theme["template"], {"resume": context, "resume_title": resume_title})

@@ -19,4 +19,11 @@ class TemplateModel {
       thumbnailUrl: json['thumbnail_url'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'category': category,
+    'thumbnail_url': thumbnailUrl,
+  };
 }

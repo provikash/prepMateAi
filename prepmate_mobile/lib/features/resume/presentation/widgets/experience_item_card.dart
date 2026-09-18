@@ -6,11 +6,11 @@ class ExperienceItemCard extends StatelessWidget {
   final VoidCallback? onDelete;
 
   const ExperienceItemCard({
-    Key? key,
+    super.key,
     required this.item,
     this.onEdit,
     this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -47,17 +47,15 @@ class ExperienceItemCard extends StatelessWidget {
             if (duration.isNotEmpty)
               Text(duration, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 8),
-            ...bullets
-                .map(
-                  (b) => Row(
-                    children: [
-                      const Icon(Icons.circle, size: 6),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(b)),
-                    ],
-                  ),
-                )
-                .toList(),
+            ...bullets.map(
+              (b) => Row(
+                children: [
+                  const Icon(Icons.circle, size: 6),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(b)),
+                ],
+              ),
+            ),
           ],
         ),
       ),

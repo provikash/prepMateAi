@@ -1,6 +1,7 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'course_video_player_screen.dart';
 import '../../../../config/theme.dart';
 import '../../data/models/ai_course_model.dart';
 import '../providers/course_providers.dart';
@@ -42,7 +43,7 @@ class AllPlaylistsScreen extends ConsumerWidget {
                   Icon(
                     Icons.search_off,
                     size: 64,
-                    color: colors.textSecondary.withOpacity(0.5),
+                    color: colors.textSecondary.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -78,7 +79,7 @@ class AllPlaylistsScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoading()),
         error: (error, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -86,7 +87,7 @@ class AllPlaylistsScreen extends ConsumerWidget {
               Icon(
                 Icons.error_outline,
                 size: 64,
-                color: colors.textSecondary.withOpacity(0.5),
+                color: colors.textSecondary.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(
@@ -120,28 +121,18 @@ class _PlaylistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () async {
-        final youtubeUrl =
-            'https://www.youtube.com/watch?v=${playlist.videoId}';
-        final uri = Uri.parse(youtubeUrl);
-
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          if (context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Could not open YouTube')));
-          }
-        }
-      },
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CourseVideoPlayerScreen(course: playlist),
+        ),
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: colors.cardBackground,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -171,7 +162,7 @@ class _PlaylistCard extends StatelessWidget {
                         return Center(
                           child: Icon(
                             Icons.image_not_supported,
-                            color: colors.textSecondary.withOpacity(0.5),
+                            color: colors.textSecondary.withValues(alpha: 0.5),
                           ),
                         );
                       },
@@ -179,7 +170,7 @@ class _PlaylistCard extends StatelessWidget {
                     // Play button overlay
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                       ),
                       child: Center(
                         child: Container(

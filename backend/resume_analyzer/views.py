@@ -1,3 +1,4 @@
+from core.media import media_url
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -36,7 +37,7 @@ class ResumeAnalysisHistoryAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        analyses = ResumeAnalysis.objects.filter(user=request.user).order_by("-created_at")
+        analyses = ResumeAnalysis.objects.select_related("resume").filter(user=request.user).order_by("-created_at")
         payload = [ResumeAnalyzerService.build_analysis_payload(item) for item in analyses]
         response_serializer = ResumeAnalysisResponseSerializer(payload, many=True)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -52,7 +53,7 @@ class ResumeListAPIView(APIView):
             pdf_url = None
             if resume.pdf_file:
                 try:
-                    pdf_url = request.build_absolute_uri(resume.pdf_file.url)
+                    pdf_url = media_url(request, resume.pdf_file)
                 except Exception:
                     pdf_url = None
             result.append({

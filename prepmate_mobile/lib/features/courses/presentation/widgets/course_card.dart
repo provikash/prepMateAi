@@ -21,9 +21,6 @@ class CourseCard extends StatelessWidget {
           color: colors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: colors.border),
-          boxShadow: Theme.of(context).brightness == Brightness.dark
-              ? AppTheme.darkShadow
-              : AppTheme.lightShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,7 +28,9 @@ class CourseCard extends StatelessWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
                   child: Image.network(
                     course.thumbnail,
                     height: 120,
@@ -40,7 +39,10 @@ class CourseCard extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 120,
                       color: colors.mutedBackground,
-                      child: Icon(Icons.image_not_supported, color: colors.textSecondary),
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ),
                 ),
@@ -48,9 +50,12 @@ class CourseCard extends StatelessWidget {
                   top: 8,
                   left: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: colors.cardBackground.withOpacity(0.9),
+                      color: colors.cardBackground.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -58,7 +63,7 @@ class CourseCard extends StatelessWidget {
                         Icon(
                           _getIconForType(course.type),
                           size: 14,
-                          color: _getColorForType(course.type),
+                          color: _getColorForType(course.type, colors),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -66,7 +71,7 @@ class CourseCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: _getColorForType(course.type),
+                            color: _getColorForType(course.type, colors),
                           ),
                         ),
                       ],
@@ -82,7 +87,11 @@ class CourseCard extends StatelessWidget {
                       color: colors.cardBackground,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.bookmark_border, size: 16, color: colors.textSecondary),
+                    child: Icon(
+                      Icons.bookmark_border,
+                      size: 16,
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -96,7 +105,11 @@ class CourseCard extends StatelessWidget {
                     course.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: colors.textPrimary),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: colors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -106,17 +119,29 @@ class CourseCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.star, size: 16, color: Colors.orange),
+                      Icon(Icons.star, size: 16, color: colors.warning),
                       const SizedBox(width: 4),
                       Text(
                         '${course.rating} (${course.reviewCount ?? 0})',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colors.textPrimary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: colors.textPrimary,
+                        ),
                       ),
                       const Spacer(),
                       if (course.isOpened)
-                        const Icon(Icons.check_circle, size: 16, color: Colors.green)
+                        Icon(
+                          Icons.check_circle,
+                          size: 16,
+                          color: colors.success,
+                        )
                       else
-                        Icon(Icons.more_vert, size: 16, color: colors.textSecondary),
+                        Icon(
+                          Icons.more_vert,
+                          size: 16,
+                          color: colors.textSecondary,
+                        ),
                     ],
                   ),
                 ],
@@ -154,16 +179,16 @@ class CourseCard extends StatelessWidget {
     }
   }
 
-  Color _getColorForType(CourseType type) {
+  Color _getColorForType(CourseType type, AppColors colors) {
     switch (type) {
       case CourseType.youtubeVideo:
-        return Colors.red;
+        return colors.error;
       case CourseType.playlist:
-        return Colors.green;
+        return colors.success;
       case CourseType.pdf:
-        return Colors.orange;
+        return colors.warning;
       default:
-        return Colors.blue;
+        return colors.info;
     }
   }
 

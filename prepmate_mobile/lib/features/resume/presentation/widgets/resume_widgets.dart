@@ -1,3 +1,4 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'package:flutter/material.dart';
 import '../../../../config/theme.dart';
 
@@ -112,7 +113,7 @@ class ExperienceCard extends StatelessWidget {
             Icon(
               Icons.location_on,
               size: 14,
-              color: colors.textSecondary.withOpacity(0.5),
+              color: colors.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(width: 4),
             Text(
@@ -175,11 +176,11 @@ class AIButton extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
-          colors: [colors.primary, colors.primary.withOpacity(0.8)],
+          colors: [colors.primary, colors.primary.withValues(alpha: 0.8)],
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.primary.withOpacity(0.3),
+            color: colors.primary.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -198,10 +199,7 @@ class AIButton extends StatelessWidget {
             ? const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
+                child: AppLoading(color: Colors.white, strokeWidth: 2),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,

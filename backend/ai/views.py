@@ -28,6 +28,8 @@ class GenerateSummaryView(APIView):
 		serializer.is_valid(raise_exception=True)
 
 		result = generate_summary(serializer.validated_data)
+		if result.get("status") == "error":
+			return Response(result, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 		return Response(result, status=status.HTTP_200_OK)
 
 
@@ -62,6 +64,8 @@ class SuggestSkillsView(APIView):
 			role=serializer.validated_data["role"],
 			existing_skills=serializer.validated_data.get("existing_skills", []),
 		)
+		if result.get("status") == "error":
+			return Response(result, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 		return Response(result, status=status.HTTP_200_OK)
 
 

@@ -3,6 +3,17 @@ __pycache__/
 *.py[cod]
 *$py.class
 .env
+.env.*
+!.env.example
+*.dump
+backend/backup*.json
+prepmate_mobile/.dart_tool/
+prepmate_mobile/.flutter-plugins*
+prepmate_mobile/android/.gradle/
+prepmate_mobile/android/local.properties
+prepmate_mobile/android/key.properties
+*.jks
+*.keystore
 
 # C extensions
 *.so

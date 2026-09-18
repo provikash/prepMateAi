@@ -1,145 +1,62 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../core/network/request_interceptors.dart';
 import '../core/services/auth_token_manager.dart';
 import 'api_config.dart';
-
-// ─── Providers ───────────────────────────────────────────────────────────────
 
 final secureStorageProvider = Provider<FlutterSecureStorage>(
   (ref) => const FlutterSecureStorage(),
 );
 
-/// Main application [Dio] instance.
-///
-/// Interceptor chain (in order):
-///   1. [onRequest]  — attach Bearer token (proactive refresh if near expiry).
-///   2. [onResponse] — debug logging only.
-///   3. [onError]    — on 401, attempt one token refresh then retry;
-///                     if that fails, trigger forced logout.
+/// The one application HTTP client. Widgets must consume repositories or
+/// providers rather than reading this provider directly.
 final dioProvider = Provider<Dio>((ref) {
-  // ⚠️  Configure your backend URL here:
-  // For Android Emulator (default): http://10.0.2.2:8000/api/v1/
-  // For Physical Device: http://<YOUR_MACHINE_IP>:8000/api/v1/
-  // Example: http://192.168.1.100:8000/api/v1/
-  // const baseUrl = 'htthttp://10.203.119.93:8000//api/v1/';
-
   final dio = Dio(
     BaseOptions(
-      // ⚠️  Change this to your environment-specific URL.
       baseUrl: apiBaseUrl,
-
-      // Increased timeout to handle slower networks and backend responsiveness
-      // Adjust based on your environment and expected response times
       connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {
+      receiveTimeout: const Duration(seconds: 180),
+      headers: const {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
     ),
   );
 
-  // ─── Request interceptor ─────────────────────────────────────────────────
+  dio.interceptors.add(RequestTelemetryInterceptor());
+  dio.interceptors.add(PublicConditionalCacheInterceptor());
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Skip token injection for auth & explicitly-skipped endpoints.
         if (options.extra['skipAuth'] == true) {
-          _logRequest(options);
           return handler.next(options);
         }
-
-        // Attaches a valid Bearer token; proactively refreshes if near expiry.
-        final manager = ref.read(authTokenManagerProvider);
-        await manager.maybeAttachOrRefresh(options);
-
-        _logRequest(options);
+        await ref.read(authTokenManagerProvider).maybeAttachOrRefresh(options);
         handler.next(options);
       },
-
-      // ─── Response interceptor ───────────────────────────────────────────
-      onResponse: (response, handler) {
-        _logResponse(response);
-        handler.next(response);
-      },
-
-      // ─── Error interceptor ──────────────────────────────────────────────
-      onError: (DioException error, handler) async {
+      onError: (error, handler) async {
         if (error.response?.statusCode == 401) {
-          // Attempt one silent token refresh + request retry.
           try {
-            final manager = ref.read(authTokenManagerProvider);
-            final retried = await manager.retryWithFreshToken(
-              dio,
-              error.requestOptions,
-            );
-            if (retried != null) {
-              // Successfully retried — resolve the original error with the
-              // fresh response so the caller never sees a 401.
-              return handler.resolve(retried);
-            }
+            final retried = await ref
+                .read(authTokenManagerProvider)
+                .retryWithFreshToken(dio, error.requestOptions);
+            if (retried != null) return handler.resolve(retried);
           } on DioException catch (retryError) {
-            // retryWithFreshToken already called handleUnauthorized() if the
-            // retry itself returned 401 — pass through with the retry error.
             return handler.next(retryError);
           } catch (_) {
-            // Unexpected error — fall through and surface the original 401.
+            // Preserve the original 401 for the caller.
           }
         }
-
-        _logError(error);
         handler.next(error);
       },
     ),
   );
+  // Added after authentication so the key includes an in-memory account
+  // fingerprint. The authorization value is never persisted or logged.
+  dio.interceptors.add(SingleFlightInterceptor());
 
+  ref.onDispose(() => dio.close(force: true));
   return dio;
 });
-
-// ─── Private logging helpers ─────────────────────────────────────────────────
-// Tokens are intentionally excluded from all log output.
-
-void _logRequest(RequestOptions options) {
-  if (!kDebugMode) return;
-  debugPrint('→ [${options.method}] ${options.uri}');
-  if (options.data != null) {
-    debugPrint('  Body: ${_scrubSensitiveFields(options.data)}');
-  }
-}
-
-void _logResponse(Response response) {
-  if (!kDebugMode) return;
-  debugPrint('← [${response.statusCode}] ${response.requestOptions.uri}');
-}
-
-void _logError(DioException error) {
-  if (!kDebugMode) return;
-  debugPrint(
-    '✗ [${error.response?.statusCode}] ${error.requestOptions.uri} — ${error.message}',
-  );
-}
-
-/// Removes known sensitive keys so tokens never appear in logs.
-dynamic _scrubSensitiveFields(dynamic data) {
-  if (data is Map<String, dynamic>) {
-    const sensitive = {
-      'password',
-      'refresh',
-      'access',
-      'token',
-      'id_token',
-      'data',
-    };
-    return data.map(
-      (key, value) => MapEntry(
-        key,
-        sensitive.contains(key) ? '***' : _scrubSensitiveFields(value),
-      ),
-    );
-  }
-  if (data is List) return data.map(_scrubSensitiveFields).toList();
-  return data;
-}

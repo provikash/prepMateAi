@@ -17,16 +17,14 @@ class SkillGapSummary extends ConsumerWidget {
       error: (_, __) => 0,
     );
 
-    final skills = skillGapAsync; // Since skillGapProvider returns List<String> directly
+    final skills =
+        skillGapAsync; // Since skillGapProvider returns List<String> directly
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Color(0xFFFFF3E0),
-        border: Border.all(
-          color: Color(0xFFFFE0B2),
-          width: 1,
-        ),
+        border: Border.all(color: Color(0xFFFFE0B2), width: 1),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -35,9 +33,9 @@ class SkillGapSummary extends ConsumerWidget {
           // Header
           Text(
             'Your Skill Gap Summary',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
 
@@ -56,7 +54,7 @@ class SkillGapSummary extends ConsumerWidget {
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 8,
                         ),
                       ],
@@ -100,10 +98,7 @@ class SkillGapSummary extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Score',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -155,9 +150,9 @@ class SkillGapSummary extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    skills.isEmpty 
-                      ? 'Upload your resume to get personalized recommendations.'
-                      : 'Focus on mastering ${skills.take(2).join(' and ')} to improve your match score.',
+                    skills.isEmpty
+                        ? 'Upload your resume to get personalized recommendations.'
+                        : 'Focus on mastering ${skills.take(2).join(' and ')} to improve your match score.',
                     style: TextStyle(
                       fontSize: 12,
                       color: Color(0xFFF57C00),
@@ -186,10 +181,7 @@ class _SkillChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Color(0xFFFFB74D),
-          width: 1,
-        ),
+        border: Border.all(color: Color(0xFFFFB74D), width: 1),
       ),
       child: Text(
         skill,

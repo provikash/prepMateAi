@@ -6,7 +6,11 @@ class ContinueLearningCard extends StatelessWidget {
   final Course course;
   final VoidCallback onTap;
 
-  const ContinueLearningCard({super.key, required this.course, required this.onTap});
+  const ContinueLearningCard({
+    super.key,
+    required this.course,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,19 +42,24 @@ class ContinueLearningCard extends StatelessWidget {
                     width: 100,
                     height: 100,
                     color: colors.mutedBackground,
-                    child: Icon(Icons.image_not_supported,
-                        color: colors.textSecondary),
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: colors.cardBackground.withOpacity(0.8),
+                  color: colors.cardBackground.withValues(alpha: 0.8),
                   shape: BoxShape.circle,
                 ),
-                child:
-                    Icon(Icons.play_arrow, color: colors.textPrimary, size: 24),
+                child: Icon(
+                  Icons.play_arrow,
+                  color: colors.textPrimary,
+                  size: 24,
+                ),
               ),
             ],
           ),
@@ -60,17 +69,22 @@ class ContinueLearningCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: colors.primary.withOpacity(0.1),
+                    color: colors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.play_circle_outline,
-                          size: 12, color: colors.primary),
+                      Icon(
+                        Icons.play_circle_outline,
+                        size: 12,
+                        color: colors.primary,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'IN PROGRESS',
@@ -89,9 +103,10 @@ class ContinueLearningCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: colors.textPrimary),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: colors.textPrimary,
+                  ),
                 ),
                 Text(
                   course.lessonInfo ?? '',
@@ -114,8 +129,10 @@ class ContinueLearningCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       '${course.progressPercentage}%',
-                      style:
-                          TextStyle(fontSize: 12, color: colors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -125,13 +142,18 @@ class ContinueLearningCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.access_time,
-                            size: 14, color: colors.textSecondary),
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: colors.textSecondary,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           course.remainingTime ?? '',
                           style: TextStyle(
-                              fontSize: 12, color: colors.textSecondary),
+                            fontSize: 12,
+                            color: colors.textSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -142,13 +164,17 @@ class ContinueLearningCard extends StatelessWidget {
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text('Continue',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),

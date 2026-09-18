@@ -1,15 +1,21 @@
+import 'package:prepmate_mobile/core/widgets/app_scaffold.dart';
+import 'package:prepmate_mobile/core/widgets/app_state.dart';
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
 import '../../../../core/providers/form_provider.dart';
+import '../../../../core/drafts/resume_draft_store.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../data/datasources/resume_remote_data_source.dart';
 import '../../data/models/template_detail_model.dart';
 import '../providers/resume_builder_provider.dart';
 import '../providers/resume_providers.dart';
 import '../providers/field_enhance_provider.dart';
+import '../models/resume_journey.dart';
 import '../widgets/resume_step_indicator.dart';
 import '../widgets/schema_form_section.dart';
 
@@ -25,22 +31,42 @@ class ResumeFormScreen extends ConsumerStatefulWidget {
   ConsumerState<ResumeFormScreen> createState() => _ResumeFormScreenState();
 }
 
-class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
+class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
+    with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   String? _configuredTemplateId;
   bool _profilePrefilled = false;
   String? _enhancingPath;
   Map<String, String> _backendErrors = const {};
+  String? _draftRestoredForTemplate;
+  int _experienceTab = 0;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(profileProvider.notifier).loadProfile());
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      ref.read(resumeDraftControllerProvider.notifier).flush();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    ref.read(resumeDraftControllerProvider.notifier).flush();
+    super.dispose();
   }
 
   void _prefillProfile() {
     if (_profilePrefilled) return;
-    final user = ref.read(profileProvider).user;
+    final user =
+        ref.read(profileProvider).user ?? ref.read(authViewModelProvider).user;
     if (user == null) return;
     _profilePrefilled = true;
     ref.read(resumeFormProvider.notifier).prefillFromProfile({
@@ -64,13 +90,25 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
       if (previous != next && _backendErrors.isNotEmpty && mounted) {
         setState(() => _backendErrors = const {});
       }
+      final templateId = widget.templateId;
+      if (previous != next && templateId != null) {
+        final builder = ref.read(resumeBuilderProvider);
+        ref
+            .read(resumeDraftControllerProvider.notifier)
+            .schedule(
+              templateId: templateId,
+              data: ref.read(resumeFormProvider).data,
+              remoteResumeId: builder.savedResumeId,
+            );
+      }
     });
     final profile = ref.watch(profileProvider);
+    final authUser = ref.watch(authViewModelProvider).user;
     final templateAsync = widget.templateId == null
         ? null
         : ref.watch(templateDetailProvider(widget.templateId!));
 
-    if (profile.user != null && !_profilePrefilled) {
+    if ((profile.user != null || authUser != null) && !_profilePrefilled) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _prefillProfile());
     }
 
@@ -78,15 +116,15 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
       return _noTemplate(context);
     }
     return templateAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(
+        body: AppLoadingState(label: 'Preparing your resume builder'),
+      ),
       error: (error, _) => Scaffold(body: _error(context, error.toString())),
       data: (template) {
         if (_configuredTemplateId != template.id) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted || _configuredTemplateId == template.id) return;
-            ref.read(resumeBuilderProvider.notifier).configure(template);
-            _configuredTemplateId = template.id;
+            _configureAndRestore(template);
           });
         }
         return _builder(context, template);
@@ -94,36 +132,26 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
     );
   }
 
-  Widget _noTemplate(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Create Resume')),
+  Widget _noTemplate(BuildContext context) => AppScaffold(
+    title: 'Create resume',
     body: _error(
       context,
       'Select a resume template before starting the builder.',
     ),
   );
 
-  Widget _error(BuildContext context, String message) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => context.pop(),
-            child: const Text('Go back'),
-          ),
-        ],
-      ),
-    ),
+  Widget _error(BuildContext context, String message) => AppErrorState(
+    title: 'Resume builder unavailable',
+    message: message.replaceFirst('Exception: ', ''),
+    actionLabel: 'Go back',
+    onAction: () => context.pop(),
   );
 
   Widget _builder(BuildContext context, TemplateDetailModel template) {
     final colors = AppColors.of(context);
     final builder = ref.watch(resumeBuilderProvider);
-    final section = builder.currentSection;
-    if (section == null) {
+    final step = builder.currentStepData;
+    if (step == null) {
       return Scaffold(
         body: _error(context, 'This template has no editable sections.'),
       );
@@ -154,7 +182,9 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child: Text('${builder.currentStep + 1}/${builder.totalSteps}'),
+                child: Text(
+                  'Step ${builder.currentStep + 1} of ${builder.totalSteps}',
+                ),
               ),
             ),
           ],
@@ -172,13 +202,16 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
                       .toList(),
                   onStepTapped: (index) =>
                       ref.read(resumeBuilderProvider.notifier).goToStep(index),
-                  completedSteps: _completedSteps(template),
+                  completedSteps: _completedJourneySteps(builder),
+                  completionPercent: ResumeCompletion.calculate(
+                    ref.watch(resumeFormProvider).data,
+                  ).percent,
                 ),
                 const SizedBox(height: 18),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    section.title,
+                    step.title,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -186,7 +219,7 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    _descriptionFor(section),
+                    step.description,
                     style: TextStyle(color: colors.textSecondary),
                   ),
                 ),
@@ -195,26 +228,7 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
                   child: Form(
                     key: _formKey,
                     child: ListView(
-                      children: [
-                        SchemaFormSection(
-                          key: ValueKey(
-                            '${section.key}-${builder.currentStep}',
-                          ),
-                          section: section,
-                          aiActions: section.aiActions,
-                          onAiAction: (action) =>
-                              _openAiAction(context, action),
-                          onAiPressed: section.aiActions.isEmpty
-                              ? null
-                              : () => _openAiAction(
-                                  context,
-                                  section.aiActions.first,
-                                ),
-                          onEnhance: _enhanceField,
-                          enhancingPath: _enhancingPath,
-                          backendErrors: _backendErrors,
-                        ),
-                      ],
+                      children: [_stepContent(context, template, step)],
                     ),
                   ),
                 ),
@@ -224,6 +238,19 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
                     child: Text(
                       builder.errorMessage!,
                       style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                if (step.canSkip &&
+                    builder.currentStep < builder.totalSteps - 1)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: builder.isSaving
+                          ? null
+                          : () => ref
+                                .read(resumeBuilderProvider.notifier)
+                                .nextStep(),
+                      child: const Text('Skip for now'),
                     ),
                   ),
                 Row(
@@ -242,10 +269,8 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
                     if (builder.currentStep > 0) const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: builder.isSaving
-                            ? null
-                            : () => _save(template, draft: true),
-                        child: const Text('Save Draft'),
+                        onPressed: builder.isSaving ? null : _saveAndExit,
+                        child: const Text('Save and exit'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -258,13 +283,11 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child: AppLoading(strokeWidth: 2),
                               )
                             : Text(
                                 builder.currentStep == builder.totalSteps - 1
-                                    ? 'Preview'
+                                    ? 'Save resume'
                                     : 'Next',
                               ),
                       ),
@@ -273,7 +296,10 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  builder.saveStatus,
+                  _saveStatusLabel(
+                    builder.saveStatus,
+                    ref.watch(resumeDraftControllerProvider),
+                  ),
                   style: TextStyle(color: colors.textSecondary, fontSize: 12),
                 ),
               ],
@@ -284,13 +310,469 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
     );
   }
 
-  String _descriptionFor(FormSectionModel section) {
-    if (section.type == SectionType.repeatable ||
-        section.type == SectionType.list) {
-      return 'Add as many entries as you need. You can edit or remove them at any time.';
+  Widget _stepContent(
+    BuildContext context,
+    TemplateDetailModel template,
+    ResumeJourneyStep step,
+  ) {
+    switch (step.key) {
+      case ResumeJourneyStepKey.about:
+        final section = step.sections.first;
+        const essentials = {'name', 'label', 'email', 'phone', 'location'};
+        final primary = section.copyWith(
+          fields: section.fields
+              .where((field) => essentials.contains(field.key))
+              .toList(),
+        );
+        final additional = section.copyWith(
+          title: 'More contact details',
+          fields: section.fields
+              .where((field) => !essentials.contains(field.key))
+              .toList(),
+        );
+        return Column(
+          children: [
+            _schema(context, primary),
+            if (additional.fields.isNotEmpty)
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: ExpansionTile(
+                  title: const Text('More contact details'),
+                  subtitle: const Text(
+                    'Website and professional profiles · Optional',
+                  ),
+                  childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  children: [_schema(context, additional)],
+                ),
+              ),
+          ],
+        );
+      case ResumeJourneyStepKey.experienceProjects:
+        final available = step.sections;
+        final safeTab = _experienceTab.clamp(0, available.length - 1);
+        return Column(
+          children: [
+            if (available.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: SegmentedButton<int>(
+                  segments: [
+                    for (var index = 0; index < available.length; index++)
+                      ButtonSegment(
+                        value: index,
+                        label: Text(available[index].title),
+                        icon: Icon(
+                          available[index].key == 'work'
+                              ? Icons.work_outline
+                              : Icons.folder_open_outlined,
+                        ),
+                      ),
+                  ],
+                  selected: {safeTab},
+                  onSelectionChanged: (selection) {
+                    setState(() => _experienceTab = selection.first);
+                  },
+                ),
+              ),
+            _schema(context, available[safeTab]),
+          ],
+        );
+      case ResumeJourneyStepKey.educationSkills:
+        return Column(
+          children: [
+            for (final section in step.sections) ...[
+              _schema(context, section),
+              const SizedBox(height: 12),
+            ],
+          ],
+        );
+      case ResumeJourneyStepKey.summary:
+        final form = ref.watch(resumeFormProvider);
+        final summary = form.summary;
+        final canDraft =
+            (form.basics['label']?.toString().trim().isNotEmpty ?? false) &&
+            form.skills.isNotEmpty;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _schema(context, step.sections.first),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: canDraft && _enhancingPath == null
+                    ? _draftSummaryFromDetails
+                    : null,
+                icon: _enhancingPath == 'basics.summary.draft'
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: AppLoading(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_awesome_outlined),
+                label: const Text('Draft from my details'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Text(
+                '${summary.length} characters · Aim for 80–300 characters using only facts you supplied.',
+                style: TextStyle(color: AppColors.of(context).textSecondary),
+              ),
+            ),
+          ],
+        );
+      case ResumeJourneyStepKey.review:
+        return _reviewStep(context, template);
     }
-    return 'Complete this section before continuing.';
   }
+
+  Widget _schema(
+    BuildContext context,
+    FormSectionModel section,
+  ) => SchemaFormSection(
+    key: ValueKey(
+      '${section.key}-${section.fields.map((field) => field.key).join(',')}',
+    ),
+    section: section,
+    aiActions: section.aiActions,
+    onAiAction: (action) => _openAiAction(context, action),
+    onAiPressed: section.aiActions.isEmpty
+        ? null
+        : () => _openAiAction(context, section.aiActions.first),
+    onEnhance: _enhanceField,
+    enhancingPath: _enhancingPath,
+    backendErrors: _backendErrors,
+  );
+
+  Widget _reviewStep(BuildContext context, TemplateDetailModel template) {
+    final data = ref.watch(resumeFormProvider).data;
+    final completion = ResumeCompletion.calculate(data);
+    final colors = AppColors.of(context);
+    final optional = ref.watch(resumeBuilderProvider).journey.optionalSections;
+    final populatedOptional = optional
+        .where((section) => _hasValue(data[section.key]))
+        .toList();
+    const canonicalKeys = {
+      'basics',
+      'work',
+      'education',
+      'skills',
+      'projects',
+      'certificates',
+      'languages',
+      'awards',
+      'volunteer',
+      'publications',
+      'interests',
+      'references',
+    };
+    final availableKeys = template.sections
+        .map((section) => section.key)
+        .toSet();
+    final hiddenPopulated = canonicalKeys
+        .where((key) => !availableKeys.contains(key) && _hasValue(data[key]))
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                if (template.thumbnailUrl != null &&
+                    template.thumbnailUrl!.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      template.thumbnailUrl!,
+                      width: 64,
+                      height: 84,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.square(
+                        dimension: 64,
+                        child: Icon(Icons.description_outlined),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox.square(
+                    dimension: 64,
+                    child: Icon(Icons.description_outlined, size: 36),
+                  ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        template.title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text('Template version ${template.version}'),
+                      const SizedBox(height: 8),
+                      Text('${completion.percent}% complete'),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.push('/template'),
+                  child: const Text('Change'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (completion.blockingIssues.isNotEmpty)
+          Card(
+            color: colors.errorSoft,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Required before export',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  for (final issue in completion.blockingIssues)
+                    Text('• $issue'),
+                ],
+              ),
+            ),
+          ),
+        if (completion.recommendations.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ways to strengthen it',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  for (final suggestion in completion.recommendations.take(4))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text('• $suggestion'),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        if (hiddenPopulated.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Card(
+            color: colors.warningSoft,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'This template does not display ${hiddenPopulated.join(', ')}. '
+                'Your content is still preserved and will reappear in a supported template.',
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        if (populatedOptional.isNotEmpty) ...[
+          Text(
+            'Additional sections',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 6),
+          for (final section in populatedOptional)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(_optionalIcon(section.key)),
+              title: Text(section.title),
+              subtitle: Text('${_itemCount(data[section.key])} added'),
+              trailing: const Icon(Icons.edit_outlined),
+              onTap: () => _showOptionalSections(
+                context,
+                initialSectionKey: section.key,
+              ),
+            ),
+          const SizedBox(height: 6),
+        ],
+        OutlinedButton.icon(
+          onPressed: () => _showOptionalSections(context),
+          icon: const Icon(Icons.add_circle_outline),
+          label: Text(
+            populatedOptional.isEmpty
+                ? 'Add another section'
+                : 'Optional sections (${populatedOptional.length})',
+          ),
+        ),
+        const SizedBox(height: 8),
+        FilledButton.icon(
+          onPressed:
+              completion.blockingIssues.isEmpty &&
+                  !ref.watch(resumeBuilderProvider).isSaving
+              ? () => _save(template, draft: false, preview: true)
+              : null,
+          icon: const Icon(Icons.picture_as_pdf_outlined),
+          label: const Text('Save latest and view PDF'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showOptionalSections(
+    BuildContext context, {
+    String? initialSectionKey,
+  }) async {
+    String? selectedKey = initialSectionKey;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Consumer(
+          builder: (context, ref, _) {
+            final sections = ref
+                .watch(resumeBuilderProvider)
+                .journey
+                .optionalSections;
+            final data = ref.watch(resumeFormProvider).data;
+            FormSectionModel? selected;
+            for (final section in sections) {
+              if (section.key == selectedKey) {
+                selected = section;
+                break;
+              }
+            }
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: .82,
+              minChildSize: .5,
+              maxChildSize: .95,
+              builder: (_, controller) => ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text(
+                    'Add another section',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Optional sections never become extra required steps.',
+                  ),
+                  const SizedBox(height: 16),
+                  for (final section in sections)
+                    Card(
+                      child: ListTile(
+                        minVerticalPadding: 12,
+                        leading: Icon(_optionalIcon(section.key)),
+                        title: Text(section.title),
+                        subtitle: Text(
+                          '${_itemCount(data[section.key])} added · ${_optionalDescription(section.key)}',
+                        ),
+                        trailing: TextButton(
+                          onPressed: () => setSheetState(() {
+                            selectedKey = selectedKey == section.key
+                                ? null
+                                : section.key;
+                          }),
+                          child: Text(
+                            selectedKey == section.key ? 'Close' : 'Add / edit',
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (selected != null) ...[
+                    const SizedBox(height: 12),
+                    _schema(context, selected),
+                    if (_hasValue(data[selected.key]))
+                      TextButton.icon(
+                        onPressed: () async {
+                          final selectedSection = selected!;
+                          final remove = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              title: Text('Remove ${selectedSection.title}?'),
+                              content: const Text(
+                                'This removes the entries from this resume.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, true),
+                                  child: const Text('Remove'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (remove == true) {
+                            ref
+                                .read(resumeFormProvider.notifier)
+                                .clearSection(selectedSection.key);
+                          }
+                        },
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Remove section content'),
+                      ),
+                  ],
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveAndExit() async {
+    await ref.read(resumeDraftControllerProvider.notifier).flush();
+    if (mounted) context.pop();
+  }
+
+  Set<int> _completedJourneySteps(ResumeBuilderState builder) {
+    final complete = ResumeCompletion.calculate(
+      ref.watch(resumeFormProvider).data,
+    );
+    return {
+      for (var index = 0; index < builder.steps.length; index++)
+        if (complete.completedSteps.contains(builder.steps[index].key)) index,
+    };
+  }
+
+  int _itemCount(dynamic value) => value is List
+      ? value.where((item) => _hasValue(item)).length
+      : _hasValue(value)
+      ? 1
+      : 0;
+
+  IconData _optionalIcon(String key) => switch (key) {
+    'certificates' => Icons.workspace_premium_outlined,
+    'languages' => Icons.language_outlined,
+    'awards' => Icons.emoji_events_outlined,
+    'volunteer' => Icons.volunteer_activism_outlined,
+    'publications' => Icons.menu_book_outlined,
+    'interests' => Icons.interests_outlined,
+    'references' => Icons.people_outline,
+    _ => Icons.add_box_outlined,
+  };
+
+  String _optionalDescription(String key) => switch (key) {
+    'certificates' => 'Credentials and professional training',
+    'languages' => 'Languages and fluency',
+    'awards' => 'Recognition and achievements',
+    'volunteer' => 'Community and unpaid experience',
+    'publications' => 'Articles, papers, and published work',
+    'interests' => 'Relevant interests outside work',
+    'references' => 'Professional references',
+    _ => 'Additional resume information',
+  };
 
   Future<void> _continue(TemplateDetailModel template) async {
     if (!(_formKey.currentState?.validate() ?? true)) return;
@@ -301,15 +783,18 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
       return;
     }
 
-    final invalidStep = _firstInvalidStep(template);
-    if (invalidStep != null) {
-      notifier.goToStep(invalidStep);
-      notifier.setError(
-        'Complete the required fields in ${template.sections[invalidStep].title}.',
+    final completion = ResumeCompletion.calculate(
+      ref.read(resumeFormProvider).data,
+    );
+    if (completion.blockingIssues.isNotEmpty) {
+      final aboutIndex = builder.journey.steps.indexWhere(
+        (step) => step.key == ResumeJourneyStepKey.about,
       );
+      if (aboutIndex >= 0) notifier.goToStep(aboutIndex);
+      notifier.setError(completion.blockingIssues.first);
       return;
     }
-    await _save(template, draft: false, preview: true);
+    await _save(template, draft: false);
   }
 
   Future<void> _save(
@@ -320,6 +805,7 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
     final notifier = ref.read(resumeBuilderProvider.notifier);
     final builder = ref.read(resumeBuilderProvider);
     if (builder.isSaving) return;
+    ref.read(resumeFormProvider.notifier).sanitizeForSubmission();
     final form = ref.read(resumeFormProvider);
     final submittedRevision = form.revision;
     final name = form.basics['name']?.toString().trim() ?? '';
@@ -339,6 +825,9 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
       } else {
         notifier.setSavedWithNewerChanges(saved.id);
       }
+      await ref
+          .read(resumeDraftControllerProvider.notifier)
+          .markSynced(templateId: template.id, remoteResumeId: saved.id);
       ref.invalidate(storedResumesProvider);
       if (preview && mounted) context.go('/resume/pdf/${saved.id}');
     } on ResumeSaveException catch (error) {
@@ -350,45 +839,32 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
     }
   }
 
-  Set<int> _completedSteps(TemplateDetailModel template) {
-    final data = ref.watch(resumeFormProvider).data;
-    final completed = <int>{};
-    for (var index = 0; index < template.sections.length; index++) {
-      if (_sectionIsComplete(template.sections[index], data)) {
-        completed.add(index);
-      }
-    }
-    return completed;
+  Future<void> _configureAndRestore(TemplateDetailModel template) async {
+    ref.read(resumeBuilderProvider.notifier).configure(template);
+    _configuredTemplateId = template.id;
+    if (_draftRestoredForTemplate == template.id) return;
+    _draftRestoredForTemplate = template.id;
+    final draft = await ref
+        .read(resumeDraftControllerProvider.notifier)
+        .restore(templateId: template.id);
+    if (!mounted || draft == null) return;
+    ref.read(resumeFormProvider.notifier).restoreData(draft.data);
   }
 
-  bool _sectionIsComplete(FormSectionModel section, Map<String, dynamic> data) {
-    final required = <String>{};
-    for (final field in section.fields) {
-      if (field.isListObject) {
-        required.addAll(
-          field.objectFields
-              .where((item) => item.required)
-              .map((item) => item.key),
-        );
-      } else if (field.required) {
-        required.add(field.key);
-      }
+  String _saveStatusLabel(String remoteStatus, DraftSyncState localStatus) {
+    if (remoteStatus == 'Saving…' || remoteStatus == 'Savingâ€¦') {
+      return 'Syncing';
     }
-    if (required.isEmpty) {
-      final value = data[section.key];
-      return value is Map
-          ? value.values.any(_hasValue)
-          : value is List && value.any(_hasValue);
+    if (remoteStatus == 'Saved' || remoteStatus == 'Draft saved') {
+      return 'Saved';
     }
-    if (section.type == SectionType.single) {
-      final values = data[section.key] as Map? ?? const {};
-      return required.every((key) => _hasValue(values[key]));
-    }
-    final items = data[section.key] as List? ?? const [];
-    return items.isNotEmpty &&
-        items.whereType<Map>().every(
-          (item) => required.every((key) => _hasValue(item[key])),
-        );
+    return switch (localStatus) {
+      DraftSyncState.localOnly => 'Saved locally',
+      DraftSyncState.syncing => 'Syncing',
+      DraftSyncState.synced => 'Saved',
+      DraftSyncState.failed => 'Local save failed',
+      DraftSyncState.conflict => 'Sync conflict — review before saving',
+    };
   }
 
   bool _hasValue(dynamic value) {
@@ -398,59 +874,13 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
     return value != null;
   }
 
-  int? _firstInvalidStep(TemplateDetailModel template) {
-    final data = ref.read(resumeFormProvider).data;
-    for (var index = 0; index < template.sections.length; index++) {
-      final section = template.sections[index];
-      final fields = section.fields.expand(
-        (field) => field.isListObject
-            ? field.objectFields.map((item) => item.key)
-            : [field.key],
-      );
-      final required = section.fields.expand((field) {
-        if (field.isListObject) {
-          return field.objectFields
-              .where((item) => item.required)
-              .map((item) => item.key);
-        }
-        return field.required ? [field.key] : const <String>[];
-      }).toSet();
-      if (required.isEmpty) continue;
-      if (section.type == SectionType.single) {
-        final values = data[section.key] as Map? ?? const {};
-        if (required.any(
-          (key) => (values[key]?.toString().trim() ?? '').isEmpty,
-        )) {
-          return index;
-        }
-      } else {
-        final items = data[section.key] as List? ?? const [];
-        for (final raw in items.whereType<Map>()) {
-          final hasContent = fields.any((key) {
-            final value = raw[key];
-            return value is List
-                ? value.isNotEmpty
-                : (value?.toString().trim() ?? '').isNotEmpty;
-          });
-          if (hasContent &&
-              required.any((key) {
-                final value = raw[key];
-                return value is List
-                    ? value.isEmpty
-                    : (value?.toString().trim() ?? '').isEmpty;
-              })) {
-            return index;
-          }
-        }
-      }
-    }
-    return null;
-  }
-
   void _navigateToBackendError(TemplateDetailModel template, String message) {
-    for (var index = 0; index < template.sections.length; index++) {
-      if (message.contains(template.sections[index].key)) {
-        ref.read(resumeBuilderProvider.notifier).goToStep(index);
+    final builder = ref.read(resumeBuilderProvider);
+    for (final section in template.sections) {
+      if (message.contains(section.key)) {
+        ref
+            .read(resumeBuilderProvider.notifier)
+            .goToStep(builder.journey.stepIndexForSection(section.key));
         return;
       }
     }
@@ -501,6 +931,56 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
     }
   }
 
+  Future<void> _draftSummaryFromDetails() async {
+    if (_enhancingPath != null) return;
+    const path = 'basics.summary.draft';
+    final original = ref.read(resumeFormProvider).summary;
+    setState(() => _enhancingPath = path);
+    try {
+      final target = FieldEnhanceTarget(
+        fieldPath: 'basics.summary',
+        originalValue: original,
+        latestValue: () => ref.read(resumeFormProvider).summary,
+        apply: (value) => ref
+            .read(resumeFormProvider.notifier)
+            .updateSummary(value.toString()),
+        schemaActions: const ['generate_summary'],
+      );
+      while (mounted) {
+        final suggestion = await ref
+            .read(fieldEnhanceAdapterProvider)
+            .draftSummaryFromDetails(ref.read(resumeFormProvider).data);
+        if (!mounted) return;
+        final accepted = await _reviewSuggestion(
+          target,
+          suggestion,
+          stale: ref.read(resumeFormProvider).summary != original,
+        );
+        if (identical(accepted, _retryEnhancement)) continue;
+        if (accepted == null || !mounted) return;
+        target.apply(accepted);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('AI summary applied.'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () => target.apply(original),
+            ),
+          ),
+        );
+        return;
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _enhancingPath = null);
+    }
+  }
+
   Future<dynamic> _reviewSuggestion(
     FieldEnhanceTarget target,
     dynamic suggestion, {
@@ -521,7 +1001,7 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
             children: [
               if (stale)
                 const Text(
-                  'You edited this field while AI was working. Review carefully before applying.',
+                  'You edited this field while AI was working, so this result cannot replace your newer text. Cancel and run it again if needed.',
                   style: TextStyle(color: Colors.orange),
                 ),
               const SizedBox(height: 8),
@@ -553,16 +1033,18 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen> {
             child: const Text('Try Again'),
           ),
           FilledButton(
-            onPressed: () {
-              final value = isList
-                  ? controller.text
-                        .split(RegExp(r'\r?\n'))
-                        .map((item) => item.trim())
-                        .where((item) => item.isNotEmpty)
-                        .toList()
-                  : controller.text.trim();
-              Navigator.pop(dialogContext, value);
-            },
+            onPressed: stale
+                ? null
+                : () {
+                    final value = isList
+                        ? controller.text
+                              .split(RegExp(r'\r?\n'))
+                              .map((item) => item.trim())
+                              .where((item) => item.isNotEmpty)
+                              .toList()
+                        : controller.text.trim();
+                    Navigator.pop(dialogContext, value);
+                  },
             child: const Text('Apply'),
           ),
         ],

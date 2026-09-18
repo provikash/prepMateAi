@@ -161,9 +161,8 @@ class ResumeAnalyzerService:
         except (ValidationError, NotFound):
             raise
         except Exception as e:
-            logger.error(f"Error analyzing resume: {str(e)}")
-            logger.error(traceback.format_exc())
-            raise ValidationError({"detail": f"Analysis failed: {str(e)}"})
+            logger.error("Resume analysis failed: %s", type(e).__name__)
+            raise ValidationError({"detail": "Analysis is temporarily unavailable. Please try again."}) from e
 
     @staticmethod
     def get_analysis_or_404(*, user, analysis_id):

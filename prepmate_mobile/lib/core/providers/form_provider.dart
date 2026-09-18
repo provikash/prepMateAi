@@ -81,6 +81,13 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
         ),
       );
 
+  void restoreData(Map<String, dynamic> data) {
+    state = state.copyWith(
+      data: Map<String, dynamic>.from(data),
+      revision: state.revision + 1,
+    );
+  }
+
   Map<String, dynamic> get basics =>
       Map<String, dynamic>.from(state.data['basics'] as Map? ?? const {});
 
@@ -175,6 +182,23 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     final nextData = Map<String, dynamic>.from(state.data);
     nextData[sectionKey] = items;
     state = state.copyWith(data: nextData, revision: state.revision + 1);
+  }
+
+  void clearSection(String sectionKey) {
+    final nextData = Map<String, dynamic>.from(state.data);
+    nextData[sectionKey] = <Map<String, dynamic>>[];
+    state = state.copyWith(data: nextData, revision: state.revision + 1);
+  }
+
+  /// Removes placeholder rows before sync so partially opened repeatable cards
+  /// never become invalid server records. Existing value types and null end
+  /// dates are preserved.
+  void sanitizeForSubmission() {
+    final sanitized = <String, dynamic>{};
+    for (final entry in state.data.entries) {
+      sanitized[entry.key] = _sanitizeValue(entry.value);
+    }
+    state = state.copyWith(data: sanitized, revision: state.revision + 1);
   }
 
   void reorderSectionItem(String sectionKey, int from, int to) {
@@ -343,3 +367,27 @@ final resumeFormProvider =
     StateNotifierProvider<ResumeFormNotifier, ResumeFormState>((ref) {
       return ResumeFormNotifier();
     });
+
+dynamic _sanitizeValue(dynamic value) {
+  if (value is List) {
+    return value
+        .map(_sanitizeValue)
+        .where(_hasMeaningfulValue)
+        .toList(growable: true);
+  }
+  if (value is Map) {
+    return <String, dynamic>{
+      for (final entry in value.entries)
+        entry.key.toString(): _sanitizeValue(entry.value),
+    };
+  }
+  return value;
+}
+
+bool _hasMeaningfulValue(dynamic value) {
+  if (value == null) return false;
+  if (value is String) return value.trim().isNotEmpty;
+  if (value is List) return value.any(_hasMeaningfulValue);
+  if (value is Map) return value.values.any(_hasMeaningfulValue);
+  return true;
+}

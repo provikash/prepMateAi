@@ -9,6 +9,10 @@ class AppInputField extends StatefulWidget {
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
   final TextCapitalization capitalization;
+  final ValueChanged<String>? onChanged;
+  final TextInputAction? textInputAction;
+  final int maxLines;
+  final bool enabled;
 
   const AppInputField({
     super.key,
@@ -20,6 +24,10 @@ class AppInputField extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.validator,
     this.capitalization = TextCapitalization.none,
+    this.onChanged,
+    this.textInputAction,
+    this.maxLines = 1,
+    this.enabled = true,
   });
 
   @override
@@ -37,24 +45,22 @@ class _AppInputFieldState extends State<AppInputField> {
       controller: widget.controller,
       keyboardType: widget.keyboardType,
       validator: widget.validator,
+      onChanged: widget.onChanged,
+      textInputAction: widget.textInputAction,
       textCapitalization: widget.capitalization,
       obscureText: isPassword ? obscure : false,
+      maxLines: isPassword ? 1 : widget.maxLines,
+      enabled: widget.enabled,
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,
-        prefixIcon:
-        widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
+        prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
         suffixIcon: isPassword
             ? IconButton(
-          icon: Icon(
-            obscure ? Icons.visibility_off : Icons.visibility,
-          ),
-          onPressed: () {
-            setState(() {
-              obscure = !obscure;
-            });
-          },
-        )
+                tooltip: obscure ? 'Show password' : 'Hide password',
+                icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => obscure = !obscure),
+              )
             : null,
       ),
     );

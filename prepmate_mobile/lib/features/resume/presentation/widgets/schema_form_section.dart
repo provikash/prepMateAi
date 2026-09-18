@@ -1,3 +1,4 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +6,7 @@ import '../../../../config/theme.dart';
 import '../../../../core/providers/form_provider.dart';
 import '../../data/models/template_detail_model.dart';
 import '../providers/field_enhance_provider.dart';
+import 'chip_input.dart';
 import 'resume_widgets.dart';
 
 class FieldEnhanceTarget {
@@ -137,13 +139,6 @@ class _SingleSchemaSectionState extends ConsumerState<_SingleSchemaSection> {
               ),
             );
           }),
-          if (widget.aiActions.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            AIButton(
-              text: 'AI ${widget.section.title}',
-              onPressed: widget.onAiPressed ?? () {},
-            ),
-          ],
         ],
       ),
     );
@@ -196,6 +191,7 @@ class _RepeatableSchemaSectionState
     extends ConsumerState<_RepeatableSchemaSection> {
   final Map<String, TextEditingController> _controllers = {};
   final List<Key> _itemKeys = [];
+  int? _expandedIndex;
 
   @override
   void dispose() {
@@ -223,6 +219,7 @@ class _RepeatableSchemaSectionState
       icon: _iconForSection(widget.section.key),
       onAdd: () {
         _itemKeys.add(UniqueKey());
+        setState(() => _expandedIndex = items.length);
         ref
             .read(resumeFormProvider.notifier)
             .addSectionItem(widget.section.key, _emptyItem(widget.section));
@@ -254,14 +251,46 @@ class _RepeatableSchemaSectionState
                     children: [
                       Row(
                         children: [
-                          Text(
-                            '${widget.section.title} ${entry.key + 1}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: colors.textPrimary,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _itemTitle(entry.value, entry.key),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                                if (_itemSubtitle(entry.value).isNotEmpty)
+                                  Text(
+                                    _itemSubtitle(entry.value),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: colors.textSecondary,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                          const Spacer(),
+                          IconButton(
+                            tooltip: _expandedIndex == entry.key
+                                ? 'Collapse item'
+                                : 'Edit item',
+                            onPressed: () => setState(() {
+                              _expandedIndex = _expandedIndex == entry.key
+                                  ? null
+                                  : entry.key;
+                            }),
+                            icon: Icon(
+                              _expandedIndex == entry.key
+                                  ? Icons.expand_less
+                                  : Icons.edit_outlined,
+                            ),
+                          ),
                           IconButton(
                             tooltip: 'Move up',
                             onPressed: entry.key == 0
@@ -277,72 +306,157 @@ class _RepeatableSchemaSectionState
                             icon: const Icon(Icons.arrow_downward),
                           ),
                           IconButton(
-                            onPressed: () {
-                              _itemKeys.removeAt(entry.key);
-                              _clearControllers();
-                              ref
-                                  .read(resumeFormProvider.notifier)
-                                  .removeSectionItem(
-                                    widget.section.key,
-                                    entry.key,
-                                  );
-                            },
+                            tooltip: 'Delete item',
+                            onPressed: () => _confirmRemove(
+                              context,
+                              entry.key,
+                              _itemTitle(entry.value, entry.key),
+                            ),
                             icon: const Icon(Icons.delete_outline),
                           ),
                         ],
                       ),
-                      ..._entryFields(widget.section).map((field) {
-                        final value = entry.value[field.key];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _SchemaFieldInput(
-                            key: ValueKey(
-                              '${widget.section.key}-${entry.key}-${field.key}',
+                      if (_expandedIndex == entry.key) ...[
+                        ..._primaryFields(
+                          widget.section,
+                        ).map((field) => _entryField(entry, field)),
+                        if (_secondaryFields(widget.section).isNotEmpty)
+                          Card(
+                            elevation: 0,
+                            child: ExpansionTile(
+                              title: const Text('More details'),
+                              subtitle: const Text('Optional information'),
+                              childrenPadding: const EdgeInsets.fromLTRB(
+                                12,
+                                0,
+                                12,
+                                8,
+                              ),
+                              children: [
+                                for (final field in _secondaryFields(
+                                  widget.section,
+                                ))
+                                  _entryField(entry, field),
+                              ],
                             ),
-                            sectionKey: widget.section.key,
-                            field: field,
-                            value: value,
-                            controller: _controllerFor(
-                              entry.key,
-                              field.key,
-                              value,
-                            ),
-                            aiActions: field.aiActions,
-                            onAiAction: widget.onAiAction,
-                            onChanged: (nextValue) {
-                              ref
-                                  .read(resumeFormProvider.notifier)
-                                  .updateSectionItem(
-                                    widget.section.key,
-                                    entry.key,
-                                    {field.key: nextValue},
-                                  );
-                            },
-                            itemIndex: entry.key,
-                            itemContext: entry.value,
-                            onEnhance: widget.onEnhance,
-                            enhancingPath: widget.enhancingPath,
-                            backendError: widget
-                                .backendErrors['${widget.section.key}[${entry.key}].${field.key}'],
                           ),
-                        );
-                      }),
+                      ],
                     ],
                   ),
                 ),
               ),
             );
           }),
-          if (widget.aiActions.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            AIButton(
-              text: 'AI ${widget.section.title}',
-              onPressed: widget.onAiPressed ?? () {},
-            ),
-          ],
         ],
       ),
     );
+  }
+
+  Widget _entryField(
+    MapEntry<int, Map<String, dynamic>> entry,
+    FormFieldModel field,
+  ) {
+    final value = entry.value[field.key];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _SchemaFieldInput(
+        key: ValueKey('${widget.section.key}-${entry.key}-${field.key}'),
+        sectionKey: widget.section.key,
+        field: field,
+        value: value,
+        controller: _controllerFor(entry.key, field.key, value),
+        aiActions: field.aiActions,
+        onAiAction: widget.onAiAction,
+        onChanged: (nextValue) =>
+            ref.read(resumeFormProvider.notifier).updateSectionItem(
+              widget.section.key,
+              entry.key,
+              {field.key: nextValue},
+            ),
+        itemIndex: entry.key,
+        itemContext: entry.value,
+        onEnhance: widget.onEnhance,
+        enhancingPath: widget.enhancingPath,
+        backendError: widget
+            .backendErrors['${widget.section.key}[${entry.key}].${field.key}'],
+      ),
+    );
+  }
+
+  List<FormFieldModel> _primaryFields(FormSectionModel section) {
+    final fields = _entryFields(section);
+    final secondary = _secondaryKeys(section.key);
+    return fields.where((field) => !secondary.contains(field.key)).toList();
+  }
+
+  List<FormFieldModel> _secondaryFields(FormSectionModel section) {
+    final secondary = _secondaryKeys(section.key);
+    return _entryFields(
+      section,
+    ).where((field) => secondary.contains(field.key)).toList();
+  }
+
+  Set<String> _secondaryKeys(String sectionKey) => switch (sectionKey) {
+    'work' => {'url', 'location', 'summary'},
+    'education' => {'score', 'location', 'url', 'courses'},
+    _ => const <String>{},
+  };
+
+  String _itemTitle(Map<String, dynamic> item, int index) {
+    for (final key in const ['position', 'name', 'institution', 'title']) {
+      final value = item[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return '${widget.section.title} ${index + 1}';
+  }
+
+  String _itemSubtitle(Map<String, dynamic> item) {
+    final parts = <String>[];
+    for (final key in const ['name', 'institution', 'area']) {
+      final value = item[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty && !parts.contains(value)) parts.add(value);
+    }
+    final start = item['startDate']?.toString().trim() ?? '';
+    final end = item['endDate'];
+    if (start.isNotEmpty) {
+      parts.add(
+        '$start - ${end == null || end.toString().trim().isEmpty ? 'Present' : end}',
+      );
+    }
+    return parts.take(2).join(' · ');
+  }
+
+  Future<void> _confirmRemove(
+    BuildContext context,
+    int index,
+    String title,
+  ) async {
+    final remove = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this item?'),
+        content: Text('“$title” will be removed from this resume.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (remove != true || !mounted) return;
+    setState(() {
+      _itemKeys.removeAt(index);
+      _expandedIndex = null;
+      _clearControllers();
+    });
+    ref
+        .read(resumeFormProvider.notifier)
+        .removeSectionItem(widget.section.key, index);
   }
 
   Map<String, dynamic> _emptyItem(FormSectionModel section) {
@@ -376,6 +490,7 @@ class _RepeatableSchemaSectionState
             label: itemField.label,
             type: itemField.type,
             required: itemField.required,
+            requirement: itemField.requirement,
             help: itemField.help,
             aiActions: itemField.aiActions,
           ),
@@ -457,7 +572,11 @@ class _SchemaFieldInputState extends State<_SchemaFieldInput> {
   @override
   Widget build(BuildContext context) {
     final field = widget.field;
-    final label = field.required ? '${field.label} *' : field.label;
+    final label = field.required
+        ? '${field.label} *'
+        : field.requirement == 'recommended'
+        ? '${field.label} (recommended)'
+        : '${field.label} (optional)';
     final helper = field.help;
     final type = field.type.toLowerCase();
     const supportedTypes = {
@@ -499,6 +618,24 @@ class _SchemaFieldInputState extends State<_SchemaFieldInput> {
         helper: helper,
         value: widget.value,
         onChanged: widget.onChanged,
+      );
+    }
+    if (type == 'list' &&
+        widget.sectionKey == 'skills' &&
+        field.key == 'keywords') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.titleSmall),
+          if (helper != null) Text(helper),
+          const SizedBox(height: 8),
+          ChipInput(
+            initial: (widget.value as List? ?? const [])
+                .whereType<String>()
+                .toList(),
+            onChanged: widget.onChanged,
+          ),
+        ],
       );
     }
 
@@ -585,16 +722,6 @@ class _SchemaFieldInputState extends State<_SchemaFieldInput> {
           onChanged: (value) => widget.onChanged(_outputValue(value)),
           validator: _validateText,
         ),
-        if (widget.aiActions.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          AIButton(
-            text: 'AI ${field.label}',
-            onPressed: () {
-              final action = widget.aiActions.first;
-              widget.onAiAction?.call(action);
-            },
-          ),
-        ],
         if (_canEnhance()) ...[
           const SizedBox(height: 8),
           Align(
@@ -606,7 +733,7 @@ class _SchemaFieldInputState extends State<_SchemaFieldInput> {
               icon: widget.enhancingPath == _fieldPath()
                   ? const SizedBox.square(
                       dimension: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: AppLoading(strokeWidth: 2),
                     )
                   : const Icon(Icons.auto_awesome, size: 18),
               label: const Text('Enhance with AI'),
@@ -784,21 +911,36 @@ class _LocationFieldInputState extends State<_LocationFieldInput> {
         Text(widget.label, style: Theme.of(context).textTheme.titleSmall),
         if (widget.helper != null) Text(widget.helper!),
         const SizedBox(height: 8),
-        for (final part in _parts)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: TextFormField(
-              controller: _controller(part.$1),
-              decoration: InputDecoration(labelText: part.$2),
-              onChanged: (value) {
-                _location[part.$1] = value.trim();
-                widget.onChanged(Map<String, dynamic>.from(_location));
-              },
+        _locationPart(('city', 'City')),
+        Card(
+          margin: EdgeInsets.zero,
+          child: ExpansionTile(
+            title: const Text('Full location'),
+            subtitle: const Text(
+              'Address, region, postal code, and country · Optional',
             ),
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            children: [
+              for (final part in _parts.where((part) => part.$1 != 'city'))
+                _locationPart(part),
+            ],
           ),
+        ),
       ],
     );
   }
+
+  Widget _locationPart((String, String) part) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: TextFormField(
+      controller: _controller(part.$1),
+      decoration: InputDecoration(labelText: part.$2),
+      onChanged: (value) {
+        _location[part.$1] = value.trim();
+        widget.onChanged(Map<String, dynamic>.from(_location));
+      },
+    ),
+  );
 }
 
 class _ProfilesFieldInput extends StatefulWidget {

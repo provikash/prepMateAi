@@ -39,6 +39,10 @@ class AuthTokenManager {
 
   final Ref _ref;
   Future<String?>? _refreshInFlight;
+  Future<void>? _logoutInFlight;
+  DateTime? _refreshFailureUntil;
+  bool _lastRefreshWasRejected = false;
+  bool _hasHandledUnauthorized = false;
 
   // Separate Dio instance used only for the refresh call so we don't
   // accidentally trigger the main interceptor recursively.
@@ -72,6 +76,7 @@ class AuthTokenManager {
   /// Saves tokens.  Refresh token is only updated when non-null/non-empty
   /// so an access-only refresh response never wipes the refresh token.
   Future<void> saveTokens({required String accessToken, String? refreshToken}) {
+    _hasHandledUnauthorized = false;
     return TokenService.saveTokens(
       accessToken: accessToken,
       refreshToken: refreshToken,
@@ -122,7 +127,10 @@ class AuthTokenManager {
 
     final refreshToken = await getRefreshToken();
     if (refreshToken == null || refreshToken.isEmpty) {
-      // No refresh token → return whatever we have (may be null).
+      if (forceRefresh) {
+        _lastRefreshWasRejected = true;
+        return null;
+      }
       return accessToken;
     }
 
@@ -177,6 +185,10 @@ class AuthTokenManager {
   Future<String?> refreshAccessToken({String? refreshToken}) async {
     final active = _refreshInFlight;
     if (active != null) return active;
+    final failureUntil = _refreshFailureUntil;
+    if (failureUntil != null && failureUntil.isAfter(DateTime.now())) {
+      return null;
+    }
     final operation = _performRefresh(refreshToken: refreshToken);
     _refreshInFlight = operation;
     try {
@@ -188,7 +200,12 @@ class AuthTokenManager {
 
   Future<String?> _performRefresh({String? refreshToken}) async {
     final token = refreshToken ?? await getRefreshToken();
-    if (token == null || token.isEmpty) return null;
+    if (token == null || token.isEmpty) {
+      _lastRefreshWasRejected = true;
+      return null;
+    }
+
+    _lastRefreshWasRejected = false;
 
     try {
       final response = await _refreshDio.post(
@@ -211,14 +228,21 @@ class AuthTokenManager {
         refreshToken: newRefresh, // null is safe — won't overwrite existing
       );
 
+      _refreshFailureUntil = null;
+      _hasHandledUnauthorized = false;
+
       _log('Token refreshed successfully');
       return newAccess;
     } on DioException catch (error) {
       // Only log the status code in debug mode — never the token value.
       _log('Token refresh failed: HTTP ${error.response?.statusCode}');
+      final status = error.response?.statusCode;
+      _lastRefreshWasRejected = status == 400 || status == 401;
+      _refreshFailureUntil = DateTime.now().add(const Duration(seconds: 5));
       return null;
     } catch (error) {
       _log('Token refresh failed: $error');
+      _refreshFailureUntil = DateTime.now().add(const Duration(seconds: 5));
       return null;
     }
   }
@@ -228,6 +252,21 @@ class AuthTokenManager {
   /// Clears all stored tokens, notifies the Riverpod auth state, and
   /// emits on [logoutStream] so any UI listener can navigate to login.
   Future<void> handleUnauthorized() async {
+    if (_hasHandledUnauthorized) return;
+    final active = _logoutInFlight;
+    if (active != null) return active;
+    final operation = _performUnauthorized();
+    _logoutInFlight = operation;
+    try {
+      await operation;
+    } finally {
+      if (identical(_logoutInFlight, operation)) _logoutInFlight = null;
+    }
+  }
+
+  Future<void> _performUnauthorized() async {
+    if (_hasHandledUnauthorized) return;
+    _hasHandledUnauthorized = true;
     await clearTokens();
     // Notify Riverpod state.
     _ref
@@ -271,7 +310,7 @@ class AuthTokenManager {
 
     final freshToken = await getValidAccessToken(forceRefresh: true);
     if (freshToken == null || freshToken.isEmpty) {
-      await handleUnauthorized();
+      if (_lastRefreshWasRejected) await handleUnauthorized();
       return null;
     }
 

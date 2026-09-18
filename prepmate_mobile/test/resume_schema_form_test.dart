@@ -126,6 +126,8 @@ void main() {
       ),
     );
 
+    await tester.tap(find.text('Full location'));
+    await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Address'),
       '42 Sentinel Road',
@@ -197,11 +199,14 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Add'));
     await tester.pump();
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Company'),
+      find.widgetWithText(TextFormField, 'Company (optional)'),
       'Sentinel Company',
     );
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Achievements / Responsibilities'),
+      find.widgetWithText(
+        TextFormField,
+        'Achievements / Responsibilities (optional)',
+      ),
       'Improved speed, quality\nMentored engineers',
     );
     await tester.pump();

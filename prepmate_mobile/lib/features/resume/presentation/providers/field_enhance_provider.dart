@@ -92,6 +92,62 @@ class FieldEnhanceAdapter {
     }
   }
 
+  Future<String> draftSummaryFromDetails(
+    Map<String, dynamic> resumeData, {
+    CancelToken? cancelToken,
+  }) async {
+    final basics = Map<String, dynamic>.from(
+      resumeData['basics'] as Map? ?? const {},
+    );
+    final role = basics['label']?.toString().trim() ?? '';
+    final skills = (resumeData['skills'] as List? ?? const [])
+        .whereType<Map>()
+        .expand((item) sync* {
+          final name = item['name']?.toString().trim() ?? '';
+          if (name.isNotEmpty) yield name;
+          yield* (item['keywords'] as List? ?? const [])
+              .whereType<String>()
+              .map((value) => value.trim())
+              .where((value) => value.isNotEmpty);
+        })
+        .toSet()
+        .toList();
+    if (role.isEmpty || skills.isEmpty) {
+      throw const FieldEnhanceException(
+        'Add a target role and at least one skill before drafting a summary.',
+      );
+    }
+    final experience = (resumeData['work'] as List? ?? const [])
+        .whereType<Map>()
+        .expand(
+          (item) => [
+            item['position']?.toString().trim() ?? '',
+            item['summary']?.toString().trim() ?? '',
+            ...(item['highlights'] as List? ?? const []).whereType<String>(),
+          ],
+        )
+        .where((value) => value.isNotEmpty)
+        .take(25)
+        .toList();
+    try {
+      final result = await _ai.submit('generate-summary', {
+        'role': role,
+        'skills': skills.take(25).toList(),
+        'experience': experience,
+        'target_job_description': '',
+      }, cancelToken: cancelToken);
+      final suggestion = result['summary'];
+      if (suggestion is! String || suggestion.trim().isEmpty) {
+        throw const FormatException(
+          'AI returned an invalid summary suggestion.',
+        );
+      }
+      return suggestion.trim();
+    } on DioException catch (error) {
+      throw FieldEnhanceException(_friendlyDioError(error));
+    }
+  }
+
   Future<String> _improveText(
     String fieldPath,
     dynamic value,

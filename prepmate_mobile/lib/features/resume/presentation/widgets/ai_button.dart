@@ -4,8 +4,7 @@ class AIButton extends StatelessWidget {
   final VoidCallback onPressed;
   final String label;
 
-  const AIButton({Key? key, required this.onPressed, required this.label})
-    : super(key: key);
+  const AIButton({super.key, required this.onPressed, required this.label});
 
   @override
   Widget build(BuildContext context) {

@@ -1,0 +1,16 @@
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+.venv
+venv
+.git
+media
+staticfiles
+backup*
+*.dump
+*.sqlite3
+tmp*
+*.log
+ai/prompts/*.png
+ai/prompts/*extracted*

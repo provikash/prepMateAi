@@ -24,12 +24,34 @@ class ResultScreen extends ConsumerWidget {
             _buildHeader(analysis),
             const SizedBox(height: 32),
             _buildSection('Missing Sections', analysis.missingSections),
-            _buildSkillGroups('Missing Skills', analysis.missingSkills, Colors.red.shade50, Colors.red),
-            _buildSkillGroups('Matched Skills', analysis.matchedSkills, Colors.green.shade50, Colors.green),
+            _buildSkillGroups(
+              'Missing Skills',
+              analysis.missingSkills,
+              Colors.red.shade50,
+              Colors.red,
+            ),
+            _buildSkillGroups(
+              'Matched Skills',
+              analysis.matchedSkills,
+              Colors.green.shade50,
+              Colors.green,
+            ),
             _buildKeywordAnalysis(analysis.keywordAnalysis),
-            _buildListSection('Formatting Issues', analysis.formatIssues, Icons.text_fields),
-            _buildListSection('Contact Issues', analysis.contactIssues, Icons.contact_mail),
-            _buildListSection('Suggestions', analysis.suggestions, Icons.lightbulb_outline),
+            _buildListSection(
+              'Formatting Issues',
+              analysis.formatIssues,
+              Icons.text_fields,
+            ),
+            _buildListSection(
+              'Contact Issues',
+              analysis.contactIssues,
+              Icons.contact_mail,
+            ),
+            _buildListSection(
+              'Suggestions',
+              analysis.suggestions,
+              Icons.lightbulb_outline,
+            ),
             const SizedBox(height: 80),
           ],
         ),
@@ -43,7 +65,9 @@ class ResultScreen extends ConsumerWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0F172A),
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           child: const Text('Reanalyze', style: TextStyle(color: Colors.white)),
         ),
@@ -84,11 +108,20 @@ class ResultScreen extends ConsumerWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
             ),
-            Text('$score%', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              '$score%',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         const SizedBox(height: 8),
-        Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.grey,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -100,34 +133,61 @@ class ResultScreen extends ConsumerWidget {
       Wrap(
         spacing: 8,
         runSpacing: 8,
-        children: items.map((e) => Chip(label: Text(e), backgroundColor: Colors.grey.shade100)).toList(),
+        children: items
+            .map(
+              (e) =>
+                  Chip(label: Text(e), backgroundColor: Colors.grey.shade100),
+            )
+            .toList(),
       ),
     );
   }
 
-  Widget _buildSkillGroups(String title, Map<String, List<String>> groups, Color bg, Color text) {
+  Widget _buildSkillGroups(
+    String title,
+    Map<String, List<String>> groups,
+    Color bg,
+    Color text,
+  ) {
     if (groups.isEmpty) return const SizedBox.shrink();
     return _buildCard(
       title,
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: groups.entries.map((entry) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                children: entry.value.map((s) => Chip(
-                  label: Text(s, style: TextStyle(color: text, fontSize: 12)),
-                  backgroundColor: bg,
-                )).toList(),
+        children: groups.entries
+            .map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.key,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      children: entry.value
+                          .map(
+                            (s) => Chip(
+                              label: Text(
+                                s,
+                                style: TextStyle(color: text, fontSize: 12),
+                              ),
+                              backgroundColor: bg,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        )).toList(),
+            )
+            .toList(),
       ),
     );
   }
@@ -145,25 +205,42 @@ class ResultScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(6),
           ),
           const SizedBox(height: 8),
-          Text('Match Percentage: ${kw.matchPercentage}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            'Match Percentage: ${kw.matchPercentage}%',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
-          _buildListSection('Missing Keywords', kw.missingKeywords, Icons.close, color: Colors.red),
+          _buildListSection(
+            'Missing Keywords',
+            kw.missingKeywords,
+            Icons.close,
+            color: Colors.red,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildListSection(String title, List<String> items, IconData icon, {Color color = Colors.black87}) {
+  Widget _buildListSection(
+    String title,
+    List<String> items,
+    IconData icon, {
+    Color color = Colors.black87,
+  }) {
     if (items.isEmpty) return const SizedBox.shrink();
     return _buildCard(
       title,
       Column(
-        children: items.map((item) => ListTile(
-          leading: Icon(icon, color: color, size: 20),
-          title: Text(item, style: const TextStyle(fontSize: 14)),
-          contentPadding: EdgeInsets.zero,
-          dense: true,
-        )).toList(),
+        children: items
+            .map(
+              (item) => ListTile(
+                leading: Icon(icon, color: color, size: 20),
+                title: Text(item, style: const TextStyle(fontSize: 14)),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -180,7 +257,10 @@ class ResultScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
           content,
         ],

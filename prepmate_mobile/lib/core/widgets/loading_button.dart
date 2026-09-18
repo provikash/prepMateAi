@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
-class LoadingButton extends StatelessWidget {
-  final bool isLoading;
-  final VoidCallback? onPressed;
-  final String text;
-  final IconData? icon;
+import 'app_button.dart';
 
+/// Backward-compatible adapter. New screens should use [AppPrimaryButton].
+class LoadingButton extends StatelessWidget {
   const LoadingButton({
     super.key,
     required this.isLoading,
@@ -14,36 +12,16 @@ class LoadingButton extends StatelessWidget {
     this.icon,
   });
 
+  final bool isLoading;
+  final VoidCallback? onPressed;
+  final String text;
+  final IconData? icon;
+
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: ElevatedButton.icon(
-        onPressed: isLoading ? null : onPressed,
-        icon: isLoading
-            ? const SizedBox.shrink()
-            : Icon(icon, size: 20),
-        label: isLoading
-            ? const SizedBox(
-          height: 20,
-          width: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            color: Colors.white,
-          ),
-        )
-            : Text(
-          text,
-          style: const TextStyle(fontSize: 16),
-        ),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppPrimaryButton(
+    label: text,
+    icon: icon,
+    loading: isLoading,
+    onPressed: onPressed,
+  );
 }

@@ -1,4 +1,6 @@
-from django.http import HttpResponse
+import hashlib
+
+from django.http import HttpResponse, HttpResponseNotModified
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -42,9 +44,30 @@ class ResumeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="pdf")
     def generate_pdf(self, request, pk=None):
+        current = self.get_object()
+        validator = (
+            f"{current.pk}:{current.updated_at.isoformat()}:"
+            f"{current.template_version}"
+        )
+        etag = '"' + hashlib.sha256(validator.encode("utf-8")).hexdigest() + '"'
+        if request.headers.get("If-None-Match") == etag:
+            response = HttpResponseNotModified()
+            response["ETag"] = etag
+            response["Cache-Control"] = "private, no-cache"
+            return response
         pdf_bytes, resume = PDFExportService.generate_pdf_bytes(resume_id=pk, user=request.user)
-        return HttpResponse(pdf_bytes, content_type="application/pdf", headers={"Content-Disposition": f'inline; filename="resume_{resume.pk}.pdf"'})
+        return HttpResponse(
+            pdf_bytes,
+            content_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="resume_{resume.pk}.pdf"',
+                "ETag": etag,
+                "Cache-Control": "private, no-cache",
+            },
+        )
 
     @action(detail=True, methods=["get"], url_path="export")
     def export_pdf(self, request, pk=None):
-        return self.generate_pdf(request, pk=pk)
+        response = self.generate_pdf(request, pk=pk)
+        response['Content-Disposition'] = f'attachment; filename="resume_{pk}.pdf"'
+        return response

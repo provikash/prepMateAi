@@ -202,7 +202,7 @@ class _GenerateSummaryInputScreenState
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: colors.textSecondary.withOpacity(0.5),
+                color: colors.textSecondary.withValues(alpha: 0.5),
                 fontSize: 14,
               ),
               counterText: '${controller.text.length}/$maxChars',
@@ -295,7 +295,7 @@ class _ImproveSectionInputScreenState
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.purple.withOpacity(0.1),
+                color: Colors.purple.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -354,7 +354,7 @@ class _ImproveSectionInputScreenState
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedSection,
+          initialValue: _selectedSection,
           dropdownColor: colors.cardBackground,
           style: TextStyle(color: colors.textPrimary),
           decoration: InputDecoration(
@@ -404,7 +404,9 @@ class _ImproveSectionInputScreenState
           style: TextStyle(color: colors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: colors.textSecondary.withOpacity(0.5)),
+            hintStyle: TextStyle(
+              color: colors.textSecondary.withValues(alpha: 0.5),
+            ),
             counterText: '${controller.text.length}/$maxChars',
             counterStyle: TextStyle(color: colors.textSecondary),
             filled: true,
@@ -487,7 +489,7 @@ class _SuggestSkillsInputScreenState
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -565,7 +567,7 @@ class _SuggestSkillsInputScreenState
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: colors.textSecondary.withOpacity(0.5),
+                color: colors.textSecondary.withValues(alpha: 0.5),
               ),
               counterText: '${controller.text.length}/$maxChars',
               counterStyle: TextStyle(color: colors.textSecondary),
@@ -729,7 +731,7 @@ class _GenerateBulletsInputScreenState
             Icon(
               Icons.info_outline,
               size: 16,
-              color: colors.textSecondary.withOpacity(0.5),
+              color: colors.textSecondary.withValues(alpha: 0.5),
             ),
           ],
         ),
@@ -740,7 +742,9 @@ class _GenerateBulletsInputScreenState
           style: TextStyle(color: colors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: colors.textSecondary.withOpacity(0.5)),
+            hintStyle: TextStyle(
+              color: colors.textSecondary.withValues(alpha: 0.5),
+            ),
             counterText: '${controller.text.length}/$maxChars',
             counterStyle: TextStyle(color: colors.textSecondary),
             filled: true,

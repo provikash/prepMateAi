@@ -3,13 +3,22 @@ import '../data/datasources/home_remote_data_source.dart';
 import '../data/models/dashboard_model.dart';
 import '../data/models/resume_model.dart';
 import '../data/models/template_model.dart';
+import '../data/repositories/home_repository.dart';
 import '../../../config/dio_client.dart';
+import '../../../core/cache/cache_store.dart';
 import '../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../auth/presentation/state/auth_state.dart';
 
 final homeRemoteDataSourceProvider = Provider<HomeRemoteDataSource>((ref) {
   final dio = ref.watch(dioProvider);
   return HomeRemoteDataSource(dio);
+});
+
+final homeRepositoryProvider = Provider<HomeRepository>((ref) {
+  return HomeRepository(
+    remote: ref.watch(homeRemoteDataSourceProvider),
+    cache: ref.watch(cacheCoordinatorProvider),
+  );
 });
 
 final dashboardProvider =
@@ -25,14 +34,33 @@ class DashboardNotifier extends AsyncNotifier<DashboardModel> {
     if (authState.status != AuthStatus.authenticated) {
       throw Exception('User not authenticated');
     }
-    return ref.watch(homeRemoteDataSourceProvider).getDashboard();
+    final userId = authState.user!.id;
+    return ref
+        .watch(homeRepositoryProvider)
+        .getDashboard(
+          userId: userId,
+          onRevalidated: (value) => state = AsyncData(value),
+        );
   }
 
-  Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(
-      () => ref.read(homeRemoteDataSourceProvider).getDashboard(),
-    );
+  Future<bool> refresh() async {
+    final previous = state.asData?.value;
+    if (previous == null) state = const AsyncValue.loading();
+    try {
+      final value = await ref
+          .read(homeRepositoryProvider)
+          .getDashboard(
+            userId: ref.read(authViewModelProvider).user!.id,
+            forceRefresh: true,
+          );
+      state = AsyncData(value);
+      return true;
+    } catch (error, stackTrace) {
+      state = previous == null
+          ? AsyncError(error, stackTrace)
+          : AsyncData(previous);
+      return false;
+    }
   }
 }
 
@@ -48,13 +76,24 @@ class ResumeListNotifier extends AsyncNotifier<List<ResumeModel>> {
     if (authState.status != AuthStatus.authenticated) {
       throw Exception('User not authenticated');
     }
-    return ref.watch(homeRemoteDataSourceProvider).getResumes();
+    final userId = authState.user!.id;
+    return ref
+        .watch(homeRepositoryProvider)
+        .getResumes(
+          userId: userId,
+          onRevalidated: (value) => state = AsyncData(value),
+        );
   }
 
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(
-      () => ref.read(homeRemoteDataSourceProvider).getResumes(),
+      () => ref
+          .read(homeRepositoryProvider)
+          .getResumes(
+            userId: ref.read(authViewModelProvider).user!.id,
+            forceRefresh: true,
+          ),
     );
   }
 }
@@ -67,13 +106,15 @@ final templateListProvider =
 class TemplateListNotifier extends AsyncNotifier<List<TemplateModel>> {
   @override
   Future<List<TemplateModel>> build() async {
-    return ref.watch(homeRemoteDataSourceProvider).getTemplates();
+    return ref
+        .watch(homeRepositoryProvider)
+        .getTemplates(onRevalidated: (value) => state = AsyncData(value));
   }
 
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(
-      () => ref.read(homeRemoteDataSourceProvider).getTemplates(),
+      () => ref.read(homeRepositoryProvider).getTemplates(forceRefresh: true),
     );
   }
 }

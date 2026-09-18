@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+
 import '../models/dashboard_model.dart';
 import '../models/resume_model.dart';
 import '../models/resume_detail_model.dart';
@@ -13,9 +16,21 @@ class HomeRemoteDataSource {
   Future<DashboardModel> getDashboard() async {
     try {
       final response = await dio.get('dashboard/');
-      return DashboardModel.fromJson(response.data);
-    } catch (e) {
+      final body = response.data;
+      if (body is! Map) {
+        throw const HomeRequestException('Dashboard data could not be loaded.');
+      }
+      final mapped = Map<String, dynamic>.from(body);
+      final data = mapped['data'];
+      return DashboardModel.fromJson(
+        data is Map ? Map<String, dynamic>.from(data) : mapped,
+      );
+    } on HomeRequestException {
       rethrow;
+    } on DioException catch (error) {
+      throw HomeRequestException.fromDio(error);
+    } catch (_) {
+      throw const HomeRequestException('Dashboard data could not be loaded.');
     }
   }
 
@@ -105,4 +120,37 @@ class HomeRemoteDataSource {
       rethrow;
     }
   }
+}
+
+class HomeRequestException implements Exception {
+  const HomeRequestException(this.message);
+
+  final String message;
+
+  factory HomeRequestException.fromDio(DioException error) {
+    if (error.type == DioExceptionType.connectionError ||
+        error.error is SocketException) {
+      return const HomeRequestException(
+        'The server could not be reached. Check your connection and retry.',
+      );
+    }
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return const HomeRequestException(
+        'The dashboard request timed out. Please retry.',
+      );
+    }
+    return HomeRequestException(switch (error.response?.statusCode) {
+      401 => 'Your session expired. Please sign in again.',
+      403 => 'Dashboard access is not available for this account.',
+      404 => 'Dashboard data could not be found.',
+      429 => 'Too many requests. Please wait and retry.',
+      500 => 'Dashboard data could not be loaded. Please retry.',
+      _ => 'Dashboard data could not be loaded.',
+    });
+  }
+
+  @override
+  String toString() => message;
 }

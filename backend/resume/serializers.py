@@ -1,3 +1,4 @@
+from core.media import media_url
 from rest_framework import serializers
 
 from .models import Resume, ResumeTemplate
@@ -19,7 +20,7 @@ class ResumeListSerializer(serializers.ModelSerializer):
             return None
         url = file_field.url
         request = self.context.get("request")
-        return request.build_absolute_uri(url) if request else url
+        return media_url(request, file_field)
 
     def get_thumbnail_url(self, obj):
         if obj.thumbnail:
@@ -60,7 +61,7 @@ class ResumeDetailSerializer(serializers.ModelSerializer):
             return None
         url = file_field.url
         request = self.context.get("request")
-        return request.build_absolute_uri(url) if request else url
+        return media_url(request, file_field)
 
     def get_thumbnail_url(self, obj):
         if obj.thumbnail:
@@ -113,7 +114,7 @@ class ResumeSerializer(serializers.ModelSerializer):
             return None
         url = file_field.url
         request = self.context.get("request")
-        return request.build_absolute_uri(url) if request else url
+        return media_url(request, file_field)
 
     def get_thumbnail_url(self, obj):
         if obj.thumbnail:
@@ -134,7 +135,9 @@ class ResumeSerializer(serializers.ModelSerializer):
     def validate_data(self, value):
         if self.instance is not None and self.partial:
             value = deep_merge(self.instance.data or empty_resume(), value)
-        metadata = self.initial_data.get("metadata", {})
+        metadata = self.initial_data.get(
+            "metadata", getattr(self.instance, "metadata", {}) or {}
+        )
         is_draft = isinstance(metadata, dict) and metadata.get("status") == "draft"
         return validate_and_normalize(value, strict=not is_draft)
 
@@ -153,6 +156,13 @@ class ResumeSerializer(serializers.ModelSerializer):
         if self.instance is None and data is None:
             attrs["data"] = empty_resume()
             data = attrs["data"]
+        metadata = attrs.get("metadata", getattr(self.instance, "metadata", {}) or {})
+        is_draft = isinstance(metadata, dict) and metadata.get("status") == "draft"
+        if data is not None and not is_draft and "data" not in initial:
+            # A metadata-only transition from draft to complete must not bypass
+            # the same export validation used by a normal final save.
+            attrs["data"] = validate_and_normalize(data, strict=True)
+            data = attrs["data"]
         source_data = self.initial_data.get("data", data)
         if template is not None and data is not None and template.html_structure and isinstance(source_data, dict) and any(key in source_data for key in ("personal_info", "experience", "skill_groups")):
             ResumeValidationService.validate_data_against_template(source_data, template)
@@ -164,7 +174,23 @@ class ResumeSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
+        render_input_changed = any(
+            field in validated_data for field in ("data", "template", "title")
+        )
+        old_pdf = instance.pdf_file if render_input_changed and instance.pdf_file else None
+        old_thumbnail = instance.thumbnail if render_input_changed and instance.thumbnail else None
         template = validated_data.get("template")
         if template is not None and template.pk != instance.template_id:
             validated_data["template_version"] = template.version
-        return super().update(instance, validated_data)
+        updated = super().update(instance, validated_data)
+        if render_input_changed:
+            # A stored export/thumbnail represents the previous data and template
+            # version. Clear it so the next GET /pdf/ renders the saved revision.
+            if old_pdf:
+                old_pdf.delete(save=False)
+            if old_thumbnail:
+                old_thumbnail.delete(save=False)
+            Resume.objects.filter(pk=updated.pk).update(pdf_file="", thumbnail="")
+            updated.pdf_file = ""
+            updated.thumbnail = ""
+        return updated

@@ -5,15 +5,17 @@ import '../../data/datasources/resume_analyzer_remote_datasource.dart';
 import '../../data/models/resume_analysis_model.dart';
 import '../../data/models/resume_model.dart';
 
-final resumeAnalyzerDataSourceProvider = Provider<ResumeAnalyzerRemoteDataSource>((ref) {
-  return ResumeAnalyzerRemoteDataSource(ref.watch(dioProvider));
-});
+final resumeAnalyzerDataSourceProvider =
+    Provider<ResumeAnalyzerRemoteDataSource>((ref) {
+      return ResumeAnalyzerRemoteDataSource(ref.watch(dioProvider));
+    });
 
 final resumeListProvider = FutureProvider<List<ResumeModel>>((ref) async {
   return ref.watch(resumeAnalyzerDataSourceProvider).getResumes();
 });
 
-class ResumeAnalyzerNotifier extends StateNotifier<AsyncValue<ResumeAnalysisModel?>> {
+class ResumeAnalyzerNotifier
+    extends StateNotifier<AsyncValue<ResumeAnalysisModel?>> {
   final ResumeAnalyzerRemoteDataSource _dataSource;
 
   ResumeAnalyzerNotifier(this._dataSource) : super(const AsyncValue.data(null));
@@ -37,6 +39,12 @@ class ResumeAnalyzerNotifier extends StateNotifier<AsyncValue<ResumeAnalysisMode
   }
 }
 
-final resumeAnalyzerProvider = StateNotifierProvider<ResumeAnalyzerNotifier, AsyncValue<ResumeAnalysisModel?>>((ref) {
-  return ResumeAnalyzerNotifier(ref.watch(resumeAnalyzerDataSourceProvider));
-});
+final resumeAnalyzerProvider =
+    StateNotifierProvider<
+      ResumeAnalyzerNotifier,
+      AsyncValue<ResumeAnalysisModel?>
+    >((ref) {
+      return ResumeAnalyzerNotifier(
+        ref.watch(resumeAnalyzerDataSourceProvider),
+      );
+    });

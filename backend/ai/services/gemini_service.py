@@ -76,15 +76,15 @@ class GeminiService:
 		try:
 			response = self.session.post(url, json=payload, timeout=self.timeout)
 		except requests.Timeout as exc:
-			logger.exception("Gemini request timed out: %s", exc)
+			logger.warning("Gemini request timed out")
 			raise AIServiceTimeoutError("Gemini request timed out.") from exc
 		except requests.RequestException as exc:
-			logger.exception("Gemini request failed: %s", exc)
-			raise AIServiceProviderError(f"Gemini request failed: {exc}") from exc
+			logger.warning("Gemini request failed")
+			raise AIServiceProviderError("Gemini is temporarily unavailable.") from None
 
 		if response.status_code >= 400:
 			raise AIServiceProviderError(
-				f"Gemini returned status {response.status_code}: {response.text[:500]}"
+				f"Gemini returned status {response.status_code}."
 			)
 
 		data = response.json()
@@ -102,7 +102,7 @@ class GeminiService:
 		try:
 			parsed = json.loads(trimmed)
 		except json.JSONDecodeError:
-			parsed = AIService._parse_json_from_code_block_or_fragment(trimmed)
+			parsed = GeminiService._parse_json_from_code_block_or_fragment(trimmed)
 
 		if not isinstance(parsed, dict):
 			raise AIServiceResponseError("AI response must be a JSON object.")

@@ -28,5 +28,7 @@ abstract class ResumeRepository {
 
   Future<Uint8List> downloadPdf(String id);
 
+  Future<void> deleteResume(String id);
+
   Future<List<ResumeModel>> getResumes();
 }

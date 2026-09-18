@@ -1,3 +1,4 @@
+from core.media import media_url
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -126,7 +127,7 @@ class UserProfileSerializer(StrictInputMixin, serializers.ModelSerializer):
         if not obj.profile_image:
             return None
         request = self.context.get("request")
-        return request.build_absolute_uri(obj.profile_image.url) if request else obj.profile_image.url
+        return media_url(request, obj.profile_image)
 
 
 class EmailSerializer(StrictInputMixin, serializers.Serializer):

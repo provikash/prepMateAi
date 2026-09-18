@@ -10,6 +10,7 @@ class ResumeStepIndicator extends StatelessWidget {
     required this.sectionTitles,
     required this.onStepTapped,
     this.completedSteps = const {},
+    this.completionPercent,
   });
 
   final int currentStep;
@@ -17,6 +18,7 @@ class ResumeStepIndicator extends StatelessWidget {
   final List<String> sectionTitles;
   final ValueChanged<int> onStepTapped;
   final Set<int> completedSteps;
+  final int? completionPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +28,9 @@ class ResumeStepIndicator extends StatelessWidget {
     final navigationProgress = totalSteps == 1
         ? 1.0
         : safeStep / (totalSteps - 1);
-    final completionProgress =
-        completedSteps.length.clamp(0, totalSteps) / totalSteps;
+    final completionProgress = completionPercent == null
+        ? completedSteps.length.clamp(0, totalSteps) / totalSteps
+        : completionPercent!.clamp(0, 100) / 100;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final duration = reduceMotion
@@ -40,7 +43,7 @@ class ResumeStepIndicator extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          '$title. Section ${safeStep + 1} of $totalSteps. ${(completionProgress * 100).round()} percent complete.',
+          '$title. Step ${safeStep + 1} of $totalSteps. ${(completionProgress * 100).round()} percent complete.',
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colors.cardBackground,
@@ -67,7 +70,7 @@ class ResumeStepIndicator extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Section ${safeStep + 1} of $totalSteps',
+                          'Step ${safeStep + 1} of $totalSteps',
                           style: TextStyle(color: colors.textSecondary),
                         ),
                       ],
@@ -95,8 +98,8 @@ class ResumeStepIndicator extends StatelessWidget {
                     minHeight: 9,
                     color: colors.primary,
                     backgroundColor: colors.mutedBackground,
-                    semanticsLabel: 'Section navigation progress',
-                    semanticsValue: '${(value * 100).round()} percent',
+                    semanticsLabel: 'Resume journey progress',
+                    semanticsValue: '${(value * 100).round()}',
                   ),
                 ),
               ),
@@ -112,12 +115,12 @@ class ResumeStepIndicator extends StatelessWidget {
                     final complete = completedSteps.contains(index);
                     final itemTitle = index < sectionTitles.length
                         ? sectionTitles[index]
-                        : 'Section ${index + 1}';
+                        : 'Step ${index + 1}';
                     return Semantics(
                       button: true,
                       selected: active,
                       label:
-                          '$itemTitle, section ${index + 1} of $totalSteps${complete ? ', complete' : ', incomplete'}',
+                          '$itemTitle, step ${index + 1} of $totalSteps${complete ? ', complete' : ', incomplete'}',
                       child: AnimatedContainer(
                         duration: duration,
                         decoration: BoxDecoration(

@@ -94,6 +94,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.RequestIdMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -195,7 +196,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Ensure a single MIDDLEWARE setting is used (defined above).
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(os.getenv('MEDIA_ROOT', str(BASE_DIR / 'media')))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -224,6 +225,8 @@ REST_FRAMEWORK ={
         'ai_suggest_skills': '40/hour',
         'ai_generate_bullets': '30/hour',
         'ai_task_status': '240/hour',
+        'course_recommendations': '30/hour',
+        'course_progress': '1200/hour',
     },
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.DefaultPagination',
     'PAGE_SIZE': 10,
@@ -272,6 +275,11 @@ LOGGING = {
         },
     },
     "loggers": {
+        "core.request": {
+            "handlers": ["console"],
+            "level": os.getenv("REQUEST_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
         "resume": {
             "handlers": ["console"],
             "level": "INFO",
@@ -297,7 +305,30 @@ for scope in AUTH_THROTTLE_RATES:
     AUTH_THROTTLE_RATES[scope] = os.getenv("AUTH_RATE_" + scope.upper(), AUTH_THROTTLE_RATES[scope])
 ALLOWED_HOSTS = [v.strip() for v in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if v.strip()]
 CSRF_TRUSTED_ORIGINS = [v.strip() for v in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if v.strip()]
-CACHES = {"default": {"BACKEND": os.getenv("CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache"), "LOCATION": os.getenv("CACHE_LOCATION", "prepmate-auth")}}
+CACHE_BACKEND = os.getenv(
+    "CACHE_BACKEND", "django.core.cache.backends.locmem.LocMemCache"
+)
+CACHE_LOCATION = os.getenv("CACHE_LOCATION", "prepmate-local")
+CACHES = {
+    "default": {
+        "BACKEND": CACHE_BACKEND,
+        "LOCATION": CACHE_LOCATION,
+        "KEY_PREFIX": os.getenv("CACHE_KEY_PREFIX", "prepmate"),
+        "VERSION": int(os.getenv("CACHE_VERSION", "3")),
+        "TIMEOUT": int(os.getenv("CACHE_DEFAULT_TIMEOUT", "300")),
+        **(
+            {
+                "OPTIONS": {
+                    "IGNORE_EXCEPTIONS": True,
+                    "SOCKET_CONNECT_TIMEOUT": 2,
+                    "SOCKET_TIMEOUT": 2,
+                }
+            }
+            if CACHE_BACKEND == "django_redis.cache.RedisCache"
+            else {}
+        ),
+    }
+}
 # Default deployment mode is production. Development and tests explicitly opt out.
 PRODUCTION = DJANGO_ENV == "production"
 if PRODUCTION:
@@ -308,8 +339,8 @@ if PRODUCTION:
         raise ImproperlyConfigured("Production requires an explicit ALLOWED_HOSTS allowlist.")
     if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
         raise ImproperlyConfigured("Production requires PostgreSQL.")
-    if CACHES["default"]["BACKEND"] != "django.core.cache.backends.db.DatabaseCache":
-        raise ImproperlyConfigured("Production requires shared DatabaseCache; run createcachetable.")
+    if CACHES["default"]["BACKEND"] != "django_redis.cache.RedisCache":
+        raise ImproperlyConfigured("Production requires a shared Redis cache.")
     if EMAIL_BACKEND != "django.core.mail.backends.smtp.EmailBackend":
         raise ImproperlyConfigured("Production requires SMTP email delivery; console/file backends expose OTPs.")
     SECURE_SSL_REDIRECT = True
@@ -320,3 +351,15 @@ if PRODUCTION:
     SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
+
+# Enable only when the edge proxy overwrites X-Forwarded-Proto and the app
+# container cannot be reached directly from the public internet.
+if os.getenv('TRUST_PROXY_HEADERS', 'False') == 'True':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_REDIRECT_EXEMPT = [r'^health/$']
+DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}

@@ -16,4 +16,10 @@ class ResumeModel {
       pdfUrl: json['pdf_url'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'pdf_url': pdfUrl,
+  };
 }

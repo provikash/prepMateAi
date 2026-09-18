@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/resume_providers.dart';
 
 class TemplateListScreen extends ConsumerWidget {
-  const TemplateListScreen({Key? key}) : super(key: key);
+  const TemplateListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/theme.dart';
 
 class ErrorText extends StatelessWidget {
   final String? message;
@@ -12,13 +13,16 @@ class ErrorText extends StatelessWidget {
     return Column(
       children: [
         const SizedBox(height: 16),
-        Text(
-          message!,
-          style: const TextStyle(
-            color: Colors.red,
-            fontSize: 14,
+        Semantics(
+          liveRegion: true,
+          label: 'Error: $message',
+          child: Text(
+            message!,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.of(context).error),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );

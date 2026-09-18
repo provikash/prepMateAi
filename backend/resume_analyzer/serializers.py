@@ -23,6 +23,11 @@ class AnalyzeResumeRequestSerializer(serializers.Serializer):
         if value.size > max_size_bytes:
             raise serializers.ValidationError("PDF size must be <= 10MB.")
 
+        signature = value.read(5)
+        value.seek(0)
+        if signature != b'%PDF-':
+            raise serializers.ValidationError('Upload a valid PDF document.')
+
         return value
 
     def validate_job_role(self, value):

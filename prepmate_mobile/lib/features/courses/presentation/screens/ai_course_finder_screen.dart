@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'course_video_player_screen.dart';
 import '../../data/models/ai_course_model.dart';
 import '../providers/course_providers.dart';
 import '../widgets/ai_course_card.dart';
@@ -275,7 +275,7 @@ class AICourseFinderScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Color(0xFF7C3AED).withOpacity(0.2),
+                  color: Color(0xFF7C3AED).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -333,7 +333,7 @@ class AICourseFinderScreen extends ConsumerWidget {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: Offset(0, 2),
                 ),
@@ -420,17 +420,10 @@ class AICourseFinderScreen extends ConsumerWidget {
     WidgetRef ref,
     AICourse course,
   ) async {
-    // Open YouTube URL instead of playing inline
-    final youtubeUrl = 'https://www.youtube.com/watch?v=${course.videoId}';
-    final uri = Uri.parse(youtubeUrl);
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      // Fallback: show error message
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not open YouTube')));
-    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CourseVideoPlayerScreen(course: course),
+      ),
+    );
   }
 }

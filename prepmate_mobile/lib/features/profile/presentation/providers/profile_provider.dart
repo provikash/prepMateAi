@@ -1,14 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
+import '../../../../core/cache/cache_store.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../data/datasources/profile_remote_data_source.dart';
 import '../../data/repositories/profile_repository_impl.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../viewmodels/profile_state.dart';
 import '../viewmodels/profile_viewmodel.dart';
 
-final profileRemoteDataSourceProvider = Provider<ProfileRemoteDataSource>((ref) {
+final profileRemoteDataSourceProvider = Provider<ProfileRemoteDataSource>((
+  ref,
+) {
   return ProfileRemoteDataSource(ref.watch(dioProvider));
 });
 
@@ -16,6 +20,8 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepositoryImpl(
     remote: ref.watch(profileRemoteDataSourceProvider),
     authRemote: ref.watch(authRemoteDataSourceProvider),
+    cache: ref.watch(cacheCoordinatorProvider),
+    userId: () => ref.read(authViewModelProvider).user?.id,
   );
 });
 
@@ -26,7 +32,8 @@ final profileProvider = StateNotifierProvider<ProfileViewModel, ProfileState>((
 });
 
 final isProfileIncompleteProvider = Provider<bool>((ref) {
-  final user = ref.watch(profileProvider).user;
+  final user =
+      ref.watch(profileProvider).user ?? ref.watch(authViewModelProvider).user;
   if (user == null) {
     return false;
   }

@@ -29,7 +29,10 @@ class DashboardModel {
       : 'Analyze your resume to get personalized suggestions.';
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
-    final latestResume = json['latest_resume'] as Map<String, dynamic>?;
+    final rawLatestResume = json['latest_resume'];
+    final latestResume = rawLatestResume is Map
+        ? Map<String, dynamic>.from(rawLatestResume)
+        : null;
     final missingSkillsRaw = json['missing_skills'] as List? ?? const [];
     final suggestedSkillsRaw = json['suggested_skills'] as List? ?? const [];
     final atsScore = (latestResume?['ats_score'] as num?)?.toInt() ?? 0;
@@ -54,4 +57,22 @@ class DashboardModel {
       userName: (json['full_name'] as String?) ?? 'User',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'latest_resume': {
+      'title': latestResume,
+      'ats_score': atsScore,
+      'skill_gap_percentage': skillGap,
+      'improvement_impact': int.tryParse(improvementImpact) ?? 0,
+    },
+    'missing_skills': missingSkills,
+    'suggested_skills': suggestedSkills
+        .split(',')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(),
+    'analysis_available': analysisAvailable,
+    'message': message,
+    'full_name': userName,
+  };
 }

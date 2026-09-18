@@ -39,12 +39,16 @@ class ResumeAnalysisModel {
       atsScore: json['ats_score'] ?? 0,
       skillScore: json['skill_score'] ?? 0,
       missingSections: List<String>.from(json['missing_sections'] ?? []),
-      missingSkills: (json['missing_skills'] as Map<String, dynamic>?)?.map(
+      missingSkills:
+          (json['missing_skills'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(k, List<String>.from(v)),
-          ) ?? {},
-      matchedSkills: (json['matched_skills'] as Map<String, dynamic>?)?.map(
+          ) ??
+          {},
+      matchedSkills:
+          (json['matched_skills'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(k, List<String>.from(v)),
-          ) ?? {},
+          ) ??
+          {},
       keywordAnalysis: KeywordAnalysis.fromJson(json['keyword_analysis'] ?? {}),
       formatIssues: List<String>.from(json['format_issues'] ?? []),
       contactIssues: List<String>.from(json['contact_issues'] ?? []),
@@ -53,9 +57,29 @@ class ResumeAnalysisModel {
       jobRole: json['job_role'] ?? '',
       resumeId: json['resume_id']?.toString(),
       resumeTitle: json['resume_title']?.toString() ?? 'Uploaded Resume',
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['created_at'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'analysis_id': analysisId,
+    'ats_score': atsScore,
+    'skill_score': skillScore,
+    'missing_sections': missingSections,
+    'missing_skills': missingSkills,
+    'matched_skills': matchedSkills,
+    'keyword_analysis': keywordAnalysis.toJson(),
+    'format_issues': formatIssues,
+    'contact_issues': contactIssues,
+    'suggestions': suggestions,
+    'ats_breakdown': atsBreakdown,
+    'job_role': jobRole,
+    'resume_id': resumeId,
+    'resume_title': resumeTitle,
+    'created_at': createdAt.toUtc().toIso8601String(),
+  };
 }
 
 class KeywordAnalysis {
@@ -76,4 +100,10 @@ class KeywordAnalysis {
       matchPercentage: (json['match_percentage'] ?? 0).toDouble(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'matched_keywords': matchedKeywords,
+    'missing_keywords': missingKeywords,
+    'match_percentage': matchPercentage,
+  };
 }

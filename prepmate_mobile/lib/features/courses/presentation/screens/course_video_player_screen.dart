@@ -1,3 +1,4 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
@@ -7,10 +8,7 @@ import '../providers/course_providers.dart';
 class CourseVideoPlayerScreen extends ConsumerStatefulWidget {
   final AICourse course;
 
-  const CourseVideoPlayerScreen({
-    super.key,
-    required this.course,
-  });
+  const CourseVideoPlayerScreen({super.key, required this.course});
 
   @override
   ConsumerState<CourseVideoPlayerScreen> createState() =>
@@ -18,23 +16,26 @@ class CourseVideoPlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _CourseVideoPlayerScreenState
-    extends ConsumerState<CourseVideoPlayerScreen> {
+    extends ConsumerState<CourseVideoPlayerScreen>
+    with WidgetsBindingObserver {
   late YoutubePlayerController _youtubeController;
   late Duration _lastReportedPosition;
-  bool _isPlaying = false;
+  late CourseProgressNotifier _progressNotifier;
+  DateTime _lastReport = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _reporting = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _progressNotifier = ref.read(
+      courseProgressProvider(widget.course.videoId).notifier,
+    );
     _initializePlayer();
     _lastReportedPosition = Duration.zero;
   }
 
-  void _initializePlayer() async {
-    // Fetch existing progress to resume from where user left off
-    final progressAsync =
-        ref.read(courseProgressProvider(widget.course.videoId));
-
+  void _initializePlayer() {
     _youtubeController = YoutubePlayerController(
       initialVideoId: widget.course.videoId,
       flags: const YoutubePlayerFlags(
@@ -44,71 +45,66 @@ class _CourseVideoPlayerScreenState
       ),
     );
 
-    // Load progress to determine start position
-    progressAsync.whenData((progress) {
-      if (progress.watchedSeconds > 0) {
-        // Resume from saved position
-        _youtubeController.seekTo(
-          Duration(seconds: progress.watchedSeconds),
-          allowSeekAhead: true,
-        );
-      }
-    });
-
     // Listen to player state changes and track progress
     _youtubeController.addListener(_onPlayerStateChanged);
   }
 
   void _onPlayerStateChanged() {
     if (_youtubeController.value.isPlaying) {
-      _isPlaying = true;
       _trackProgress();
-    } else {
-      _isPlaying = false;
     }
   }
 
-  void _trackProgress() async {
+  Future<void> _trackProgress({bool force = false}) async {
     // Report progress every 5-10 seconds
     final currentPosition = _youtubeController.value.position;
     final totalDuration = _youtubeController.metadata.duration;
 
     // Only report if position changed significantly (at least 5 seconds)
-    if ((currentPosition.inSeconds - _lastReportedPosition.inSeconds).abs() >=
-        5) {
+    if (totalDuration.inSeconds <= 0 || _reporting) return;
+    if (force ||
+        (DateTime.now().difference(_lastReport).inSeconds >= 30 &&
+            currentPosition != _lastReportedPosition)) {
       _lastReportedPosition = currentPosition;
+      _lastReport = DateTime.now();
+      _reporting = true;
 
       // Update progress on backend
-      ref
-          .read(courseProgressProvider(widget.course.videoId).notifier)
-          .updateProgress(
-            watchedSeconds: currentPosition.inSeconds,
-            totalSeconds: totalDuration.inSeconds,
-          );
+      try {
+        await _progressNotifier.updateProgress(
+          watchedSeconds: currentPosition.inSeconds.clamp(
+            0,
+            totalDuration.inSeconds,
+          ),
+          totalSeconds: totalDuration.inSeconds,
+        );
+      } finally {
+        _reporting = false;
+      }
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      _youtubeController.pause();
+      _trackProgress(force: true);
     }
   }
 
   @override
   void dispose() {
-    // Final progress report before leaving
-    if (_youtubeController.value.position.inSeconds > 0) {
-      ref
-          .read(courseProgressProvider(widget.course.videoId).notifier)
-          .updateProgress(
-            watchedSeconds: _youtubeController.value.position.inSeconds,
-            totalSeconds:
-                _youtubeController.metadata.duration.inSeconds,
-          );
-    }
-
+    _trackProgress(force: true);
+    WidgetsBinding.instance.removeObserver(this);
     _youtubeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final progressAsync =
-        ref.watch(courseProgressProvider(widget.course.videoId));
+    final progressAsync = ref.watch(
+      courseProgressProvider(widget.course.videoId),
+    );
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -138,8 +134,21 @@ class _CourseVideoPlayerScreenState
                 bufferedColor: Colors.grey,
                 backgroundColor: Colors.grey[800],
               ),
-              onReady: () {
-                // Player is ready
+              onReady: () async {
+                try {
+                  final progress = await ref.read(
+                    courseProgressProvider(widget.course.videoId).future,
+                  );
+                  if (mounted &&
+                      progress.watchedSeconds > 0 &&
+                      !progress.isCompleted) {
+                    _youtubeController.seekTo(
+                      Duration(seconds: progress.watchedSeconds),
+                    );
+                  }
+                } catch (_) {
+                  /* Playback remains available without saved progress. */
+                }
               },
             ),
           ),
@@ -238,13 +247,14 @@ class _CourseVideoPlayerScreenState
                             decoration: BoxDecoration(
                               color: Color(0xFFF0E7FF),
                               borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: Color(0xFFD4B3FF), width: 1),
+                              border: Border.all(
+                                color: Color(0xFFD4B3FF),
+                                width: 1,
+                              ),
                             ),
                             padding: const EdgeInsets.all(16),
                             child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,8 +316,11 @@ class _CourseVideoPlayerScreenState
                               padding: const EdgeInsets.all(12),
                               child: Row(
                                 children: [
-                                  Icon(Icons.check_circle,
-                                      color: Colors.green, size: 20),
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Congratulations! You completed this course!',
@@ -328,9 +341,7 @@ class _CourseVideoPlayerScreenState
                   ),
                 );
               },
-              loading: () => Center(
-                child: CircularProgressIndicator(),
-              ),
+              loading: () => Center(child: AppLoading()),
               error: (error, stack) => Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(

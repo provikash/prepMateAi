@@ -1,10 +1,9 @@
-
 import 'package:flutter/material.dart';
+
 import '../../config/theme.dart';
 
-
-class topCircleButton extends StatelessWidget {
-  const topCircleButton({
+class TopCircleButton extends StatelessWidget {
+  const TopCircleButton({
     super.key,
     required this.context,
     required this.icon,
@@ -18,23 +17,17 @@ class topCircleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: colors.cardBackground,
-            border: Border.all(color: colors.border),
-          ),
-          child: Icon(icon, size: 20, color: colors.primary),
-        ),
+    return IconButton(
+      tooltip: icon == Icons.arrow_back || icon == Icons.arrow_back_ios_new
+          ? 'Back'
+          : null,
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        backgroundColor: colors.cardBackground,
+        foregroundColor: colors.primary,
+        side: BorderSide(color: colors.border),
       ),
+      icon: Icon(icon, size: AppSizes.iconSmall),
     );
   }
 }

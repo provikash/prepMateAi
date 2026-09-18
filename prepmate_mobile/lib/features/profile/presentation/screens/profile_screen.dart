@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:prepmate_mobile/config/theme.dart';
-import 'package:prepmate_mobile/core/providers/theme_provider.dart';
-import 'package:prepmate_mobile/features/profile/presentation/providers/profile_provider.dart';
+
+import '../../../../config/theme.dart';
+import '../../../../core/providers/theme_provider.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/app_scaffold.dart';
+import '../../../../core/widgets/app_state.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
-import 'personal_info_screen.dart';
-import 'help_support_screen.dart';
+import '../../../auth/data/models/user_model.dart';
+import '../providers/profile_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -16,284 +21,291 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _requestedProfile = false;
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      final cached = ref.read(authViewModelProvider).user;
+      if (cached is UserModel) {
+        ref.read(profileProvider.notifier).seed(cached);
+      } else {
+        ref.read(profileProvider.notifier).loadProfile();
+      }
+    });
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showAppConfirmationDialog(
+      context: context,
+      title: 'Sign out?',
+      message:
+          'You’ll need to sign in again to access your resumes and learning progress.',
+      confirmLabel: 'Sign out',
+      destructive: true,
+    );
+    if (!confirmed) return;
+    await ref.read(authProvider.notifier).logout();
+    if (mounted) context.go('/login');
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!_requestedProfile) {
-      _requestedProfile = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(profileProvider.notifier).loadProfile();
-      });
-    }
+    final state = ref.watch(profileProvider);
+    final user = state.user;
 
-    final profileState = ref.watch(profileProvider);
-    final user = profileState.user;
-    final colors = AppColors.of(context);
-
-    return Scaffold(
-      backgroundColor: colors.screenBackground,
-      appBar: AppBar(
-        backgroundColor: colors.screenBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Profile Settings',
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // Profile Image with Edit Icon
-            Center(
-              child: Stack(
+    return AppScaffold(
+      title: 'Profile & settings',
+      padding: EdgeInsets.zero,
+      body: state.isLoading && user == null
+          ? const AppLoadingState(label: 'Loading your profile')
+          : state.error != null && user == null
+          ? AppErrorState(
+              message: 'We couldn’t load your profile.',
+              onAction: () => ref.read(profileProvider.notifier).loadProfile(),
+            )
+          : RefreshIndicator(
+              onRefresh: () => ref.read(profileProvider.notifier).refresh(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  AppSpacing.sm,
+                  AppSpacing.screen,
+                  AppSpacing.xxl,
+                ),
                 children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade200, width: 4),
-                      image: user?.profileImage != null
-                          ? DecorationImage(
-                              image: NetworkImage(user!.profileImage!),
-                              fit: BoxFit.cover,
-                            )
-                          : const DecorationImage(
-                              image: AssetImage(
-                                'assets/images/profile_placeholder.png',
-                              ),
-                              fit: BoxFit.cover,
-                            ),
-                    ),
+                  _ProfileHeader(
+                    name: user?.fullName ?? 'PrepMate member',
+                    email: user?.email ?? '',
+                    imageUrl: user?.profileImage,
+                    onEdit: () => context.push('/profile/edit'),
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: colors.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                  const SizedBox(height: AppSpacing.xl),
+                  _SettingsSection(
+                    title: 'Account',
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.person_outline_rounded,
+                        title: 'Personal information',
+                        subtitle: 'Name, contact details and career profile',
+                        onTap: () => context.push('/profile/edit'),
                       ),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Colors.white,
-                        size: 18,
+                      _SettingsTile(
+                        icon: Icons.lock_outline_rounded,
+                        title: 'Change password',
+                        subtitle: 'Reset your account password securely',
+                        onTap: () => context.push('/forgot-password'),
                       ),
-                    ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SettingsSection(
+                    title: 'Career activity',
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.description_outlined,
+                        title: 'My resumes',
+                        onTap: () => context.go('/home'),
+                      ),
+                      _SettingsTile(
+                        icon: Icons.analytics_outlined,
+                        title: 'Analysis history',
+                        onTap: () => context.push('/ats-history'),
+                      ),
+                      _SettingsTile(
+                        icon: Icons.school_outlined,
+                        title: 'Learning progress',
+                        onTap: () => context.push('/courses'),
+                      ),
+                      _SettingsTile(
+                        icon: Icons.auto_awesome_outlined,
+                        title: 'AI credits & plan',
+                        subtitle: 'Balance, usage, plans and activity',
+                        onTap: () => context.push('/ai-credits'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _SettingsSection(
+                    title: 'Preferences',
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.dark_mode_outlined,
+                        title: 'Dark mode',
+                        subtitle: 'Use a darker palette in low light',
+                        trailing: Switch(
+                          value: ref.watch(themeModeProvider) == ThemeMode.dark,
+                          onChanged: (_) =>
+                              ref.read(themeModeProvider.notifier).toggle(),
+                        ),
+                      ),
+                      _SettingsTile(
+                        icon: Icons.help_outline_rounded,
+                        title: 'Help & support',
+                        onTap: () => context.push('/help'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  AppButton(
+                    label: 'Sign out',
+                    icon: Icons.logout_rounded,
+                    variant: AppButtonVariant.destructive,
+                    onPressed: _logout,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              user?.fullName ?? 'Loading profile...',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            // Profile Sections
-            _buildSection(
-              title: 'ACCOUNT',
-              items: [
-                _ProfileItem(
-                  icon: Icons.person_outline,
-                  title: 'Personal Info',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PersonalInfoScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _ProfileItem(
-                  icon: Icons.security_outlined,
-                  title: 'Change Password',
-                  onTap: () => context.push('/forgot-password'),
-                ),
-              ],
-            ),
-
-            _buildSection(
-              title: 'RESUME & LEARNING',
-              items: [
-                _ProfileItem(
-                  icon: Icons.description,
-                  title: 'My Resumes',
-                  onTap: () {
-                    context.push('/home');
-                  },
-                ),
-                _ProfileItem(
-                  icon: Icons.history,
-                  title: 'Analysis History',
-                  onTap: () {
-                    context.push('/ats-history');
-                  },
-                ),
-                _ProfileItem(
-                  icon: Icons.school_outlined,
-                  title: 'Learning Progress',
-                  onTap: () {
-                    context.push('/courses');
-                  },
-                ),
-              ],
-            ),
-
-            _buildSection(
-              title: 'APP SETTINGS',
-              items: [
-                _ProfileItem(
-                  icon: Icons.dark_mode_outlined,
-                  title: 'Dark Mode',
-                  trailing: Switch(
-                    value: ref.watch(themeModeProvider) == ThemeMode.dark,
-                    onChanged: (_) =>
-                        ref.read(themeModeProvider.notifier).toggle(),
-                    activeThumbColor: colors.primary,
-                  ),
-                ),
-                _ProfileItem(
-                  icon: Icons.help_outline,
-                  title: 'Help & Support',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HelpSupportScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-
-            // Log Out Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-              child: SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () async {
-                    await ref.read(authProvider.notifier).logout();
-                    if (context.mounted) context.go('/login');
-                  },
-                  style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFF5F5),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.logout, color: Colors.redAccent),
-                      SizedBox(width: 8),
-                      Text(
-                        'Log Out',
-                        style: TextStyle(
-                          color: Colors.redAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSection({required String title, required List<Widget> items}) {
-    final colors = AppColors.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: BoxDecoration(
-            color: colors.cardBackground,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(children: items),
-        ),
-      ],
     );
   }
 }
 
-class _ProfileItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback? onTap;
-  final Widget? trailing;
-
-  const _ProfileItem({
-    required this.icon,
-    required this.title,
-    this.onTap,
-    this.trailing,
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.name,
+    required this.email,
+    required this.imageUrl,
+    required this.onEdit,
   });
+
+  final String name;
+  final String email;
+  final String? imageUrl;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final initial = name.trim().isEmpty ? 'P' : name.trim()[0].toUpperCase();
+    Widget fallback() => ColoredBox(
+      color: colors.primarySoft,
+      child: Center(
+        child: Text(
+          initial,
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(color: colors.primary),
+        ),
+      ),
+    );
 
+    return AppCard(
+      child: Row(
+        children: [
+          ClipOval(
+            child: SizedBox.square(
+              dimension: 72,
+              child: imageUrl?.isNotEmpty ?? false
+                  ? Image.network(
+                      imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => fallback(),
+                    )
+                  : fallback(),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: Theme.of(context).textTheme.titleLarge),
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    email,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Edit profile',
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(
+          left: AppSpacing.xxs,
+          bottom: AppSpacing.xs,
+        ),
+        child: Text(
+          title.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: AppColors.of(context).textSecondary,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ),
+      AppCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              children[i],
+              if (i != children.length - 1)
+                const Divider(height: 1, indent: 64),
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return ListTile(
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: colors.primarySoft,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
-        child: Icon(icon, color: colors.primary, size: 20),
+        child: Icon(icon, color: colors.primary, size: AppSizes.iconSmall),
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: colors.textPrimary,
-        ),
-      ),
-      trailing: trailing ?? const Icon(Icons.chevron_right, color: Colors.grey),
+      title: Text(title),
+      subtitle: subtitle == null ? null : Text(subtitle!),
+      trailing:
+          trailing ?? (onTap == null ? null : const Icon(Icons.chevron_right)),
       onTap: onTap,
     );
   }

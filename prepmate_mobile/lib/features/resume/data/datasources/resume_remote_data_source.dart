@@ -34,6 +34,14 @@ class ResumeSaveException implements Exception {
   String toString() => message;
 }
 
+class PdfFetchResult {
+  const PdfFetchResult({required this.notModified, this.bytes, this.etag});
+
+  final bool notModified;
+  final Uint8List? bytes;
+  final String? etag;
+}
+
 class ResumeRemoteDataSource {
   final Dio dio;
 
@@ -233,16 +241,46 @@ class ResumeRemoteDataSource {
   }
 
   Future<Uint8List> getResumePdfBytes(String id) async {
+    final result = await fetchResumePdf(id);
+    if (result.bytes == null) throw Exception('Empty PDF response');
+    return result.bytes!;
+  }
+
+  Future<PdfFetchResult> fetchResumePdf(String id, {String? etag}) async {
     try {
       final response = await dio.get<List<int>>(
         'resumes/$id/pdf/',
-        options: Options(responseType: ResponseType.bytes),
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: etag == null ? null : {'If-None-Match': etag},
+          validateStatus: (status) => status == 200 || status == 304,
+        ),
       );
+      if (response.statusCode == 304) {
+        return PdfFetchResult(notModified: true, etag: etag);
+      }
       final bytes = response.data;
       if (bytes == null || bytes.isEmpty) {
         throw Exception('Empty PDF response');
       }
-      return Uint8List.fromList(bytes);
+      return PdfFetchResult(
+        notModified: false,
+        bytes: Uint8List.fromList(bytes),
+        etag: response.headers.value('etag'),
+      );
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      final message = switch (status) {
+        400 =>
+          'This resume contains data that the selected template cannot render.',
+        401 => 'Your session expired. Sign in again, then retry.',
+        404 => 'This resume or its template could not be found.',
+        429 => 'Too many PDF requests. Wait a moment, then retry.',
+        500 ||
+        503 => 'The server could not generate the PDF. Please try again.',
+        _ => _normalizeDioError(error),
+      };
+      throw Exception(message);
     } catch (error) {
       throw Exception('Failed to load PDF: ${_normalizeDioError(error)}');
     }

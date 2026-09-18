@@ -1,17 +1,19 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../config/theme.dart';
+import '../../../../config/page_transitions.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/career_hero.dart';
 import '../../../../core/widgets/section_header.dart';
 import 'package:prepmate_mobile/features/home/data/models/dashboard_model.dart';
 import 'package:prepmate_mobile/features/home/data/models/resume_model.dart';
 import 'package:prepmate_mobile/features/home/data/models/template_model.dart';
-import 'package:prepmate_mobile/features/interview/presentation/screens/interview_screen.dart';
 import 'package:prepmate_mobile/features/courses/presentation/screens/courses_screen.dart';
 import 'package:prepmate_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:prepmate_mobile/features/auth/presentation/viewmodel/auth_viewmodel.dart';
 import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
 
 import '../../providers/home_providers.dart';
@@ -25,12 +27,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _profileDialogShown = false;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() => ref.read(profileProvider.notifier).loadProfile());
-  }
+  final Set<int> _visitedTabs = {0};
 
   @override
   Widget build(BuildContext context) {
@@ -61,20 +58,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     });
 
-    final colors = AppColors.of(context);
     final bottomNavIndex = ref.watch(bottomNavProvider);
+    _visitedTabs.add(bottomNavIndex);
 
     return Scaffold(
-      backgroundColor: colors.screenBackground,
       body: IndexedStack(
         index: bottomNavIndex,
-        children: const [
-          _HomeContent(),
-          InterviewScreen(),
-          AnalyzeScreen(),
-          CoursesScreen(),
-          Center(child: Text('Profile Screen Placeholder')),
-        ],
+        children: List.generate(
+          3,
+          (index) => TabEntrance(
+            active: index == bottomNavIndex,
+            child: !_visitedTabs.contains(index)
+                ? const SizedBox.shrink()
+                : switch (index) {
+                    0 => const SafeArea(child: _HomeContent()),
+                    1 => const AnalyzeScreen(),
+                    _ => const CoursesScreen(),
+                  },
+          ),
+        ),
       ),
       bottomNavigationBar: _buildBottomNav(context, ref, bottomNavIndex),
     );
@@ -85,27 +87,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetRef ref,
     int currentIndex,
   ) {
-    final colors = AppColors.of(context);
-
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: (index) {
-        if (index == 4) {
+    return NavigationBar(
+      selectedIndex: currentIndex,
+      animationDuration: AppMotion.standard,
+      onDestinationSelected: (index) {
+        if (index == 3) {
           context.push('/profile');
-          return;
+        } else {
+          ref.read(bottomNavProvider.notifier).state = index;
         }
-        ref.read(bottomNavProvider.notifier).state = index;
       },
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: colors.primary,
-      unselectedItemColor: colors.textSecondary,
-      showUnselectedLabels: true,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.mic), label: 'Interview'),
-        BottomNavigationBarItem(icon: Icon(Icons.score), label: 'ATS Score'),
-        BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Courses'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home_rounded),
+          label: 'Home',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.analytics_outlined),
+          selectedIcon: Icon(Icons.analytics_rounded),
+          label: 'Analyze',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.auto_stories_outlined),
+          selectedIcon: Icon(Icons.auto_stories),
+          label: 'Learn',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.person_outline_rounded),
+          selectedIcon: Icon(Icons.person_rounded),
+          label: 'Profile',
+        ),
       ],
     );
   }
@@ -123,12 +135,25 @@ class _HomeContent extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
+        var dashboardRefreshed = false;
         await Future.wait([
-          ref.read(dashboardProvider.notifier).refresh(),
+          ref
+              .read(dashboardProvider.notifier)
+              .refresh()
+              .then((value) => dashboardRefreshed = value),
           ref.read(resumeListProvider.notifier).refresh(),
           ref.read(templateListProvider.notifier).refresh(),
           ref.read(profileProvider.notifier).refresh(),
         ]);
+        if (!dashboardRefreshed && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Dashboard could not be refreshed. Showing saved data.',
+              ),
+            ),
+          );
+        }
       },
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -140,6 +165,38 @@ class _HomeContent extends ConsumerWidget {
             ),
           ),
           SliverToBoxAdapter(child: SizedBox(height: 8)),
+          SliverToBoxAdapter(
+            child: CareerHero(
+              onBuild: () => context.push('/template'),
+              onAnalyze: () => ref.read(bottomNavProvider.notifier).state = 1,
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+              child: AppCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: colors.primarySoft,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Icon(Icons.auto_awesome, color: colors.primary),
+                  ),
+                  title: const Text('Optimize for a job'),
+                  subtitle: const Text(
+                    'Tailor an existing resume with evidence-backed AI suggestions.',
+                  ),
+                  trailing: const Icon(Icons.arrow_forward),
+                  onTap: () => context.push('/resume/optimize'),
+                ),
+              ),
+            ),
+          ),
 
           SliverToBoxAdapter(
             child: SizedBox(
@@ -282,7 +339,7 @@ class _ResumeStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return resumesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoading()),
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (resumes) {
         return ListView.separated(
@@ -296,11 +353,9 @@ class _ResumeStrip extends StatelessWidget {
             }
 
             final resume = resumes[index - 1];
-            return _ResumeItemCard(
-              resumeId: resume.id,
+            return HomeResumeCard(
               title: resume.title,
               thumbnailUrl: resume.thumbnailUrl,
-              pdfUrl: resume.pdfUrl,
               onTap: () => context.push('/resume/pdf/${resume.id}'),
             );
           },
@@ -364,18 +419,14 @@ class _AddResumeItem extends StatelessWidget {
   }
 }
 
-class _ResumeItemCard extends StatelessWidget {
-  final String resumeId;
+class HomeResumeCard extends StatelessWidget {
   final String title;
   final String thumbnailUrl;
-  final String pdfUrl;
   final VoidCallback onTap;
 
-  const _ResumeItemCard({
-    required this.resumeId,
+  const HomeResumeCard({
     required this.title,
     required this.thumbnailUrl,
-    required this.pdfUrl,
     required this.onTap,
   });
 
@@ -384,37 +435,30 @@ class _ResumeItemCard extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Semantics(
-      label: 'Open resume $resumeId',
+      button: true,
+      label: 'Open resume $title',
       child: GestureDetector(
         onTap: onTap,
         child: Column(
           children: [
-            Stack(
-              children: [
-                Container(
-                  width: 84,
-                  height: 84,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.mutedBackground,
-                    border: Border.all(color: colors.primary, width: 2),
-                  ),
-                  child: ClipOval(
-                    child: thumbnailUrl.isEmpty
-                        ? Icon(Icons.description, color: colors.primary)
-                        : Image.network(thumbnailUrl, fit: BoxFit.cover),
-                  ),
-                ),
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: _ResumeCardMenu(
-                    resumeId: resumeId,
-                    title: title,
-                    pdfUrl: pdfUrl,
-                  ),
-                ),
-              ],
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colors.mutedBackground,
+                border: Border.all(color: colors.primary, width: 2),
+              ),
+              child: ClipOval(
+                child: thumbnailUrl.isEmpty
+                    ? Icon(Icons.description, color: colors.primary)
+                    : Image.network(
+                        thumbnailUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Icon(Icons.description, color: colors.primary),
+                      ),
+              ),
             ),
             const SizedBox(height: 8),
             SizedBox(
@@ -434,122 +478,25 @@ class _ResumeItemCard extends StatelessWidget {
   }
 }
 
-class _ResumeCardMenu extends ConsumerWidget {
-  final String resumeId;
-  final String title;
-  final String pdfUrl;
-
-  const _ResumeCardMenu({
-    required this.resumeId,
-    required this.title,
-    required this.pdfUrl,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colors = AppColors.of(context);
-
-    return PopupMenuButton<String>(
-      icon: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: colors.cardBackground.withValues(alpha: 0.96),
-          shape: BoxShape.circle,
-          border: Border.all(color: colors.border),
-        ),
-        child: Icon(Icons.more_horiz, size: 16, color: colors.textPrimary),
-      ),
-      onSelected: (value) async {
-        if (value == 'open') {
-          if (context.mounted) {
-            context.push('/resume/pdf/$resumeId');
-          }
-          return;
-        }
-
-        if (value == 'download') {
-          if (pdfUrl.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('PDF is not available yet.')),
-            );
-            return;
-          }
-
-          final launched = await launchUrl(
-            Uri.parse(pdfUrl),
-            mode: LaunchMode.externalApplication,
-          );
-          if (!launched && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to open PDF.')),
-            );
-          }
-          return;
-        }
-
-        if (value == 'delete') {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (dialogContext) => AlertDialog(
-              title: const Text('Delete resume?'),
-              content: Text('Delete "$title" permanently?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                  child: const Text('Delete'),
-                ),
-              ],
-            ),
-          );
-
-          if (confirmed != true) {
-            return;
-          }
-
-          try {
-            await ref.read(homeRemoteDataSourceProvider).deleteResume(resumeId);
-            ref.invalidate(resumeListProvider);
-            if (context.mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Resume deleted.')));
-            }
-          } catch (error) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to delete resume: $error')),
-              );
-            }
-          }
-        }
-      },
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: 'open', child: Text('Open PDF')),
-        PopupMenuItem(value: 'download', child: Text('Download PDF')),
-        PopupMenuItem(value: 'delete', child: Text('Delete')),
-      ],
-    );
-  }
-}
-
-class _GreetingRow extends StatelessWidget {
+class _GreetingRow extends ConsumerWidget {
   final AsyncValue<DashboardModel> dashboardAsync;
 
   const _GreetingRow({required this.dashboardAsync});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = AppColors.of(context);
 
     return dashboardAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (data) {
-        final userName = data.userName;
+        final profileName = ref.watch(profileProvider).user?.fullName;
+        final accountName = ref.watch(authViewModelProvider).user?.fullName;
+        final userName = [profileName, accountName, data.userName]
+            .whereType<String>()
+            .map((value) => value.trim())
+            .firstWhere((value) => value.isNotEmpty, orElse: () => 'User');
         return Row(
           children: [
             Expanded(
@@ -595,18 +542,34 @@ class _GreetingRow extends StatelessWidget {
   }
 }
 
-class _ProgressCard extends StatelessWidget {
+class _ProgressCard extends ConsumerWidget {
   final AsyncValue<DashboardModel> dashboardAsync;
 
   const _ProgressCard({required this.dashboardAsync});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = AppColors.of(context);
 
     return dashboardAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (error, _) => Text('Error: $error'),
+      loading: () => const AppCard(child: Center(child: AppLoading())),
+      error: (_, __) => AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Dashboard data could not be loaded.',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => ref.read(dashboardProvider.notifier).refresh(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
       data: (data) {
         final score = data.atsScore;
         final progress = data.progress;
@@ -716,7 +679,7 @@ class _TemplateStrip extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return templatesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoading()),
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (templates) {
         return ListView.separated(

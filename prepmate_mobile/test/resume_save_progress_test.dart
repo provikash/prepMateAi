@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prepmate_mobile/core/providers/form_provider.dart';
 import 'package:prepmate_mobile/features/resume/presentation/providers/resume_builder_provider.dart';
 import 'package:prepmate_mobile/features/resume/presentation/widgets/resume_step_indicator.dart';
+import 'package:prepmate_mobile/features/home/presentation/screens/pdf_view_screen.dart';
+import 'package:prepmate_mobile/features/resume/presentation/providers/resume_providers.dart';
 
 void main() {
   test('a save failure always enables retry', () {
@@ -56,7 +60,7 @@ void main() {
     );
 
     expect(find.text('Personal Information'), findsOneWidget);
-    expect(find.text('Section 1 of 1'), findsOneWidget);
+    expect(find.text('Step 1 of 1'), findsOneWidget);
     expect(find.text('0% complete'), findsOneWidget);
   });
 
@@ -75,6 +79,29 @@ void main() {
     );
 
     expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+
+  testWidgets('PDF generation failure is actionable and retryable', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          pdfViewerProvider('42').overrideWith(
+            (ref) => Future<Uint8List>.error(
+              Exception('The server could not generate the PDF.'),
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: PdfViewScreen(resumeId: '42')),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.textContaining('could not generate'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Try again'), findsOneWidget);
+    expect(find.textContaining('not available yet'), findsNothing);
   });
 }
 

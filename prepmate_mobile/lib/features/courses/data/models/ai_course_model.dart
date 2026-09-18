@@ -1,24 +1,14 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'ai_course_model.g.dart';
-
 /// AI Course Recommendation model from backend
-@JsonSerializable()
 class AICourse {
   final String id;
   final String title;
   final String channel;
-  @JsonKey(name: 'video_id')
   final String videoId;
-  @JsonKey(name: 'playlist_id')
   final String? playlistId;
   final String thumbnail;
   final String? duration;
-  @JsonKey(name: 'video_count')
   final int videoCount;
-  @JsonKey(name: 'match_score')
   final double matchScore;
-  @JsonKey(name: 'created_at')
   final String createdAt;
 
   AICourse({
@@ -39,6 +29,7 @@ class AICourse {
     title: json['title'] ?? '',
     channel: json['channel'] ?? '',
     videoId: json['video_id'] ?? '',
+    playlistId: json['playlist_id'],
     thumbnail: json['thumbnail'] ?? '',
     duration: json['duration'],
     videoCount: (json['video_count'] ?? 0) as int,
@@ -51,6 +42,7 @@ class AICourse {
     'title': title,
     'channel': channel,
     'video_id': videoId,
+    'playlist_id': playlistId,
     'thumbnail': thumbnail,
     'duration': duration,
     'video_count': videoCount,
@@ -74,6 +66,7 @@ class AICourse {
       title: title ?? this.title,
       channel: channel ?? this.channel,
       videoId: videoId ?? this.videoId,
+      playlistId: playlistId,
       thumbnail: thumbnail ?? this.thumbnail,
       duration: duration ?? this.duration,
       videoCount: videoCount ?? this.videoCount,
@@ -84,18 +77,12 @@ class AICourse {
 }
 
 /// Course Progress model
-@JsonSerializable()
 class CourseProgress {
   final String? id;
-  @JsonKey(name: 'video_id')
   final String videoId;
-  @JsonKey(name: 'watched_seconds')
   final int watchedSeconds;
-  @JsonKey(name: 'total_seconds')
   final int totalSeconds;
-  @JsonKey(name: 'watch_percentage')
   final double watchPercentage;
-  @JsonKey(name: 'last_updated')
   final String? lastUpdated;
 
   CourseProgress({
@@ -107,10 +94,23 @@ class CourseProgress {
     this.lastUpdated,
   });
 
-  factory CourseProgress.fromJson(Map<String, dynamic> json) =>
-      _$CourseProgressFromJson(json);
+  factory CourseProgress.fromJson(Map<String, dynamic> json) => CourseProgress(
+    id: json['id']?.toString(),
+    videoId: json['video_id']?.toString() ?? '',
+    watchedSeconds: (json['watched_seconds'] as num?)?.toInt() ?? 0,
+    totalSeconds: (json['total_seconds'] as num?)?.toInt() ?? 0,
+    watchPercentage: (json['watch_percentage'] as num?)?.toDouble() ?? 0,
+    lastUpdated: json['last_updated']?.toString(),
+  );
 
-  Map<String, dynamic> toJson() => _$CourseProgressToJson(this);
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'video_id': videoId,
+    'watched_seconds': watchedSeconds,
+    'total_seconds': totalSeconds,
+    'watch_percentage': watchPercentage,
+    'last_updated': lastUpdated,
+  };
 
   bool get isCompleted => watchPercentage >= 95.0;
 

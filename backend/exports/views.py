@@ -34,22 +34,11 @@ class ResumeExportViewSet(ViewSet):
             return JsonResponse({"detail": "Template not found."}, status=404)
 
         data = request.data.get("data", {})
+        if not isinstance(data, dict):
+            return JsonResponse({"detail": "Resume data must be an object."}, status=400)
 
         # Prepare normalized context similar to PDFExportService
         from resume.rendering import ResumeRenderService
 
-        normalized_data = ResumeRenderService.prepare_resume_context(data)
-        personal_info = normalized_data.get("personal_info", {})
-
-        template = Template(template_obj.html_structure)
-        context = Context(
-            {
-                "resume": normalized_data,
-                **normalized_data,
-                "name": personal_info.get("name", ""),
-                "resume_title": normalized_data.get("title", "Preview"),
-            }
-        )
-
-        rendered = template.render(context)
+        rendered = ResumeRenderService.render_resume(data, template_obj, resume_title='Preview')
         return HttpResponse(rendered, content_type="text/html")

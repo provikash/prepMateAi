@@ -24,11 +24,19 @@ class AICourseRepository {
       final response = await _dio.get('courses/progress/$videoId/');
       return CourseProgress.fromJson(response.data);
     } catch (e) {
-      return CourseProgress(videoId: videoId, watchedSeconds: 0, totalSeconds: 0);
+      return CourseProgress(
+        videoId: videoId,
+        watchedSeconds: 0,
+        totalSeconds: 0,
+      );
     }
   }
 
-  Future<void> updateProgress(String videoId, int watchedSeconds, int totalSeconds) async {
+  Future<void> updateProgress(
+    String videoId,
+    int watchedSeconds,
+    int totalSeconds,
+  ) async {
     try {
       await _dio.post(
         'courses/progress/',

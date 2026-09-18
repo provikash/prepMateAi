@@ -17,8 +17,9 @@ DATE_PATTERN = re.compile(r"^\d{4}(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\d|3[01
 
 def canonical_form_schema():
     """Return the one editable schema shared by API clients and the renderer."""
-    def field(key, label, type="text", required=False, help=None, ai_actions=None):
+    def field(key, label, type="text", required=False, help=None, ai_actions=None, requirement=None):
         value = {"key": key, "label": label, "type": type, "required": required}
+        value["requirement"] = requirement or ("entry_required" if required else "optional")
         if type == "list" and help is None:
             help = "Enter one item per line."
         if help:
@@ -27,51 +28,75 @@ def canonical_form_schema():
             value["ai_actions"] = ai_actions
         return value
 
-    def section(key, title, fields, *, single=False):
+    optional_keys = {
+        "certificates",
+        "languages",
+        "awards",
+        "volunteer",
+        "publications",
+        "interests",
+        "references",
+    }
+
+    def section(key, title, fields, *, single=False, order=0):
+        presentation = {
+            "group": "optional" if key in optional_keys else "core",
+            "default_visible": key not in optional_keys,
+            "order": order,
+            "can_skip": key != "basics",
+            "recommended_for": ["student", "experienced", "career_changer"],
+        }
         if single:
-            return {"key": key, "title": title, "type": "single", "fields": fields}
+            return {
+                "key": key,
+                "title": title,
+                "type": "single",
+                "fields": fields,
+                **presentation,
+            }
         return {
             "key": key,
             "title": title,
             "type": "repeatable",
             "fields": [{"key": key, "label": title, "type": "list_object", "item_fields": fields}],
+            **presentation,
         }
 
     return {
         "schema": "jsonresume",
-        "version": 1,
+        "version": 2,
         "sections": [
             section("basics", "Personal Information", [
-                field("name", "Full Name", required=True), field("label", "Professional Title"),
-                field("email", "Email", "email", True), field("phone", "Phone", "phone"),
-                field("url", "Website", "url"), field("summary", "Professional Summary", "textarea", True, ai_actions=["improve_section"]),
+                field("name", "Full Name", required=True, requirement="export_required"), field("label", "Professional Title", requirement="recommended"),
+                field("email", "Email", "email", requirement="recommended"), field("phone", "Phone", "phone", requirement="recommended"),
+                field("url", "Website", "url"), field("summary", "Professional Summary", "textarea", ai_actions=["improve_section"], requirement="recommended"),
                 field("location", "Location", "location"), field("profiles", "Professional Links", "profiles"),
-            ], single=True),
+            ], single=True, order=10),
             section("work", "Work Experience", [
                 field("name", "Company", required=True), field("position", "Position", required=True),
                 field("url", "Company URL", "url"), field("location", "Location"),
                 field("startDate", "Start Date", "date", True), field("endDate", "End Date", "date", help="Leave empty for a current position."),
                 field("summary", "Summary", "textarea", ai_actions=["improve_section"]), field("highlights", "Achievements / Responsibilities", "list", ai_actions=["generate_bullets"]),
-            ]),
+            ], order=20),
             section("education", "Education", [
                 field("institution", "Institution", required=True), field("url", "Institution URL", "url"),
                 field("studyType", "Degree"), field("area", "Area of Study"), field("score", "Grade / Score"),
                 field("startDate", "Start Date", "date"), field("endDate", "End Date", "date"),
                 field("location", "Location"), field("courses", "Courses", "list"),
-            ]),
-            section("skills", "Skills", [field("name", "Category", required=True), field("level", "Level"), field("keywords", "Skills", "list", True)]),
+            ], order=40),
+            section("skills", "Skills", [field("name", "Category", required=True), field("level", "Level"), field("keywords", "Skills", "list", True)], order=50),
             section("projects", "Projects", [
                 field("name", "Project Name", required=True), field("description", "Description", "textarea", ai_actions=["improve_section"]),
                 field("url", "Project URL", "url"), field("startDate", "Start Date", "date"), field("endDate", "End Date", "date"),
                 field("roles", "Roles", "list"), field("highlights", "Highlights", "list", ai_actions=["generate_bullets"]),
-            ]),
-            section("certificates", "Certifications", [field("name", "Certification", required=True), field("issuer", "Issuer"), field("date", "Date", "date"), field("url", "Credential URL", "url"), field("summary", "Details", "textarea", ai_actions=["improve_section"])]),
-            section("languages", "Languages", [field("language", "Language", required=True), field("fluency", "Fluency")]),
-            section("awards", "Awards", [field("title", "Award", required=True), field("awarder", "Awarded By"), field("date", "Date", "date"), field("summary", "Details", "textarea", ai_actions=["improve_section"])]),
-            section("volunteer", "Volunteer Experience", [field("organization", "Organization", required=True), field("position", "Position"), field("url", "Organization URL", "url"), field("startDate", "Start Date", "date"), field("endDate", "End Date", "date"), field("summary", "Summary", "textarea", ai_actions=["improve_section"]), field("highlights", "Highlights", "list", ai_actions=["generate_bullets"])]),
-            section("publications", "Publications", [field("name", "Publication", required=True), field("publisher", "Publisher"), field("releaseDate", "Release Date", "date"), field("url", "URL", "url"), field("summary", "Summary", "textarea", ai_actions=["improve_section"])]),
-            section("interests", "Interests", [field("name", "Interest", required=True), field("keywords", "Keywords", "list")]),
-            section("references", "References", [field("name", "Name", required=True), field("reference", "Reference", "textarea")]),
+            ], order=30),
+            section("certificates", "Certifications", [field("name", "Certification", required=True), field("issuer", "Issuer"), field("date", "Date", "date"), field("url", "Credential URL", "url"), field("summary", "Details", "textarea", ai_actions=["improve_section"])], order=60),
+            section("languages", "Languages", [field("language", "Language", required=True), field("fluency", "Fluency")], order=70),
+            section("awards", "Awards", [field("title", "Award", required=True), field("awarder", "Awarded By"), field("date", "Date", "date"), field("summary", "Details", "textarea", ai_actions=["improve_section"])], order=80),
+            section("volunteer", "Volunteer Experience", [field("organization", "Organization", required=True), field("position", "Position"), field("url", "Organization URL", "url"), field("startDate", "Start Date", "date"), field("endDate", "End Date", "date"), field("summary", "Summary", "textarea", ai_actions=["improve_section"]), field("highlights", "Highlights", "list", ai_actions=["generate_bullets"])], order=90),
+            section("publications", "Publications", [field("name", "Publication", required=True), field("publisher", "Publisher"), field("releaseDate", "Release Date", "date"), field("url", "URL", "url"), field("summary", "Summary", "textarea", ai_actions=["improve_section"])], order=100),
+            section("interests", "Interests", [field("name", "Interest", required=True), field("keywords", "Keywords", "list")], order=110),
+            section("references", "References", [field("name", "Name", required=True), field("reference", "Reference", "textarea")], order=120),
         ],
     }
 
@@ -224,8 +249,7 @@ def validate_and_normalize(raw, *, strict=True):
     if not isinstance(basics, dict):
         raise serializers.ValidationError({"basics": "Must be an object."})
     data["basics"] = copy.deepcopy(basics)
-    has_content = any(bool(converted.get(section)) for section in SECTIONS)
-    if strict and has_content and not _text(data["basics"].get("name") or data["basics"].get("full_name")):
+    if strict and not _text(data["basics"].get("name") or data["basics"].get("full_name")):
         raise serializers.ValidationError({"basics": {"name": "Full name is required."}})
     schema_sections = {section["key"]: section for section in canonical_form_schema()["sections"]}
 
@@ -275,8 +299,14 @@ def validate_and_normalize(raw, *, strict=True):
                 errors[key] = "Must be a string or null."
             elif strict and definition.get("required") and not field_value.strip() and (item_index is not None or key == "name"):
                 errors[key] = "This field is required."
+            elif field_type == "email" and field_value.strip() and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", field_value.strip()):
+                errors[key] = "Enter a valid email address."
             elif field_type == "date" and field_value.strip() and not DATE_PATTERN.fullmatch(field_value.strip()):
                 errors[key] = "Use YYYY, YYYY-MM, or YYYY-MM-DD."
+        start = _text(value.get("startDate"))
+        end = _text(value.get("endDate"))
+        if start and end and DATE_PATTERN.fullmatch(start) and DATE_PATTERN.fullmatch(end) and end < start:
+            errors["endDate"] = "End date cannot be before start date."
         return errors
 
     basics_errors = validate_known_fields("basics", data["basics"])

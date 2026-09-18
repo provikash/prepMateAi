@@ -14,25 +14,9 @@ class AnalysisResultScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: colors.screenBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Analysis Result',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Analysis result')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppSpacing.screen),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -47,7 +31,7 @@ class AnalysisResultScreen extends ConsumerWidget {
               isDark: isDark,
               title: 'Strengths',
               icon: Icons.auto_awesome,
-              iconColor: Colors.green,
+              iconColor: colors.success,
               items: _getStrengths(),
             ),
             const SizedBox(height: 16),
@@ -56,7 +40,7 @@ class AnalysisResultScreen extends ConsumerWidget {
               isDark: isDark,
               title: 'Improvements',
               icon: Icons.trending_up,
-              iconColor: Colors.orange,
+              iconColor: colors.warning,
               items: _getImprovements(),
             ),
             const SizedBox(height: 32),
@@ -70,7 +54,9 @@ class AnalysisResultScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              ...analysis.suggestions.map((s) => _buildSuggestionItem(s, colors)),
+              ...analysis.suggestions.map(
+                (s) => _buildSuggestionItem(s, colors),
+              ),
             ],
             const SizedBox(height: 40),
           ],
@@ -84,9 +70,9 @@ class AnalysisResultScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? colors.cardBackground : colors.screenBackground,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: isDark ? AppTheme.darkShadow : AppTheme.lightShadow,
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         children: [
@@ -107,10 +93,9 @@ class AnalysisResultScreen extends ConsumerWidget {
                 children: [
                   Text(
                     '${analysis.atsScore}%',
-                    style: TextStyle(
-                      fontSize: 36,
+                    style: const TextStyle(
+                      fontSize: 32,
                       fontWeight: FontWeight.w800,
-                      color: colors.textPrimary,
                     ),
                   ),
                   Text(
@@ -156,7 +141,7 @@ class AnalysisResultScreen extends ConsumerWidget {
             'Skill Match',
             '${analysis.skillScore}%',
             analysis.skillScore / 100,
-            Colors.teal,
+            colors.secondary,
             colors,
             isDark,
           ),
@@ -167,7 +152,7 @@ class AnalysisResultScreen extends ConsumerWidget {
             'Keywords',
             '${(analysis.keywordAnalysis.matchPercentage * 100).toInt()}%',
             analysis.keywordAnalysis.matchPercentage,
-            Colors.orange,
+            colors.warning,
             colors,
             isDark,
           ),
@@ -176,14 +161,20 @@ class AnalysisResultScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricCard(String label, String value, double progress,
-      Color color, AppColors colors, bool isDark) {
+  Widget _buildMetricCard(
+    String label,
+    String value,
+    double progress,
+    Color color,
+    AppColors colors,
+    bool isDark,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? colors.cardBackground : colors.screenBackground,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: isDark ? AppTheme.darkShadow : AppTheme.lightShadow,
+        color: colors.cardBackground,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         children: [
@@ -205,7 +196,7 @@ class AnalysisResultScreen extends ConsumerWidget {
                 child: CircularProgressIndicator(
                   value: progress,
                   strokeWidth: 5,
-                  backgroundColor: color.withOpacity(0.1),
+                  backgroundColor: color.withValues(alpha: 0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
               ),
@@ -329,25 +320,31 @@ class AnalysisResultScreen extends ConsumerWidget {
           ),
           child: Column(
             children: items
-                .map((item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.circle, size: 6, color: iconColor,).paddingOnly(top: 6, right: 10),
-                          Expanded(
-                            child: Text(
-                              item,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: colors.textSecondary,
-                                height: 1.4,
-                              ),
+                .map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          size: 6,
+                          color: iconColor,
+                        ).paddingOnly(top: 6, right: 10),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: colors.textSecondary,
+                              height: 1.4,
                             ),
                           ),
-                        ],
-                      ),
-                    ))
+                        ),
+                      ],
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -360,9 +357,9 @@ class AnalysisResultScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.primarySoft.withOpacity(0.4),
+        color: colors.primarySoft.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.primary.withOpacity(0.1)),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,7 +393,10 @@ class AnalysisResultScreen extends ConsumerWidget {
       strengths.add('Strong keyword alignment with the job role.');
     }
     if (analysis.matchedSkills.isNotEmpty) {
-      final skills = analysis.matchedSkills.values.expand((e) => e).take(3).join(', ');
+      final skills = analysis.matchedSkills.values
+          .expand((e) => e)
+          .take(3)
+          .join(', ');
       strengths.add('High proficiency in key skills: $skills.');
     }
     if (analysis.formatIssues.isEmpty) {
@@ -408,10 +408,15 @@ class AnalysisResultScreen extends ConsumerWidget {
   List<String> _getImprovements() {
     final improvements = <String>[];
     if (analysis.missingSections.isNotEmpty) {
-      improvements.add('Consider adding: ${analysis.missingSections.join(", ")}.');
+      improvements.add(
+        'Consider adding: ${analysis.missingSections.join(", ")}.',
+      );
     }
     if (analysis.missingSkills.isNotEmpty) {
-      final skills = analysis.missingSkills.values.expand((e) => e).take(3).join(', ');
+      final skills = analysis.missingSkills.values
+          .expand((e) => e)
+          .take(3)
+          .join(', ');
       improvements.add('Highly recommended to add skills: $skills.');
     }
     improvements.addAll(analysis.formatIssues);

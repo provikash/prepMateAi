@@ -5,10 +5,18 @@ import '../../data/models/resume_analysis_model.dart';
 import '../../data/repositories/resume_analyzer_repository_impl.dart';
 import '../../domain/repositories/resume_analyzer_repository.dart';
 import '../../../resume/presentation/providers/resume_providers.dart';
+import '../../../../core/cache/cache_store.dart';
+import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 
-final resumeAnalyzerRepositoryProvider = Provider<ResumeAnalyzerRepository>((ref) {
+final resumeAnalyzerRepositoryProvider = Provider<ResumeAnalyzerRepository>((
+  ref,
+) {
   final dio = ref.watch(dioProvider);
-  return ResumeAnalyzerRepositoryImpl(dio);
+  return ResumeAnalyzerRepositoryImpl(
+    dio,
+    cache: ref.watch(cacheCoordinatorProvider),
+    userId: () => ref.read(authViewModelProvider).user?.id,
+  );
 });
 
 final resumeListProvider = storedResumesProvider;
@@ -31,22 +39,31 @@ class AsyncState<T> {
 }
 
 // 1. analyzeProvider
-final analyzeProvider = StateNotifierProvider<AnalyzeNotifier, AsyncState<ResumeAnalysisModel>>((ref) {
-  return AnalyzeNotifier(ref.watch(resumeAnalyzerRepositoryProvider));
-});
+final analyzeProvider =
+    StateNotifierProvider<AnalyzeNotifier, AsyncState<ResumeAnalysisModel>>((
+      ref,
+    ) {
+      return AnalyzeNotifier(ref.watch(resumeAnalyzerRepositoryProvider));
+    });
 
 class AnalyzeNotifier extends StateNotifier<AsyncState<ResumeAnalysisModel>> {
   final ResumeAnalyzerRepository _repository;
   AnalyzeNotifier(this._repository) : super(AsyncState());
 
-  Future<void> analyze({String? resumeId, File? file, required String jobRole}) async {
+  Future<void> analyze({
+    String? resumeId,
+    File? file,
+    required String jobRole,
+  }) async {
     // Basic validation
     if (jobRole.isEmpty || jobRole.length > 120) {
       state = AsyncState(errorMessage: "Job role must be 1-120 characters");
       return;
     }
     if (resumeId == null && file == null) {
-      state = AsyncState(errorMessage: "Please upload a file or select a resume");
+      state = AsyncState(
+        errorMessage: "Please upload a file or select a resume",
+      );
       return;
     }
     if (file != null) {
@@ -76,9 +93,10 @@ class AnalyzeNotifier extends StateNotifier<AsyncState<ResumeAnalysisModel>> {
 }
 
 // 2. historyProvider
-final historyProvider = AsyncNotifierProvider<HistoryNotifier, List<ResumeAnalysisModel>>(() {
-  return HistoryNotifier();
-});
+final historyProvider =
+    AsyncNotifierProvider<HistoryNotifier, List<ResumeAnalysisModel>>(() {
+      return HistoryNotifier();
+    });
 
 class HistoryNotifier extends AsyncNotifier<List<ResumeAnalysisModel>> {
   @override
@@ -88,14 +106,21 @@ class HistoryNotifier extends AsyncNotifier<List<ResumeAnalysisModel>> {
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => ref.read(resumeAnalyzerRepositoryProvider).getHistory());
+    state = await AsyncValue.guard(
+      () => ref.read(resumeAnalyzerRepositoryProvider).getHistory(),
+    );
   }
 }
 
 // 3. analysisDetailProvider
-final analysisDetailProvider = StateNotifierProvider.family<DetailNotifier, AsyncState<ResumeAnalysisModel>, String>((ref, id) {
-  return DetailNotifier(ref.watch(resumeAnalyzerRepositoryProvider), id);
-});
+final analysisDetailProvider =
+    StateNotifierProvider.family<
+      DetailNotifier,
+      AsyncState<ResumeAnalysisModel>,
+      String
+    >((ref, id) {
+      return DetailNotifier(ref.watch(resumeAnalyzerRepositoryProvider), id);
+    });
 
 class DetailNotifier extends StateNotifier<AsyncState<ResumeAnalysisModel>> {
   final ResumeAnalyzerRepository _repository;

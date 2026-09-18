@@ -1,3 +1,4 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +76,9 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
       return;
     }
 
-    ref.read(analyzeProvider.notifier).analyze(
+    ref
+        .read(analyzeProvider.notifier)
+        .analyze(
           resumeId: _useSavedResume ? _selectedResumeId : null,
           file: _useSavedResume ? null : _selectedFile,
           jobRole: _roleController.text,
@@ -94,38 +97,25 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
         context.push('/ats-result', extra: next.data);
       }
       if (next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.errorMessage!),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
     });
 
     return Scaffold(
-      backgroundColor: colors.screenBackground,
       appBar: AppBar(
-        title: Text(
-          'ATS Analyzer',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
+        title: const Text('ATS analyzer'),
         actions: [
           IconButton(
             icon: Icon(Icons.history, color: colors.textPrimary),
             onPressed: () => context.push('/ats-history'),
           ),
         ],
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppSpacing.screen),
           child: Form(
             key: _formKey,
             child: Column(
@@ -135,11 +125,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
                 const SizedBox(height: 32),
                 Text(
                   'Target Job Role',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 12),
                 NeuTextField(
@@ -153,11 +139,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
                 const SizedBox(height: 32),
                 Text(
                   'Resume Source',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 12),
                 _buildSourceSelector(colors),
@@ -189,19 +171,19 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Boost Your Interview Chances 🚀',
+          'Improve your interview chances',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.primary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: colors.primary,
+          ),
         ),
         const SizedBox(height: 12),
         Text(
           'Our AI-powered ATS analyzer evaluates your resume against industry standards and job descriptions.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-                height: 1.5,
-              ),
+            color: colors.textSecondary,
+            height: 1.5,
+          ),
         ),
       ],
     );
@@ -234,40 +216,58 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
   }
 
   Widget _buildResumeDropdown(
-      AsyncValue<List<ResumeModel>> resumesAsync, AppColors colors, bool isDark) {
+    AsyncValue<List<ResumeModel>> resumesAsync,
+    AppColors colors,
+    bool isDark,
+  ) {
     return resumesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Text('Error: $error', style: TextStyle(color: Colors.red)),
+      loading: () => const Center(child: AppLoading()),
+      error: (error, _) => Text(
+        'Saved resumes are unavailable. You can upload a PDF instead.',
+        style: TextStyle(color: colors.error),
+      ),
       data: (resumes) {
         if (resumes.isEmpty) {
-          return _buildEmptyState('No saved resumes found. Please upload one.', colors);
+          return _buildEmptyState(
+            'No saved resumes found. Please upload one.',
+            colors,
+          );
         }
 
         // Initialize _selectedResumeId if it's null or if the selected one is no longer in the list
-        if (_selectedResumeId == null || !resumes.any((r) => r.id == _selectedResumeId)) {
+        if (_selectedResumeId == null ||
+            !resumes.any((r) => r.id == _selectedResumeId)) {
           _selectedResumeId = resumes.first.id;
         }
 
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? colors.cardBackground : colors.screenBackground,
+            color: colors.cardBackground,
             borderRadius: BorderRadius.circular(16),
             boxShadow: isDark ? AppTheme.darkShadow : AppTheme.lightShadow,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedResumeId,
+              initialValue: _selectedResumeId,
               dropdownColor: colors.cardBackground,
-              decoration: const InputDecoration(border: InputBorder.none, filled: false),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                filled: false,
+              ),
               items: resumes
-                  .map((resume) => DropdownMenuItem(
-                        value: resume.id,
-                        child: Text(
-                          resume.title,
-                          style: TextStyle(color: colors.textPrimary, fontSize: 14),
+                  .map(
+                    (resume) => DropdownMenuItem(
+                      value: resume.id,
+                      child: Text(
+                        resume.title,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 14,
                         ),
-                      ))
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) => setState(() => _selectedResumeId = value),
             ),
@@ -287,7 +287,10 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: isDark ? AppTheme.darkShadow : AppTheme.lightShadow,
           border: _selectedFile != null
-              ? Border.all(color: colors.primary.withOpacity(0.5), width: 2)
+              ? Border.all(
+                  color: colors.primary.withValues(alpha: 0.5),
+                  width: 2,
+                )
               : null,
         ),
         child: Column(
@@ -297,7 +300,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
                   ? Icons.cloud_upload_outlined
                   : Icons.check_circle_outline,
               size: 48,
-              color: _selectedFile == null ? colors.primary : Colors.green,
+              color: _selectedFile == null ? colors.primary : colors.success,
             ),
             const SizedBox(height: 16),
             Text(
@@ -316,7 +319,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
             const SizedBox(height: 8),
             Text(
               _selectedFile == null
-                  ? 'Only PDF • Max size 10MB'
+                  ? 'PDF only • Maximum 10 MB'
                   : '${(_selectedFile!.lengthSync() / (1024 * 1024)).toStringAsFixed(2)} MB',
               style: TextStyle(color: colors.textSecondary, fontSize: 12),
             ),
@@ -324,8 +327,10 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => setState(() => _selectedFile = null),
-                child: const Text('Change File',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Change File',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ],
@@ -338,7 +343,7 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.primarySoft.withOpacity(0.3),
+        color: colors.primarySoft.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -355,12 +360,16 @@ class _AnalyzeScreenState extends ConsumerState<AnalyzeScreen> {
       decoration: BoxDecoration(
         color: colors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.border.withOpacity(0.5)),
+        border: Border.all(color: colors.border.withValues(alpha: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.tips_and_updates_outlined, color: colors.primary, size: 24),
+          Icon(
+            Icons.tips_and_updates_outlined,
+            color: colors.primary,
+            size: 24,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -410,10 +419,10 @@ class _SourceOption extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: colors.primary.withOpacity(0.3),
+                    color: colors.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ]
               : (isDark ? AppTheme.darkShadow : AppTheme.lightShadow),
         ),

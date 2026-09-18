@@ -4,13 +4,15 @@ from django.template import Context, Template
 from pathlib import Path
 from io import BytesIO
 import pdfplumber
+from django.core.files.base import ContentFile
+from unittest.mock import patch
 
 from resume.models import ResumeTemplate
 from resume.rendering import ResumeRenderService
 from resume.serializers import ResumeSerializer
 from resume.services import ResumeValidationService
 from rest_framework.test import APIClient
-from resume.json_resume import empty_resume
+from resume.json_resume import canonical_form_schema, empty_resume
 from resume.models import Resume
 
 
@@ -153,6 +155,39 @@ class ResumeSerializerValidationTests(TestCase):
             serializer.validated_data["data"]["basics"]["customHeadline"],
             "Platform specialist",
         )
+
+    def test_schema_exposes_five_step_presentation_metadata(self):
+        schema = canonical_form_schema()
+        sections = {section["key"]: section for section in schema["sections"]}
+
+        self.assertEqual(schema["version"], 2)
+        self.assertEqual(sections["basics"]["group"], "core")
+        self.assertFalse(sections["basics"]["can_skip"])
+        self.assertEqual(sections["certificates"]["group"], "optional")
+        self.assertFalse(sections["certificates"]["default_visible"])
+        basics_fields = {field["key"]: field for field in sections["basics"]["fields"]}
+        self.assertEqual(basics_fields["name"]["requirement"], "export_required")
+        self.assertEqual(basics_fields["summary"]["requirement"], "recommended")
+
+    def test_final_data_validates_email_url_and_date_order(self):
+        serializer = ResumeSerializer(
+            data={
+                "title": "Invalid fields",
+                "template": self.template.id,
+                "data": {
+                    "basics": {"name": "Alice", "email": "invalid"},
+                    "work": [{
+                        "name": "Acme",
+                        "position": "Engineer",
+                        "startDate": "2025-03",
+                        "endDate": "2024-03",
+                    }],
+                },
+            }
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("basics", serializer.errors["data"])
 
 
 class ResumeNormalizationAndRenderTests(TestCase):
@@ -456,6 +491,38 @@ class ResumeRenderingApiTests(TestCase):
         self.assertEqual(response.data["template"], "professional-api")
         self.assertIn("Owner", response.data["html"])
 
+    def test_pdf_requires_authentication_and_ownership(self):
+        url = f"/api/v1/resumes/{self.resume.pk}/pdf/"
+        self.assertEqual(self.client.get(url).status_code, 401)
+        self.client.force_authenticate(self.other)
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_pdf_renderer_failure_is_retryable_and_does_not_delete_resume(self):
+        self.client.force_authenticate(self.user)
+        with patch("weasyprint.HTML.write_pdf", side_effect=RuntimeError("renderer failed")):
+            response = self.client.get(f"/api/v1/resumes/{self.resume.pk}/pdf/")
+        self.assertEqual(response.status_code, 503)
+        self.assertTrue(Resume.objects.filter(pk=self.resume.pk).exists())
+
+    def test_pdf_storage_failure_returns_retryable_error(self):
+        self.client.force_authenticate(self.user)
+        with patch("django.db.models.fields.files.FieldFile.save", side_effect=OSError("storage unavailable")):
+            response = self.client.get(f"/api/v1/resumes/{self.resume.pk}/pdf/")
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("could not be stored", str(response.data["detail"]))
+
+    def test_resume_update_invalidates_previous_pdf(self):
+        self.resume.pdf_file.save("old.pdf", ContentFile(b"old pdf"), save=True)
+        self.client.force_authenticate(self.user)
+        response = self.client.patch(
+            f"/api/v1/resumes/{self.resume.pk}/",
+            {"data": {"basics": {"name": "Latest Owner"}}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.resume.refresh_from_db()
+        self.assertFalse(self.resume.pdf_file)
+
     def test_patch_deep_merges_basics_and_switching_template_preserves_data(self):
         self.client.force_authenticate(self.user)
         url = f"/api/v1/resumes/{self.resume.pk}/"
@@ -469,7 +536,15 @@ class ResumeRenderingApiTests(TestCase):
 
     def test_create_initializes_empty_json_resume(self):
         self.client.force_authenticate(self.user)
-        response = self.client.post("/api/v1/resumes/", {"title": "Empty", "template_id": self.template.pk}, format="json")
+        response = self.client.post(
+            "/api/v1/resumes/",
+            {
+                "title": "Empty",
+                "template_id": self.template.pk,
+                "metadata": {"status": "draft"},
+            },
+            format="json",
+        )
         self.assertEqual(response.status_code, 201, response.data)
         created = Resume.objects.get(pk=response.data["id"])
         self.assertEqual(created.data, empty_resume())
@@ -491,6 +566,14 @@ class ResumeRenderingApiTests(TestCase):
         )
         self.assertEqual(final.status_code, 400)
         self.assertIn("basics", final.data["data"])
+
+        metadata_only = self.client.patch(
+            f"/api/v1/resumes/{draft.data['id']}/",
+            {"metadata": {"status": "complete"}},
+            format="json",
+        )
+        self.assertEqual(metadata_only.status_code, 400)
+        self.assertIn("basics", metadata_only.data)
 
     def test_template_api_exposes_safe_active_metadata_by_slug(self):
         inactive = ResumeTemplate.objects.create(name="Hidden", slug="hidden", theme_identifier="professional", version=1, html_structure="secret", css="secret", is_active=False)

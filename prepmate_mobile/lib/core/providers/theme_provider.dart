@@ -9,8 +9,8 @@ final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>(
 );
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system) {
-    _loadThemeMode();
+  ThemeModeNotifier({bool loadPersisted = true}) : super(ThemeMode.system) {
+    if (loadPersisted) _loadThemeMode();
   }
 
   Future<void> _loadThemeMode() async {

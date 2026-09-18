@@ -29,18 +29,26 @@ class ResumeParser:
             import pdfplumber  # type: ignore
 
             with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                if len(pdf.pages) > 20:
+                    raise ValidationError('Resume PDFs must have 20 pages or fewer.')
                 for page in pdf.pages:
                     text_chunks.append(page.extract_text() or "")
+        except ValidationError:
+            raise
         except Exception:
             try:
                 import fitz  # type: ignore
 
                 with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+                    if len(doc) > 20:
+                        raise ValidationError('Resume PDFs must have 20 pages or fewer.')
                     for page in doc:
                         text_chunks.append(page.get_text("text") or "")
+            except ValidationError:
+                raise
             except Exception as exc:
                 raise ValidationError(
-                    "Could not parse PDF. Install pdfplumber or PyMuPDF and retry."
+                    "Could not read this PDF. Please upload an unencrypted PDF with selectable text."
                 ) from exc
 
         full_text = "\n".join(text_chunks).strip()

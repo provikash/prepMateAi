@@ -25,16 +25,17 @@ final skillGapProvider = Provider<List<String>>((ref) {
   );
 });
 
-final recommendationsProvider = AsyncNotifierProvider<RecommendationsNotifier, List<Recommendation>>(() {
-  return RecommendationsNotifier();
-});
+final recommendationsProvider =
+    AsyncNotifierProvider<RecommendationsNotifier, List<Recommendation>>(() {
+      return RecommendationsNotifier();
+    });
 
 class RecommendationsNotifier extends AsyncNotifier<List<Recommendation>> {
   @override
   Future<List<Recommendation>> build() async {
     final skills = ref.watch(skillGapProvider);
     if (skills.isEmpty) return [];
-    
+
     final repo = ref.watch(aiCourseRepositoryProvider);
     return repo.getRecommendations(skills);
   }
@@ -48,7 +49,10 @@ class RecommendationsNotifier extends AsyncNotifier<List<Recommendation>> {
   }
 }
 
-final videoProgressProvider = FutureProvider.family<CourseProgress, String>((ref, videoId) async {
+final videoProgressProvider = FutureProvider.family<CourseProgress, String>((
+  ref,
+  videoId,
+) async {
   final repo = ref.watch(aiCourseRepositoryProvider);
   return repo.getProgress(videoId);
 });

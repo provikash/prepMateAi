@@ -3,6 +3,9 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
+import '../../../../core/cache/cache_store.dart';
+import '../../../../core/cache/pdf_cache_store.dart';
+import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../data/datasources/resume_remote_data_source.dart';
 import '../../data/models/created_resume_model.dart';
 import '../../data/models/resume_model.dart';
@@ -15,7 +18,12 @@ final resumeRemoteDataSourceProvider = Provider<ResumeRemoteDataSource>((ref) {
 });
 
 final resumeRepositoryProvider = Provider<ResumeRepository>((ref) {
-  return ResumeRepositoryImpl(ref.watch(resumeRemoteDataSourceProvider));
+  return ResumeRepositoryImpl(
+    ref.watch(resumeRemoteDataSourceProvider),
+    cache: ref.watch(cacheCoordinatorProvider),
+    pdfCache: ref.watch(pdfCacheStoreProvider),
+    userId: () => ref.read(authViewModelProvider).user?.id,
+  );
 });
 
 final templateDetailProvider =
@@ -82,7 +90,7 @@ final createResumeProvider =
 
 final resumeProvider = createResumeProvider;
 
-final pdfViewerProvider = FutureProvider.family<Uint8List, String>((
+final pdfViewerProvider = FutureProvider.autoDispose.family<Uint8List, String>((
   ref,
   resumeId,
 ) {

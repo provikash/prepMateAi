@@ -10,4 +10,6 @@ class CreatedResumeModel {
       title: json['title'] as String? ?? 'Resume',
     );
   }
+
+  Map<String, dynamic> toJson() => {'id': id, 'title': title};
 }

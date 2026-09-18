@@ -1,3 +1,4 @@
+import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -81,7 +82,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
 
     try {
       final dataSource = ref.read(homeRemoteDataSourceProvider);
-      final created = await dataSource.createResumeFromTemplate(
+      await dataSource.createResumeFromTemplate(
         templateId: widget.templateId,
         title: _titleController.text.trim(),
         data: _buildResumeData(),
@@ -128,7 +129,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
         future: templateFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: AppLoading());
           }
           if (snapshot.hasError) {
             return Center(
@@ -286,7 +287,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: AppLoading(strokeWidth: 2),
                             )
                           : const Icon(Icons.save_alt_outlined),
                       label: Text(_isSaving ? 'Saving...' : 'Save Resume'),

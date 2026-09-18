@@ -20,20 +20,20 @@ class ResumeAnalyzerRemoteDataSource {
     String? resumeId,
     File? uploadedFile,
   }) async {
-    FormData formData = FormData.fromMap({
-      'job_role': jobRole,
-    });
+    FormData formData = FormData.fromMap({'job_role': jobRole});
 
     if (resumeId != null) {
       formData.fields.add(MapEntry('resume_id', resumeId));
     } else if (uploadedFile != null) {
-      formData.files.add(MapEntry(
-        'uploaded_file',
-        await MultipartFile.fromFile(
-          uploadedFile.path,
-          filename: uploadedFile.path.split('/').last,
+      formData.files.add(
+        MapEntry(
+          'uploaded_file',
+          await MultipartFile.fromFile(
+            uploadedFile.path,
+            filename: uploadedFile.path.split('/').last,
+          ),
         ),
-      ));
+      );
     }
 
     final response = await _dio.post(

@@ -1,3 +1,4 @@
+from core.media import media_url
 import logging
 
 from rest_framework import status, viewsets
@@ -201,7 +202,7 @@ class DashboardView(APIView):
     def _abs_file_url(request, file_field):
         if not file_field:
             return None
-        return request.build_absolute_uri(file_field.url)
+        return media_url(request, file_field)
 
     @staticmethod
     def _flatten_skill_dict(skill_dict):
@@ -252,7 +253,14 @@ class DashboardView(APIView):
 
         latest_analysis = (
             ResumeAnalysis.objects.filter(user=request.user, resume=latest_resume)
-            .only("id", "ats_score", "skill_score", "analysis_data", "created_at")
+            .only(
+                "id",
+                "ats_score",
+                "skill_score",
+                "missing_skills",
+                "keyword_analysis",
+                "created_at",
+            )
             .order_by("-created_at")
             .first()
         )
@@ -271,13 +279,10 @@ class DashboardView(APIView):
         skill_gap_percentage = max(0, min(100, 100 - skill_score))
         improvement_impact = max(0, min(100, 100 - ats_score))
 
-        analysis_data = latest_analysis.analysis_data or {}
-        missing_skills = self._flatten_skill_dict(analysis_data.get("missing_skills", {}))
+        missing_skills = self._flatten_skill_dict(latest_analysis.missing_skills or {})
 
-        suggested_skills = analysis_data.get("suggested_skills", [])
-        if not isinstance(suggested_skills, list) or not suggested_skills:
-            keyword_analysis = analysis_data.get("keyword_analysis", {})
-            suggested_skills = keyword_analysis.get("missing_keywords", [])
+        keyword_analysis = latest_analysis.keyword_analysis or {}
+        suggested_skills = keyword_analysis.get("missing_keywords", [])
 
         if not isinstance(suggested_skills, list) or not suggested_skills:
             suggested_skills = missing_skills

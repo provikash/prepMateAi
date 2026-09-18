@@ -4,8 +4,7 @@ class ChipInput extends StatefulWidget {
   final List<String> initial;
   final ValueChanged<List<String>> onChanged;
 
-  const ChipInput({Key? key, required this.initial, required this.onChanged})
-    : super(key: key);
+  const ChipInput({super.key, required this.initial, required this.onChanged});
 
   @override
   State<ChipInput> createState() => _ChipInputState();
@@ -19,6 +18,20 @@ class _ChipInputState extends State<ChipInput> {
   void initState() {
     super.initState();
     _items = List<String>.from(widget.initial);
+  }
+
+  @override
+  void didUpdateWidget(covariant ChipInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_sameItems(widget.initial, oldWidget.initial)) {
+      _items = List<String>.from(widget.initial);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
   }
 
   void _add() {
@@ -60,10 +73,22 @@ class _ChipInputState extends State<ChipInput> {
                 decoration: const InputDecoration(hintText: 'Add skill'),
               ),
             ),
-            IconButton(icon: const Icon(Icons.add), onPressed: _add),
+            IconButton(
+              tooltip: 'Add skill',
+              icon: const Icon(Icons.add),
+              onPressed: _add,
+            ),
           ],
         ),
       ],
     );
+  }
+
+  bool _sameItems(List<String> left, List<String> right) {
+    if (left.length != right.length) return false;
+    for (var index = 0; index < left.length; index++) {
+      if (left[index] != right[index]) return false;
+    }
+    return true;
   }
 }

@@ -68,8 +68,11 @@ class AuthRemoteDataSource {
       await _googleSignIn.initialize(
         // Web OAuth 2.0 Client ID from Google Cloud Console.
         // Required on Android so the plugin can mint a backend-verifiable idToken.
-        serverClientId:
-            '704944814931-bm2kaeef6tbf0p8s6aleriqsmo0o0ci6.apps.googleusercontent.com',
+        serverClientId: const String.fromEnvironment(
+          'GOOGLE_OAUTH_CLIENT_ID',
+          defaultValue:
+              '704944814931-bm2kaeef6tbf0p8s6aleriqsmo0o0ci6.apps.googleusercontent.com',
+        ),
       );
       _googleInitialized = true;
     }

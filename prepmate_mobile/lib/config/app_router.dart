@@ -7,10 +7,10 @@ import 'package:prepmate_mobile/features/home/presentation/screens/home_screen.d
 import 'package:prepmate_mobile/features/home/presentation/screens/pdf_view_screen.dart';
 import 'package:prepmate_mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:prepmate_mobile/features/auth/presentation/screens/signup_screen.dart';
-import 'package:prepmate_mobile/features/auth/presentation/screens/forgetPassword_screen.dart';
-import 'package:prepmate_mobile/features/auth/presentation/screens/otpVerification_screen.dart';
-import 'package:prepmate_mobile/features/auth/presentation/screens/passwordChanged_screen.dart';
-import 'package:prepmate_mobile/features/auth/presentation/screens/resetPassword_screen.dart';
+import 'package:prepmate_mobile/features/auth/presentation/screens/forgot_password_screen.dart';
+import 'package:prepmate_mobile/features/auth/presentation/screens/otp_verification_screen.dart';
+import 'package:prepmate_mobile/features/auth/presentation/screens/password_changed_screen.dart';
+import 'package:prepmate_mobile/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:prepmate_mobile/features/auth/presentation/state/auth_state.dart';
 import 'package:prepmate_mobile/features/auth/presentation/viewmodel/auth_viewmodel.dart';
 import 'package:prepmate_mobile/features/profile/presentation/screens/profile_screen.dart';
@@ -30,6 +30,16 @@ import 'package:prepmate_mobile/features/splash/screens/splash_screen.dart';
 import 'package:prepmate_mobile/core/services/auth_token_manager.dart';
 import 'package:prepmate_mobile/features/courses/presentation/screens/courses_screen.dart';
 import 'package:prepmate_mobile/features/courses/presentation/screens/all_playlists_screen.dart';
+import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/optimize_resume_screen.dart';
+import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/job_analysis_screen.dart';
+import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/ai_suggestions_screen.dart';
+import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/suggestion_editor_screen.dart';
+import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/optimization_summary_screen.dart';
+import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/ats_analysis_screen.dart';
+import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/optimized_resume_preview_screen.dart';
+import 'package:prepmate_mobile/features/ai_credits/presentation/screens/ai_credits_screen.dart';
+import 'package:prepmate_mobile/features/ai_credits/presentation/screens/ai_plans_screen.dart';
+import 'package:prepmate_mobile/features/ai_credits/presentation/screens/ai_transactions_screen.dart';
 
 String? authRedirect(AuthState authState, Uri uri) {
   final path = uri.path;
@@ -123,6 +133,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const PersonalInfoScreen(),
       ),
       GoRoute(path: '/help', builder: (_, __) => const HelpSupportScreen()),
+      GoRoute(path: '/ai-credits', builder: (_, __) => const AiCreditsScreen()),
+      GoRoute(path: '/ai-plans', builder: (_, __) => const AiPlansScreen()),
+      GoRoute(
+        path: '/ai-transactions',
+        builder: (_, __) => const AiTransactionsScreen(),
+      ),
       GoRoute(
         path: '/template',
         builder: (context, state) => const TemplateGalleryScreen(),
@@ -192,6 +208,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final resumeId = state.pathParameters['resumeId'] ?? '';
           return PdfViewScreen(resumeId: resumeId);
         },
+      ),
+      GoRoute(
+        path: '/resume/optimize',
+        builder: (_, __) => const OptimizeResumeScreen(),
+      ),
+      GoRoute(
+        path: '/resume/optimize/analysis',
+        builder: (_, __) => const JobAnalysisScreen(),
+      ),
+      GoRoute(
+        path: '/resume/optimize/suggestions',
+        builder: (_, __) => const AiSuggestionsScreen(),
+      ),
+      GoRoute(
+        path: '/resume/optimize/suggestions/:suggestionId/edit',
+        builder: (_, state) => SuggestionEditorScreen(
+          suggestionId: state.pathParameters['suggestionId'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/resume/optimize/summary',
+        builder: (_, __) => const OptimizationSummaryScreen(),
+      ),
+      GoRoute(
+        path: '/resume/optimize/ats',
+        builder: (_, __) => const AtsAnalysisScreen(),
+      ),
+      GoRoute(
+        path: '/resume/optimize/preview',
+        builder: (_, __) => const OptimizedResumePreviewScreen(),
       ),
       GoRoute(
         path: '/resume/ai-assistant',
