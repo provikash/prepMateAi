@@ -35,5 +35,5 @@ urlpatterns = [
     path('api/v1/ai/', include('ai.urls')),
     path('api/v1/', include('resume_analyzer.urls')),
     path('api/v1/courses/', include('courses_ai.urls')),
+    path('api/v1/job-optimizer/', include('job_optimizer.urls')),
 ]
-

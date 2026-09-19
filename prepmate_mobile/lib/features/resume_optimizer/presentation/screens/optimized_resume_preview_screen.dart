@@ -9,27 +9,26 @@ import '../../../../config/theme.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/app_state.dart';
-import '../../../resume/presentation/providers/resume_providers.dart';
 import '../providers/optimization_provider.dart';
 import '../widgets/optimization_widgets.dart';
-import '../../../ai_credits/presentation/providers/ai_credits_provider.dart';
 
 class OptimizedResumePreviewScreen extends ConsumerWidget {
   const OptimizedResumePreviewScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(optimizationProvider);
-    final credits = ref.watch(aiCreditsProvider).account?.availableCredits ?? 0;
+    final credits = state.credits ?? 0;
     final resume = state.resume;
-    if (resume == null) {
+    final versionId = state.finalizedVersionId;
+    if (resume == null || versionId == null) {
       return AppScaffold(
         title: 'Optimized Resume',
         body: const AppErrorState(
-          message: 'The selected resume is unavailable.',
+          message: 'Finalize an optimized version before previewing its PDF.',
         ),
       );
     }
-    final pdf = ref.watch(pdfViewerProvider(resume.id));
+    final pdf = ref.watch(optimizedVersionPdfProvider(versionId));
     return AppScaffold(
       title: 'Optimized Resume',
       padding: const EdgeInsets.fromLTRB(
@@ -63,7 +62,7 @@ class OptimizedResumePreviewScreen extends ConsumerWidget {
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         Text(
-                          'Master safe · ${state.analysis?.afterScore ?? 86}% ATS',
+                          'Master safe · ${state.analysis?.afterScore ?? 0}% JD alignment',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: AppColors.of(context).success),
                         ),
@@ -74,15 +73,8 @@ class OptimizedResumePreviewScreen extends ConsumerWidget {
                     tooltip: 'Resume actions',
                     onSelected: (value) {
                       if (value == 'ats') context.push('/resume/optimize/ats');
-                      if (value == 'template') context.push('/template');
-                      if (value == 'edit') context.push('/resume/form');
                     },
                     itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit Resume')),
-                      PopupMenuItem(
-                        value: 'template',
-                        child: Text('Change Template'),
-                      ),
                       PopupMenuItem(value: 'ats', child: Text('View ATS')),
                     ],
                   ),
@@ -99,10 +91,10 @@ class OptimizedResumePreviewScreen extends ConsumerWidget {
                     error: (_, __) => AppErrorState(
                       title: 'PDF unavailable',
                       message:
-                          'We could not render this resume. Select a saved resume and retry.',
+                          'We could not render this optimized version. Please retry.',
                       actionLabel: 'Retry',
                       onAction: () =>
-                          ref.invalidate(pdfViewerProvider(resume.id)),
+                          ref.invalidate(optimizedVersionPdfProvider(versionId)),
                     ),
                     data: (bytes) => SfPdfViewer.memory(
                       bytes,

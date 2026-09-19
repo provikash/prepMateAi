@@ -109,3 +109,21 @@ class Resume(BaseModel):
 
     def __str__(self):
         return f"{self.title} ({self.user.email})"
+
+
+class ResumeVersion(BaseModel):
+    """Immutable, job-specific JSON snapshot; never updates the master Resume."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="resume_versions")
+    source_resume = models.ForeignKey(Resume, on_delete=models.CASCADE, related_name="versions")
+    optimization_session = models.OneToOneField(
+        "job_optimizer.OptimizationSession", on_delete=models.PROTECT, related_name="optimized_version"
+    )
+    title = models.CharField(max_length=255)
+    data = models.JSONField()
+    template = models.ForeignKey(ResumeTemplate, on_delete=models.SET_NULL, null=True, blank=True)
+    template_version = models.PositiveIntegerField(default=1)
+    pdf_file = models.FileField(upload_to="resumes/versions/", blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created_at"]

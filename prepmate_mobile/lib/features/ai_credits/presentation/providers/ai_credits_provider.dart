@@ -10,7 +10,7 @@ import '../viewmodels/ai_credits_viewmodel.dart';
 
 const aiCreditsUseMock = bool.fromEnvironment(
   'AI_CREDITS_USE_MOCK',
-  defaultValue: true,
+  defaultValue: false,
 );
 
 final aiCreditsRemoteDataSourceProvider = Provider<AiCreditsRemoteDataSource>(

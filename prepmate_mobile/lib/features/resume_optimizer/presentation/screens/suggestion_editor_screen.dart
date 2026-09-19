@@ -201,14 +201,21 @@ class _State extends ConsumerState<SuggestionEditorScreen> {
                     icon: Icons.check,
                     onPressed: controller!.text.trim().isEmpty
                         ? null
-                        : () {
-                            ref
+                        : () async {
+                            final ok = await ref
                                 .read(optimizationProvider.notifier)
                                 .editSuggestion(
                                   item.id,
                                   controller!.text.trim(),
                                 );
-                            context.pop();
+                            if (!context.mounted) return;
+                            if (ok) {
+                              context.pop();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(ref.read(optimizationProvider).error ?? 'Edit failed.'),
+                              ));
+                            }
                           },
                   ),
                 ),

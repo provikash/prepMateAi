@@ -91,6 +91,9 @@ class _AiPlansScreenState extends ConsumerState<AiPlansScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
+          if (state.plans.isEmpty) const AppCard(
+            child: Text('Subscription purchases are not available yet. Existing credits can still be used for AI optimization.'),
+          ),
           LayoutBuilder(
             builder: (context, constraints) {
               final cards = state.plans

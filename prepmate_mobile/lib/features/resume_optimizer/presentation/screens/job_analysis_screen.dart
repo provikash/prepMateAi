@@ -12,15 +12,19 @@ import '../widgets/optimization_widgets.dart';
 
 class JobAnalysisScreen extends ConsumerStatefulWidget {
   const JobAnalysisScreen({super.key});
+
   @override
   ConsumerState<JobAnalysisScreen> createState() => _State();
 }
 
 class _State extends ConsumerState<JobAnalysisScreen> {
   RequirementMatch? filter;
+
   @override
   Widget build(BuildContext context) {
-    final analysis = ref.watch(optimizationProvider).analysis;
+    final optState = ref.watch(optimizationProvider);
+    final analysis = optState.analysis;
+
     if (analysis == null) {
       return AppScaffold(
         title: 'Job Analysis',
@@ -31,13 +35,25 @@ class _State extends ConsumerState<JobAnalysisScreen> {
         ),
       );
     }
+
     final shown = filter == null
         ? analysis.requirements
         : analysis.requirements.where((r) => r.match == filter).toList();
+
     int count(RequirementMatch value) =>
         analysis.requirements.where((r) => r.match == value).length;
+
+    final overview = analysis.overview;
+    final displayTitle = overview?.jobTitle.isNotEmpty == true
+        ? overview!.jobTitle
+        : (optState.jobTitle.isNotEmpty ? optState.jobTitle : 'Job title not specified');
+    final displayCompany = overview?.company.isNotEmpty == true
+        ? overview!.company
+        : optState.company;
+    final displaySeniority = overview?.seniority ?? '';
+
     return AppScaffold(
-      title: 'Job Analysis',
+      title: 'Job Match Analysis',
       body: ResponsiveContent(
         child: Column(
           children: [
@@ -46,6 +62,58 @@ class _State extends ConsumerState<JobAnalysisScreen> {
             Expanded(
               child: ListView(
                 children: [
+                  // Target Role Banner
+                  AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    displayTitle,
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '$displayCompany · $displaySeniority',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.of(context).textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: AppSpacing.xs,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.of(context).primarySoft,
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                              ),
+                              child: Text(
+                                displaySeniority,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: AppColors.of(context).primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Alignment Score & Match Breakdown
                   AppCard(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
@@ -64,25 +132,32 @@ class _State extends ConsumerState<JobAnalysisScreen> {
                               children: [
                                 _Metric(
                                   '${count(RequirementMatch.matched)}',
-                                  'matched',
+                                  'matched (✓)',
+                                  AppColors.of(context).success,
                                 ),
                                 _Metric(
                                   '${count(RequirementMatch.partial)}',
-                                  'partial',
+                                  'partial (◐)',
+                                  AppColors.of(context).warning,
                                 ),
                                 _Metric(
                                   '${count(RequirementMatch.missing)}',
-                                  'missing',
+                                  'missing (!)',
+                                  AppColors.of(context).error,
+                                ),
+                                _Metric(
+                                  '${count(RequirementMatch.unclear)}',
+                                  'unclear (?)',
+                                  AppColors.of(context).primary,
                                 ),
                               ],
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
-                              '+14% potential improvement',
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(
-                                    color: AppColors.of(context).success,
-                                  ),
+                              '${analysis.requirements.length} structured requirements identified',
+                              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: AppColors.of(context).textSecondary,
+                              ),
                             ),
                           ],
                         );
@@ -91,7 +166,7 @@ class _State extends ConsumerState<JobAnalysisScreen> {
                                 children: [
                                   ScoreRing(
                                     score: analysis.beforeScore,
-                                    label: 'Job Description\nAlignment',
+                                    label: 'JD Evidence\nAlignment',
                                   ),
                                   const SizedBox(width: AppSpacing.xl),
                                   Expanded(child: metrics),
@@ -101,7 +176,7 @@ class _State extends ConsumerState<JobAnalysisScreen> {
                                 children: [
                                   ScoreRing(
                                     score: analysis.beforeScore,
-                                    label: 'Job Description\nAlignment',
+                                    label: 'JD Evidence\nAlignment',
                                   ),
                                   const SizedBox(height: AppSpacing.md),
                                   metrics,
@@ -111,8 +186,10 @@ class _State extends ConsumerState<JobAnalysisScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
+
+                  // Filter Chips for 4 States
                   Text(
-                    'Requirements',
+                    'Extracted Requirements',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -121,7 +198,7 @@ class _State extends ConsumerState<JobAnalysisScreen> {
                     child: Row(
                       children: [
                         ChoiceChip(
-                          label: const Text('All'),
+                          label: Text('All (${analysis.requirements.length})'),
                           selected: filter == null,
                           onSelected: (_) => setState(() => filter = null),
                         ),
@@ -140,24 +217,39 @@ class _State extends ConsumerState<JobAnalysisScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  ...shown.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: _RequirementCard(item: item),
+
+                  // Requirements List Cards
+                  if (shown.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                      child: Center(
+                        child: Text(
+                          'No requirements in this category.',
+                          style: TextStyle(color: AppColors.of(context).textSecondary),
+                        ),
+                      ),
+                    )
+                  else
+                    ...shown.map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: _RequirementCard(item: item),
+                      ),
                     ),
-                  ),
+
+                  const SizedBox(height: AppSpacing.md),
                   const InformationBanner(
                     icon: Icons.lightbulb_outline,
-                    title: 'Recruiter insight',
+                    title: 'Auditable Evidence Matching',
                     message:
-                        'Specific evidence is more persuasive than keyword repetition. Missing skills are never added without your confirmation.',
+                      'Requirements are matched directly against structured evidence in your master resume. Missing requirements are clearly flagged and will never be fabricated.',
                   ),
                   const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),
             AppPrimaryButton(
-              label: 'Review AI Suggestions',
+              label: 'View Optimization Workspace',
               icon: Icons.arrow_forward,
               onPressed: () => context.push('/resume/optimize/suggestions'),
             ),
@@ -168,20 +260,31 @@ class _State extends ConsumerState<JobAnalysisScreen> {
   }
 
   String _label(RequirementMatch v) => switch (v) {
-    RequirementMatch.matched => 'Matched',
-    RequirementMatch.partial => 'Partial',
-    RequirementMatch.missing => 'Missing',
+    RequirementMatch.matched => 'Matched (✓)',
+    RequirementMatch.partial => 'Partial (◐)',
+    RequirementMatch.missing => 'Missing (!)',
+    RequirementMatch.unclear => 'Unclear (?)',
   };
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric(this.value, this.label);
-  final String value, label;
+  const _Metric(this.value, this.label, this.color);
+
+  final String value;
+  final String label;
+  final Color color;
+
   @override
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Text(value, style: Theme.of(context).textTheme.titleLarge),
+      Text(
+        value,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
       const SizedBox(width: 4),
       Text(
         label,
@@ -195,19 +298,21 @@ class _Metric extends StatelessWidget {
 
 class _RequirementCard extends StatelessWidget {
   const _RequirementCard({required this.item});
+
   final JobRequirement item;
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final (label, icon, color) = switch (item.match) {
       RequirementMatch.matched => (
-        'Strong match',
+        'Matched',
         Icons.check_circle,
         colors.success,
       ),
       RequirementMatch.partial => (
-        'Partial match',
-        Icons.error_outline,
+        'Partial Match',
+        Icons.timelapse,
         colors.warning,
       ),
       RequirementMatch.missing => (
@@ -215,16 +320,25 @@ class _RequirementCard extends StatelessWidget {
         Icons.cancel_outlined,
         colors.error,
       ),
+      RequirementMatch.unclear => (
+        'Unclear / Ambiguous',
+        Icons.help_outline,
+        colors.primary,
+      ),
     };
+
     return AppCard(
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(top: AppSpacing.sm),
         leading: Icon(icon, color: color),
-        title: Text(item.name),
+        title: Text(
+          item.name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
-          '$label · ${item.importance}',
-          style: TextStyle(color: color),
+          '$label · ${item.importance} · ${item.category}',
+          style: TextStyle(color: color, fontSize: 13),
         ),
         children: [
           Align(
@@ -232,33 +346,66 @@ class _RequirementCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.explanation),
-                if (item.evidence != null) ...[
+                Text(
+                  item.explanation,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                if (item.evidence != null || item.evidencePath != null) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  TextButton.icon(
-                    onPressed: () => showModalBottomSheet<void>(
-                      context: context,
-                      builder: (_) => Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        child: SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Evidence',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              Text(item.evidence!),
-                              const SizedBox(height: AppSpacing.md),
-                            ],
-                          ),
-                        ),
-                      ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: colors.primarySoft,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(color: colors.border),
                     ),
-                    icon: const Icon(Icons.find_in_page_outlined),
-                    label: const Text('View Evidence'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.link, size: 16, color: colors.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Resume Evidence Grounding',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (item.evidenceContext != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            item.evidenceContext!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        if (item.evidence != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '"${item.evidence}"',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                        if (item.evidencePath != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'JSON Path: ${item.evidencePath}',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: colors.textSecondary,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
               ],

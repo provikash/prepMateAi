@@ -50,7 +50,7 @@ class OptimizationSummaryScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Optimization Complete',
+                          'Review approved changes',
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                       ],
@@ -69,26 +69,7 @@ class OptimizationSummaryScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  AppCard(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${a.beforeScore}%',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 18),
-                          child: Icon(Icons.arrow_forward),
-                        ),
-                        Text(
-                          '${a.afterScore}%',
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(color: AppColors.of(context).success),
-                        ),
-                      ],
-                    ),
-                  ),
+                  AppCard(child: Text('Current JD alignment: ${a.beforeScore}%. The new score will be calculated after finalization.')),
                   const SizedBox(height: AppSpacing.md),
                   const InformationBanner(
                     icon: Icons.copy_all_outlined,

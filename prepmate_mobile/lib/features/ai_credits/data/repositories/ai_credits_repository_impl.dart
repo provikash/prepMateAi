@@ -19,12 +19,11 @@ class AiCreditsRepositoryImpl implements AiCreditsRepository {
   Future<List<AiOperation>> getOperations() async =>
       (await _remote.getOperations()).map(AiOperationModel.fromJson).toList();
   @override
-  Future<List<SubscriptionPlan>> getPlans() async =>
-      (await _remote.getPlans()).map(SubscriptionPlanModel.fromJson).toList();
+  Future<List<SubscriptionPlan>> getPlans() async => const [];
   @override
   Future<UserSubscription?> getCurrentSubscription() async {
-    final value = await _remote.getCurrentSubscription();
-    return value == null ? null : UserSubscriptionModel.fromJson(value);
+    // Billing endpoints are not live yet; do not show mock purchase options.
+    return null;
   }
 
   @override

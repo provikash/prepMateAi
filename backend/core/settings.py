@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     'ai',
     'resume_analyzer',
     'courses_ai',
+    'job_optimizer',
 ]
 
 MIDDLEWARE = [
@@ -225,6 +226,8 @@ REST_FRAMEWORK ={
         'ai_suggest_skills': '40/hour',
         'ai_generate_bullets': '30/hour',
         'ai_task_status': '240/hour',
+        'optimizer_generate': '6/hour',
+        'optimizer_regenerate': '10/hour',
         'course_recommendations': '30/hour',
         'course_progress': '1200/hour',
     },
@@ -259,6 +262,14 @@ EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "20"))
 AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "25"))
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_API_BASE_URL = os.getenv("OPENROUTER_API_BASE_URL", "https://openrouter.ai/api/v1")
+OPENROUTER_MODEL_NAME = os.getenv("OPENROUTER_MODEL_NAME", "")
+OPTIMIZER_MAX_SUGGESTIONS = int(os.getenv("OPTIMIZER_MAX_SUGGESTIONS", "5"))
+AI_OPERATION_COSTS = {
+    "resume_optimization": int(os.getenv("AI_COST_RESUME_OPTIMIZATION", "10")),
+    "suggestion_regeneration": int(os.getenv("AI_COST_SUGGESTION_REGENERATION", "1")),
+}
 
 LOGGING = {
     "version": 1,

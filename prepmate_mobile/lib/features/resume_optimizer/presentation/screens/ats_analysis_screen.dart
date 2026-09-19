@@ -6,7 +6,6 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/app_state.dart';
-import '../../domain/optimization_models.dart';
 import '../providers/optimization_provider.dart';
 import '../widgets/optimization_widgets.dart';
 
@@ -23,9 +22,7 @@ class AtsAnalysisScreen extends ConsumerWidget {
         ),
       );
     }
-    final missing = a.requirements
-        .where((r) => r.match == RequirementMatch.missing)
-        .toList();
+    final delta = a.afterScore - a.beforeScore;
     return AppScaffold(
       title: 'ATS Analysis',
       body: ResponsiveContent(
@@ -64,7 +61,7 @@ class AtsAnalysisScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          '+${a.afterScore - a.beforeScore}% improvement',
+                          '${delta > 0 ? '+' : ''}$delta points change',
                           style: Theme.of(context).textTheme.labelMedium
                               ?.copyWith(color: AppColors.of(context).success),
                         ),
@@ -72,82 +69,18 @@ class AtsAnalysisScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Score breakdown',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  const AppCard(
-                    child: Column(
-                      children: [
-                        _Breakdown('Keyword Alignment', .88),
-                        _Breakdown('Skills Alignment', .84),
-                        _Breakdown('Experience Relevance', .86),
-                        _Breakdown('Formatting', .96),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'ATS compliance',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  AppCard(
-                    child: Column(
-                      children:
-                          [
-                                'Standard section headings',
-                                'Readable fonts and file format',
-                                'Clean single-column parsing',
-                                'Contact information detected',
-                              ]
-                              .map(
-                                (x) => ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: Icon(
-                                    Icons.check_circle,
-                                    color: AppColors.of(context).success,
-                                  ),
-                                  title: Text(x),
-                                  trailing: const Text('Passed'),
-                                ),
-                              )
-                              .toList(),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Remaining Gaps',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  AppCard(
-                    child: Column(
-                      children: missing
-                          .map(
-                            (r) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: Icon(
-                                Icons.info_outline,
-                                color: AppColors.of(context).warning,
-                              ),
-                              title: Text(r.name),
-                              subtitle: const Text(
-                                'No supporting evidence found.',
-                              ),
-                              trailing: const Text('Not added'),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
+                  if (a.beforeAtsScore != null && a.afterAtsScore != null) ...[
+                    AppCard(child: Text(
+                      'ATS analysis: ${a.beforeAtsScore}% before → ${a.afterAtsScore}% after. '
+                      'This uses the existing resume analyzer on the saved JSON snapshot.',
+                    )),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
                   const InformationBanner(
                     icon: Icons.shield_outlined,
-                    title: 'Evidence-first optimization',
+                    title: 'JD alignment, not a hiring probability',
                     message:
-                        'Unsupported skills were not added. Alignment reflects only changes backed by your resume.',
+                        'The primary scores come from requirement matching before and after approved changes. ATS analysis uses structured resume data, not a PDF parser.',
                   ),
                   const SizedBox(height: AppSpacing.xl),
                 ],
@@ -163,30 +96,4 @@ class AtsAnalysisScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _Breakdown extends StatelessWidget {
-  const _Breakdown(this.label, this.value);
-  final String label;
-  final double value;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: Text(label)),
-            Text('${(value * 100).round()}%'),
-          ],
-        ),
-        const SizedBox(height: 6),
-        LinearProgressIndicator(
-          value: value,
-          minHeight: 7,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-        ),
-      ],
-    ),
-  );
 }
