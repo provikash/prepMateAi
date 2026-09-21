@@ -22,14 +22,9 @@ import 'package:prepmate_mobile/features/resume/presentation/screens/resume_form
 import 'package:prepmate_mobile/features/resume/presentation/screens/ai_assistant_screen.dart';
 import 'package:prepmate_mobile/features/resume/presentation/screens/ai_input_screens.dart';
 import 'package:prepmate_mobile/features/resume/presentation/screens/ai_result_screen.dart';
-import 'package:prepmate_mobile/features/resume_analyzer/data/models/resume_analysis_model.dart';
-import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/history_screen.dart';
-import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
-import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analysis_result_screen.dart';
+
 import 'package:prepmate_mobile/features/splash/screens/splash_screen.dart';
 import 'package:prepmate_mobile/core/services/auth_token_manager.dart';
-import 'package:prepmate_mobile/features/courses/presentation/screens/courses_screen.dart';
-import 'package:prepmate_mobile/features/courses/presentation/screens/all_playlists_screen.dart';
 import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/optimize_resume_screen.dart';
 import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/job_analysis_screen.dart';
 import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/ai_suggestions_screen.dart';
@@ -144,27 +139,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TemplateGalleryScreen(),
       ),
       GoRoute(
-        path: '/ats-result',
-        builder: (context, state) {
-          final analysis = state.extra;
-          if (analysis is! ResumeAnalysisModel) {
-            return const Scaffold(
-              body: Center(
-                child: Text(
-                  'Analysis result is unavailable. Please run an analysis again.',
-                ),
-              ),
-            );
-          }
-          return AnalysisResultScreen(analysis: analysis);
-        },
-      ),
-      GoRoute(path: '/ats-analyze', builder: (_, __) => const AnalyzeScreen()),
-      GoRoute(
-        path: '/ats-history',
-        builder: (context, state) => const HistoryScreen(),
-      ),
-      GoRoute(
         path: '/verify-otp',
         builder: (context, state) {
           final email =
@@ -262,11 +236,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/resume/ai-result',
         builder: (context, state) => const AIResultScreen(),
-      ),
-      GoRoute(path: '/courses', builder: (_, __) => const CoursesScreen()),
-      GoRoute(
-        path: '/courses/playlists',
-        builder: (_, __) => const AllPlaylistsScreen(),
       ),
     ],
   );

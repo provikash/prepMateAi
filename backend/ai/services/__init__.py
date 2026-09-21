@@ -5,7 +5,7 @@ from .exceptions import (
 	AIServiceResponseError,
 	AIServiceTimeoutError,
 )
-from .gemini_service import GeminiService
+from .openrouter import AIService, OpenRouterProvider
 from .prompt_builder import (
 	build_bullet_prompt,
 	build_improve_prompt,
@@ -15,7 +15,8 @@ from .prompt_builder import (
 from .resume_service import ResumeAIService
 
 __all__ = [
-	"GeminiService",
+	"OpenRouterProvider",
+	"AIService",
 	"ResumeAIService",
 	"AIServiceConfigurationError",
 	"AIServiceError",

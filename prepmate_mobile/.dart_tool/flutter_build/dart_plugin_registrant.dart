@@ -7,14 +7,12 @@
 
 import 'dart:io'; // flutter_ignore: dart_io_import.
 import 'package:file_picker/file_picker.dart' as file_picker;
-import 'package:flutter_inappwebview_android/flutter_inappwebview_android.dart' as flutter_inappwebview_android;
 import 'package:google_sign_in_android/google_sign_in_android.dart' as google_sign_in_android;
 import 'package:path_provider_android/path_provider_android.dart' as path_provider_android;
 import 'package:shared_preferences_android/shared_preferences_android.dart' as shared_preferences_android;
 import 'package:sqflite_android/sqflite_android.dart' as sqflite_android;
 import 'package:url_launcher_android/url_launcher_android.dart' as url_launcher_android;
 import 'package:file_picker/file_picker.dart' as file_picker;
-import 'package:flutter_inappwebview_ios/flutter_inappwebview_ios.dart' as flutter_inappwebview_ios;
 import 'package:google_sign_in_ios/google_sign_in_ios.dart' as google_sign_in_ios;
 import 'package:path_provider_foundation/path_provider_foundation.dart' as path_provider_foundation;
 import 'package:shared_preferences_foundation/shared_preferences_foundation.dart' as shared_preferences_foundation;
@@ -27,7 +25,6 @@ import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:shared_preferences_linux/shared_preferences_linux.dart' as shared_preferences_linux;
 import 'package:url_launcher_linux/url_launcher_linux.dart' as url_launcher_linux;
 import 'package:file_picker/file_picker.dart' as file_picker;
-import 'package:flutter_inappwebview_macos/flutter_inappwebview_macos.dart' as flutter_inappwebview_macos;
 import 'package:google_sign_in_ios/google_sign_in_ios.dart' as google_sign_in_ios;
 import 'package:path_provider_foundation/path_provider_foundation.dart' as path_provider_foundation;
 import 'package:shared_preferences_foundation/shared_preferences_foundation.dart' as shared_preferences_foundation;
@@ -35,7 +32,6 @@ import 'package:sqflite_darwin/sqflite_darwin.dart' as sqflite_darwin;
 import 'package:url_launcher_macos/url_launcher_macos.dart' as url_launcher_macos;
 import 'package:device_info_plus/device_info_plus.dart' as device_info_plus;
 import 'package:file_picker/file_picker.dart' as file_picker;
-import 'package:flutter_inappwebview_windows/flutter_inappwebview_windows.dart' as flutter_inappwebview_windows;
 import 'package:flutter_secure_storage_windows/flutter_secure_storage_windows.dart' as flutter_secure_storage_windows;
 import 'package:path_provider_windows/path_provider_windows.dart' as path_provider_windows;
 import 'package:share_plus/share_plus.dart' as share_plus;
@@ -53,15 +49,6 @@ class _PluginRegistrant {
       } catch (err) {
         print(
           '`file_picker` threw an error: $err. '
-          'The app may not function as expected until you remove this plugin from pubspec.yaml'
-        );
-      }
-
-      try {
-        flutter_inappwebview_android.AndroidInAppWebViewPlatform.registerWith();
-      } catch (err) {
-        print(
-          '`flutter_inappwebview_android` threw an error: $err. '
           'The app may not function as expected until you remove this plugin from pubspec.yaml'
         );
       }
@@ -117,15 +104,6 @@ class _PluginRegistrant {
       } catch (err) {
         print(
           '`file_picker` threw an error: $err. '
-          'The app may not function as expected until you remove this plugin from pubspec.yaml'
-        );
-      }
-
-      try {
-        flutter_inappwebview_ios.IOSInAppWebViewPlatform.registerWith();
-      } catch (err) {
-        print(
-          '`flutter_inappwebview_ios` threw an error: $err. '
           'The app may not function as expected until you remove this plugin from pubspec.yaml'
         );
       }
@@ -241,15 +219,6 @@ class _PluginRegistrant {
       }
 
       try {
-        flutter_inappwebview_macos.MacOSInAppWebViewPlatform.registerWith();
-      } catch (err) {
-        print(
-          '`flutter_inappwebview_macos` threw an error: $err. '
-          'The app may not function as expected until you remove this plugin from pubspec.yaml'
-        );
-      }
-
-      try {
         google_sign_in_ios.GoogleSignInIOS.registerWith();
       } catch (err) {
         print(
@@ -309,15 +278,6 @@ class _PluginRegistrant {
       } catch (err) {
         print(
           '`file_picker` threw an error: $err. '
-          'The app may not function as expected until you remove this plugin from pubspec.yaml'
-        );
-      }
-
-      try {
-        flutter_inappwebview_windows.WindowsInAppWebViewPlatform.registerWith();
-      } catch (err) {
-        print(
-          '`flutter_inappwebview_windows` threw an error: $err. '
           'The app may not function as expected until you remove this plugin from pubspec.yaml'
         );
       }

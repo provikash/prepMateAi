@@ -1,14 +1,43 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
-from rest_framework.test import APITestCase
 from django.test import SimpleTestCase
-from .services.gemini_service import GeminiService
+from rest_framework.test import APITestCase
+
+from .services.openrouter import AIResult, AIService
+from .services.resume_service import ResumeAIService
 
 
-class GeminiResponseTests(SimpleTestCase):
-    def test_accepts_json_inside_markdown_fences(self):
-        self.assertEqual(GeminiService._parse_json('```json\n{"summary":"hello"}\n```'), {'summary': 'hello'})
+class ResumeAIServiceTests(SimpleTestCase):
+    def test_generate_summary_parses_openrouter_result(self):
+        mock_provider = Mock()
+        mock_provider.generate.return_value = AIResult(
+            content={"summary": "Experienced engineer."},
+            model="openai/gpt-4o-mini",
+            input_tokens=10,
+            output_tokens=5,
+            total_tokens=15,
+            request_id="req-1",
+            latency_ms=100,
+        )
+        service = ResumeAIService(ai_service=AIService(provider=mock_provider))
+        result = service.generate_summary({"basics": {"name": "Test"}})
+        self.assertEqual(result, {"summary": "Experienced engineer."})
+
+    def test_suggest_skills_cleans_list(self):
+        mock_provider = Mock()
+        mock_provider.generate.return_value = AIResult(
+            content={"skills": [" Python ", "Django", "", 123]},
+            model="openai/gpt-4o-mini",
+            input_tokens=10,
+            output_tokens=5,
+            total_tokens=15,
+            request_id="req-2",
+            latency_ms=100,
+        )
+        service = ResumeAIService(ai_service=AIService(provider=mock_provider))
+        result = service.suggest_skills("Backend Developer")
+        self.assertEqual(result, {"skills": ["Python", "Django"]})
 
 
 class ResumeAIEndpointTests(APITestCase):

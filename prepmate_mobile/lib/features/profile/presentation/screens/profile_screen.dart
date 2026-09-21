@@ -108,14 +108,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: () => context.go('/home'),
                       ),
                       _SettingsTile(
-                        icon: Icons.analytics_outlined,
-                        title: 'Analysis history',
-                        onTap: () => context.push('/ats-history'),
-                      ),
-                      _SettingsTile(
-                        icon: Icons.school_outlined,
-                        title: 'Learning progress',
-                        onTap: () => context.push('/courses'),
+                        icon: Icons.auto_fix_high_outlined,
+                        title: 'Optimization history',
+                        onTap: () => context.push('/resume/optimize'),
                       ),
                       _SettingsTile(
                         icon: Icons.auto_awesome_outlined,

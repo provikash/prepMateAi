@@ -12,7 +12,7 @@ from .throttles import AuthIPThrottle, AuthIdentityThrottle
 from .services.account_service import AccountService
 
 from resume.models import Resume
-from resume_analyzer.models import ResumeAnalysis
+
 
 from .serializers import (
     DashboardSerializer,
@@ -251,63 +251,12 @@ class DashboardView(APIView):
             "pdf_url": self._abs_file_url(request, latest_resume.pdf_file),
         }
 
-        latest_analysis = (
-            ResumeAnalysis.objects.filter(user=request.user, resume=latest_resume)
-            .only(
-                "id",
-                "ats_score",
-                "skill_score",
-                "missing_skills",
-                "keyword_analysis",
-                "created_at",
-            )
-            .order_by("-created_at")
-            .first()
-        )
-
-        if not latest_analysis:
-            payload = {
-                "latest_resume": base_resume_payload,
-                "analysis_available": False,
-                "message": "Analyze your resume to get insights.",
-            }
-            serializer = DashboardSerializer(payload)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        ats_score = int(latest_analysis.ats_score or 0)
-        skill_score = int(latest_analysis.skill_score or 0)
-        skill_gap_percentage = max(0, min(100, 100 - skill_score))
-        improvement_impact = max(0, min(100, 100 - ats_score))
-
-        missing_skills = self._flatten_skill_dict(latest_analysis.missing_skills or {})
-
-        keyword_analysis = latest_analysis.keyword_analysis or {}
-        suggested_skills = keyword_analysis.get("missing_keywords", [])
-
-        if not isinstance(suggested_skills, list) or not suggested_skills:
-            suggested_skills = missing_skills
-
-        unique_suggested = []
-        seen = set()
-        for item in suggested_skills:
-            if not isinstance(item, str):
-                continue
-            cleaned = item.strip()
-            key = cleaned.lower()
-            if cleaned and key not in seen:
-                seen.add(key)
-                unique_suggested.append(cleaned)
-
         payload = {
-            "latest_resume": {
-                **base_resume_payload,
-                "ats_score": ats_score,
-                "skill_gap_percentage": skill_gap_percentage,
-                "improvement_impact": improvement_impact,
-            },
-            "missing_skills": missing_skills,
-            "suggested_skills": unique_suggested,
+            "latest_resume": base_resume_payload,
+            "analysis_available": False,
+            "message": "Analyze your resume to get insights.",
         }
 
         serializer = DashboardSerializer(payload)
         return Response(serializer.data, status=status.HTTP_200_OK)
+

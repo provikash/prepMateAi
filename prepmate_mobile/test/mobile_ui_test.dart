@@ -5,7 +5,6 @@ import 'package:prepmate_mobile/core/widgets/app_button.dart';
 import 'package:prepmate_mobile/core/widgets/app_state.dart';
 import 'package:prepmate_mobile/config/page_transitions.dart';
 import 'package:prepmate_mobile/config/theme.dart';
-import 'package:prepmate_mobile/features/courses/data/models/ai_course_model.dart';
 import 'package:prepmate_mobile/features/auth/presentation/authWidgets/auth_shell.dart';
 
 void main() {
@@ -37,18 +36,6 @@ void main() {
     await tester.pumpWidget(page(true));
     await tester.pumpAndSettle();
     expect(find.text('My draft'), findsOneWidget);
-  });
-
-  test('course preserves playlist identity', () {
-    final course = AICourse.fromJson({
-      'video_id': 'abcdefghijk',
-      'playlist_id': 'PLexample',
-    });
-    expect(course.playlistId, 'PLexample');
-    expect(
-      course.copyWith(title: 'Updated').toJson()['playlist_id'],
-      'PLexample',
-    );
   });
 
   testWidgets('semantic design colors are available in light and dark themes', (

@@ -15,8 +15,6 @@ class HelpSupportScreen extends StatelessWidget {
         'Upload a PDF up to 10 MB with selectable text, or choose a saved resume. Enter the role you are applying for to get relevant feedback.',
     'What does my ATS score mean?':
         'It is PrepMate’s estimate based on keywords, sections, content, formatting, and contact information. Use the feedback to improve your resume; employer systems can evaluate it differently.',
-    'How is learning progress saved?':
-        'Open a course inside PrepMate. Your video position is saved while you watch and when you leave the player. An internet connection is required to sync progress.',
     'How can I reset my password?':
         'Use Forgot password on the sign-in screen. Check your email and spam folder for the verification code, then choose a new password.',
   };

@@ -8,8 +8,9 @@ import '../../features/home/providers/home_providers.dart' as home;
 import '../../features/profile/presentation/providers/profile_provider.dart';
 import '../../features/resume/presentation/providers/resume_providers.dart';
 import '../../features/resume/presentation/providers/resume_builder_provider.dart';
-import '../../features/resume_analyzer/presentation/providers/resume_analyzer_providers.dart';
-import '../../features/courses/presentation/providers/course_providers.dart';
+import '../../features/resume_optimizer/presentation/providers/optimization_provider.dart';
+
+
 
 /// Discard account-specific caches whenever the signed-in identity changes.
 void clearSessionData(WidgetRef ref, {String? previousUserId}) {
@@ -22,12 +23,9 @@ void clearSessionData(WidgetRef ref, {String? previousUserId}) {
   ref.invalidate(resumeBuilderProvider);
   ref.invalidate(resumeFormProvider);
   ref.invalidate(createResumeProvider);
-  ref.invalidate(analyzeProvider);
-  ref.invalidate(historyProvider);
-  ref.invalidate(analysisDetailProvider);
-  ref.invalidate(courseRecommendationsProvider);
-  ref.invalidate(courseProgressProvider);
-  ref.invalidate(allCourseProgressProvider);
+  ref.invalidate(optimizationProvider);
+
+
   if (previousUserId != null && previousUserId.isNotEmpty) {
     unawaited(
       ref

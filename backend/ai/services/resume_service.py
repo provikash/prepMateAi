@@ -1,6 +1,7 @@
 import logging
 
-from .gemini_service import GeminiService
+from .exceptions import AIServiceResponseError
+from .openrouter import AIService
 from .prompt_builder import (
     build_bullet_prompt,
     build_improve_prompt,
@@ -14,17 +15,33 @@ logger = logging.getLogger(__name__)
 class ResumeAIService:
     """
     Service for AI-powered resume operations.
-    Orchestrates Gemini API calls for resume generation tasks.
+    Orchestrates OpenRouter API calls for resume generation tasks.
     """
 
-    def __init__(self):
-        self.gemini_service = GeminiService()
+    def __init__(self, ai_service: AIService | None = None):
+        self.ai_service = ai_service or AIService()
+
+    def _generate_json(self, prompt: str, expected_key: str) -> dict:
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a professional resume writer and career expert. Always return strict, valid JSON matching the requested structure.",
+            },
+            {"role": "user", "content": prompt},
+        ]
+        result = self.ai_service.generate_json(messages)
+        parsed = result.content
+
+        if not isinstance(parsed, dict) or expected_key not in parsed:
+            raise AIServiceResponseError(f"AI response missing expected key: {expected_key}.")
+
+        return parsed
 
     def generate_summary(self, data: dict) -> dict:
         """Generate a professional summary from resume data."""
         try:
             prompt = build_summary_prompt(data)
-            result = self.gemini_service.generate_json_response(prompt, expected_key="summary")
+            result = self._generate_json(prompt, expected_key="summary")
             return {"summary": result["summary"]}
         except Exception as exc:
             logger.exception("Failed to generate summary")
@@ -34,7 +51,7 @@ class ResumeAIService:
         """Improve a resume section with AI suggestions."""
         try:
             prompt = build_improve_prompt(text=text, section_name=section_name)
-            result = self.gemini_service.generate_json_response(prompt, expected_key="improved_text")
+            result = self._generate_json(prompt, expected_key="improved_text")
             return {"improved_text": result["improved_text"]}
         except Exception as exc:
             logger.exception("Failed to improve section: %s", section_name)
@@ -44,7 +61,7 @@ class ResumeAIService:
         """Suggest relevant skills for a job role."""
         try:
             prompt = build_skills_prompt(role=role, existing_skills=existing_skills)
-            result = self.gemini_service.generate_json_response(prompt, expected_key="skills")
+            result = self._generate_json(prompt, expected_key="skills")
 
             skills = result["skills"]
             if not isinstance(skills, list):
@@ -60,7 +77,7 @@ class ResumeAIService:
         """Generate achievement bullets from work experience."""
         try:
             prompt = build_bullet_prompt(experience=experience)
-            result = self.gemini_service.generate_json_response(prompt, expected_key="bullets")
+            result = self._generate_json(prompt, expected_key="bullets")
 
             bullets = result["bullets"]
             if not isinstance(bullets, list):

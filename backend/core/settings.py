@@ -88,8 +88,6 @@ INSTALLED_APPS = [
     'templates',
     'exports',
     'ai',
-    'resume_analyzer',
-    'courses_ai',
     'job_optimizer',
 ]
 
@@ -228,8 +226,6 @@ REST_FRAMEWORK ={
         'ai_task_status': '240/hour',
         'optimizer_generate': '6/hour',
         'optimizer_regenerate': '10/hour',
-        'course_recommendations': '30/hour',
-        'course_progress': '1200/hour',
     },
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.DefaultPagination',
     'PAGE_SIZE': 10,
@@ -258,13 +254,11 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-repl
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "20"))
 
-# AI provider config (Gemini by default)
+# AI provider config (OpenRouter)
 AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "25"))
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_API_BASE_URL = os.getenv("OPENROUTER_API_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_MODEL_NAME = os.getenv("OPENROUTER_MODEL_NAME", "")
+OPENROUTER_MODEL_NAME = os.getenv("OPENROUTER_MODEL_NAME", "openai/gpt-4o-mini")
 OPTIMIZER_MAX_SUGGESTIONS = int(os.getenv("OPTIMIZER_MAX_SUGGESTIONS", "5"))
 AI_OPERATION_COSTS = {
     "resume_optimization": int(os.getenv("AI_COST_RESUME_OPTIMIZATION", "10")),

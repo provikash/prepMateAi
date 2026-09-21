@@ -29,8 +29,7 @@
         "shared_preferences",
         "shimmer",
         "syncfusion_flutter_pdfviewer",
-        "url_launcher",
-        "youtube_player_flutter"
+        "url_launcher"
       ],
       "devDependencies": [
         "flutter_launcher_icons",
@@ -155,14 +154,6 @@
         "uuid",
         "vector_math",
         "web"
-      ]
-    },
-    {
-      "name": "youtube_player_flutter",
-      "version": "9.1.3",
-      "dependencies": [
-        "flutter",
-        "flutter_inappwebview"
       ]
     },
     {
@@ -764,19 +755,6 @@
       ]
     },
     {
-      "name": "flutter_inappwebview",
-      "version": "6.1.5",
-      "dependencies": [
-        "flutter",
-        "flutter_inappwebview_android",
-        "flutter_inappwebview_ios",
-        "flutter_inappwebview_macos",
-        "flutter_inappwebview_platform_interface",
-        "flutter_inappwebview_web",
-        "flutter_inappwebview_windows"
-      ]
-    },
-    {
       "name": "list_counter",
       "version": "1.0.2",
       "dependencies": []
@@ -1228,57 +1206,6 @@
       "dependencies": []
     },
     {
-      "name": "flutter_inappwebview_windows",
-      "version": "0.6.0",
-      "dependencies": [
-        "flutter",
-        "flutter_inappwebview_platform_interface"
-      ]
-    },
-    {
-      "name": "flutter_inappwebview_web",
-      "version": "1.1.2",
-      "dependencies": [
-        "flutter",
-        "flutter_inappwebview_platform_interface",
-        "flutter_web_plugins",
-        "web"
-      ]
-    },
-    {
-      "name": "flutter_inappwebview_macos",
-      "version": "1.1.2",
-      "dependencies": [
-        "flutter",
-        "flutter_inappwebview_platform_interface"
-      ]
-    },
-    {
-      "name": "flutter_inappwebview_ios",
-      "version": "1.1.2",
-      "dependencies": [
-        "flutter",
-        "flutter_inappwebview_platform_interface"
-      ]
-    },
-    {
-      "name": "flutter_inappwebview_android",
-      "version": "1.1.3",
-      "dependencies": [
-        "flutter",
-        "flutter_inappwebview_platform_interface"
-      ]
-    },
-    {
-      "name": "flutter_inappwebview_platform_interface",
-      "version": "1.3.0+1",
-      "dependencies": [
-        "flutter",
-        "flutter_inappwebview_internal_annotations",
-        "plugin_platform_interface"
-      ]
-    },
-    {
       "name": "sqflite",
       "version": "2.4.2+1",
       "dependencies": [
@@ -1323,11 +1250,6 @@
     {
       "name": "vm_service",
       "version": "15.0.2",
-      "dependencies": []
-    },
-    {
-      "name": "flutter_inappwebview_internal_annotations",
-      "version": "1.3.0",
       "dependencies": []
     },
     {

@@ -5,16 +5,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
 import '../../../../config/page_transitions.dart';
+import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/optimize_resume_screen.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/career_hero.dart';
 import '../../../../core/widgets/section_header.dart';
 import 'package:prepmate_mobile/features/home/data/models/dashboard_model.dart';
 import 'package:prepmate_mobile/features/home/data/models/resume_model.dart';
 import 'package:prepmate_mobile/features/home/data/models/template_model.dart';
-import 'package:prepmate_mobile/features/courses/presentation/screens/courses_screen.dart';
 import 'package:prepmate_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:prepmate_mobile/features/auth/presentation/viewmodel/auth_viewmodel.dart';
-import 'package:prepmate_mobile/features/resume_analyzer/presentation/screens/analyze_screen.dart';
 
 import '../../providers/home_providers.dart';
 
@@ -59,21 +58,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     final bottomNavIndex = ref.watch(bottomNavProvider);
-    _visitedTabs.add(bottomNavIndex);
+    final tabIndex = bottomNavIndex.clamp(0, 1);
+    _visitedTabs.add(tabIndex);
 
     return Scaffold(
       body: IndexedStack(
-        index: bottomNavIndex,
+        index: tabIndex,
         children: List.generate(
-          3,
+          2,
           (index) => TabEntrance(
-            active: index == bottomNavIndex,
+            active: index == tabIndex,
             child: !_visitedTabs.contains(index)
                 ? const SizedBox.shrink()
                 : switch (index) {
                     0 => const SafeArea(child: _HomeContent()),
-                    1 => const AnalyzeScreen(),
-                    _ => const CoursesScreen(),
+                    _ => const OptimizeResumeScreen(),
                   },
           ),
         ),
@@ -88,10 +87,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     int currentIndex,
   ) {
     return NavigationBar(
-      selectedIndex: currentIndex,
+      selectedIndex: currentIndex > 1 ? 0 : currentIndex,
       animationDuration: AppMotion.standard,
       onDestinationSelected: (index) {
-        if (index == 3) {
+        if (index == 2) {
           context.push('/profile');
         } else {
           ref.read(bottomNavProvider.notifier).state = index;
@@ -104,14 +103,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           label: 'Home',
         ),
         NavigationDestination(
-          icon: Icon(Icons.analytics_outlined),
-          selectedIcon: Icon(Icons.analytics_rounded),
-          label: 'Analyze',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.auto_stories_outlined),
-          selectedIcon: Icon(Icons.auto_stories),
-          label: 'Learn',
+          icon: Icon(Icons.auto_fix_high_outlined),
+          selectedIcon: Icon(Icons.auto_fix_high),
+          label: 'Optimize',
         ),
         NavigationDestination(
           icon: Icon(Icons.person_outline_rounded),

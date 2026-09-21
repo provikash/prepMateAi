@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from resume.models import Resume
-from resume_analyzer.models import ResumeAnalysis
 from users.models import UserProfile
 
 
@@ -57,29 +56,19 @@ class ProfileAndDashboardApiTests(APITestCase):
         self.assertIsNone(response.data["latest_resume"])
         self.assertIn("message", response.data)
 
-    def test_dashboard_uses_actual_analysis_fields(self):
-        resume = Resume.objects.create(
+    def test_dashboard_with_resume_but_no_analysis(self):
+        """After removing resume_analyzer, dashboard returns resume info
+        without analysis data and analysis_available is False."""
+        Resume.objects.create(
             user=self.user,
             title="Backend Resume",
             data={"basics": {"name": "Owner"}},
-        )
-        ResumeAnalysis.objects.create(
-            user=self.user,
-            resume=resume,
-            job_role="Engineer",
-            ats_score=72,
-            skill_score=60,
-            missing_skills={"technical": ["Django", "PostgreSQL"]},
-            keyword_analysis={"missing_keywords": ["Testing", "Django"]},
         )
 
         response = self.client.get("/api/v1/dashboard/")
 
         self.assertEqual(response.status_code, 200, response.data)
-        self.assertEqual(response.data["latest_resume"]["ats_score"], 72)
-        self.assertEqual(
-            response.data["latest_resume"]["skill_gap_percentage"],
-            40,
-        )
-        self.assertEqual(response.data["missing_skills"], ["Django", "PostgreSQL"])
-        self.assertEqual(response.data["suggested_skills"], ["Testing", "Django"])
+        self.assertIsNotNone(response.data["latest_resume"])
+        self.assertEqual(response.data["latest_resume"]["title"], "Backend Resume")
+        self.assertFalse(response.data.get("analysis_available", True))
+        self.assertIn("message", response.data)
