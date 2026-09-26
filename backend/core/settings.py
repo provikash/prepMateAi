@@ -137,11 +137,6 @@ DB_HOST = os.getenv("DB_HOST", "")
 DB_PORT = os.getenv("DB_PORT", "")
 
 
-GOOGLE_OAUTH_CLIENT_ID = os.environ.get(
-    'GOOGLE_OAUTH_CLIENT_ID',
-    '123456789-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com'
-)
-
 # If DATABASE_URL env var is not set, use individual DB settings from .env
 if not os.getenv("DATABASE_URL"):
     DATABASES["default"] = {
@@ -299,9 +294,38 @@ OTP_EXPIRY_SECONDS = int(os.getenv("OTP_EXPIRY_SECONDS", "600"))
 OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
 OTP_RESEND_COOLDOWN_SECONDS = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "60"))
 OTP_ISSUE_WINDOW_SECONDS = int(os.getenv("OTP_ISSUE_WINDOW_SECONDS", "600"))
-OTP_MAX_ISSUES = int(os.getenv("OTP_MAX_ISSUES", "3"))
+OTP_MAX_ISSUES_PER_WINDOW = int(os.getenv("OTP_MAX_ISSUES_PER_WINDOW", os.getenv("OTP_MAX_ISSUES", "3")))
+OTP_MAX_ISSUES = OTP_MAX_ISSUES_PER_WINDOW  # legacy email service compatibility
+OTP_DAILY_LIMIT = int(os.getenv("OTP_DAILY_LIMIT", "10"))
+OTP_IP_HOURLY_LIMIT = int(os.getenv("OTP_IP_HOURLY_LIMIT", "20"))
+OTP_DEVICE_HOURLY_LIMIT = int(os.getenv("OTP_DEVICE_HOURLY_LIMIT", "10"))
+OTP_GLOBAL_HOURLY_LIMIT = int(os.getenv("OTP_GLOBAL_HOURLY_LIMIT", "1000"))
+OTP_PROVIDER = os.getenv("OTP_PROVIDER", "console")
+FAST2SMS_API_KEY = os.getenv("FAST2SMS_API_KEY", "")
+FAST2SMS_OTP_ID = os.getenv(
+    "FAST2SMS_OTP_ID",
+    # Backward compatibility for deployments using the old, misleading name.
+    os.getenv("FAST2SMS_DLT_TEMPLATE_ID", ""),
+)
+FAST2SMS_ROUTE = os.getenv("FAST2SMS_ROUTE", "otp")
+FAST2SMS_SENDER_ID = os.getenv("FAST2SMS_SENDER_ID", "")
+# Keep the legacy setting available to any out-of-tree integrations.
+FAST2SMS_DLT_TEMPLATE_ID = FAST2SMS_OTP_ID
+FAST2SMS_ENTITY_ID = os.getenv("FAST2SMS_ENTITY_ID", "")
+FAST2SMS_CONNECT_TIMEOUT_SECONDS = int(os.getenv("FAST2SMS_CONNECT_TIMEOUT_SECONDS", "5"))
+FAST2SMS_REQUEST_TIMEOUT_SECONDS = int(os.getenv("FAST2SMS_REQUEST_TIMEOUT_SECONDS", "10"))
+ENABLE_TEST_OTP_LOGIN = os.getenv("ENABLE_TEST_OTP_LOGIN", "False") == "True"
+_raw_test_phones = [v.strip() for v in os.getenv("TEST_OTP_PHONE_NUMBERS", "").split(",") if v.strip()]
+TEST_OTP_PHONE_NUMBERS = set()
+for _p in _raw_test_phones:
+    TEST_OTP_PHONE_NUMBERS.add(_p)
+    if _p.startswith("+91") and len(_p) == 13:
+        TEST_OTP_PHONE_NUMBERS.add(_p[3:])
+    elif not _p.startswith("+") and len(_p) == 10:
+        TEST_OTP_PHONE_NUMBERS.add(f"+91{_p}")
+TEST_OTP_CODE = os.getenv("TEST_OTP_CODE", "")
 AUTH_THROTTLE_RATES = {
-    "register": "5/min", "login": "10/min", "refresh": "20/min",
+    "otp_request": "5/min", "otp_resend": "3/min", "otp_verify": "10/min", "refresh": "20/min",
     "verify": "10/min", "resend": "3/min", "reset_request": "3/min",
     "reset_confirm": "10/min", "logout": "10/min", "change_password": "5/min",
     "deactivate": "5/min", "account": "5/min", "me": "60/min",
@@ -346,14 +370,22 @@ if PRODUCTION:
         raise ImproperlyConfigured("Production requires PostgreSQL.")
     if CACHES["default"]["BACKEND"] != "django_redis.cache.RedisCache":
         raise ImproperlyConfigured("Production requires a shared Redis cache.")
-    if EMAIL_BACKEND != "django.core.mail.backends.smtp.EmailBackend":
-        raise ImproperlyConfigured("Production requires SMTP email delivery; console/file backends expose OTPs.")
+    if ENABLE_TEST_OTP_LOGIN:
+        raise ImproperlyConfigured("ENABLE_TEST_OTP_LOGIN must never be enabled in production.")
+    if OTP_PROVIDER != "fast2sms" or not FAST2SMS_API_KEY or not FAST2SMS_OTP_ID:
+        raise ImproperlyConfigured("Production requires the Fast2SMS OTP provider and credentials.")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+elif ENABLE_TEST_OTP_LOGIN:
+    from django.core.exceptions import ImproperlyConfigured
+    if not DEBUG or DJANGO_ENV not in {"development", "test"} or not TEST_OTP_CODE or not TEST_OTP_PHONE_NUMBERS:
+        raise ImproperlyConfigured("Test OTP login requires DEBUG=True, development/test environment, an allowlist, and TEST_OTP_CODE.")
+    import logging
+    logging.getLogger("users").warning("TEST OTP LOGIN IS ENABLED for explicitly allowlisted numbers; never use this in production.")
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 

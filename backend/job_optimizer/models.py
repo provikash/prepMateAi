@@ -33,6 +33,8 @@ class OptimizationSession(BaseModel):
         ANALYZED = "ANALYZED", "Analyzed"
         MATCHING = "MATCHING", "Matching"
         READY_FOR_REVIEW = "READY_FOR_REVIEW", "Ready for Review"
+        APPLYING = "APPLYING", "Applying"
+        GENERATING_PDF = "GENERATING_PDF", "Generating PDF"
         COMPLETED = "COMPLETED", "Completed"
         FAILED = "FAILED", "Failed"
         CANCELLED = "CANCELLED", "Cancelled"
@@ -49,6 +51,7 @@ class OptimizationSession(BaseModel):
         related_name="optimization_sessions",
     )
     source_resume_version = models.PositiveIntegerField(default=1)
+    source_resume_updated_at = models.DateTimeField(null=True, blank=True)
     job_description = models.ForeignKey(
         JobDescription,
         on_delete=models.CASCADE,
@@ -65,9 +68,21 @@ class OptimizationSession(BaseModel):
     source_data_snapshot = models.JSONField(default=dict, blank=True)
     final_analysis_json = models.JSONField(default=dict, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    failed_at = models.DateTimeField(null=True, blank=True)
+    failure_code = models.CharField(max_length=60, blank=True, default="")
+    failure_message = models.CharField(max_length=255, blank=True, default="")
+    request_id = models.CharField(max_length=100, blank=True, default="")
+    apply_idempotency_key = models.CharField(max_length=100, blank=True, default="")
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "request_id"],
+                condition=~models.Q(request_id=""),
+                name="unique_user_optimizer_request_id",
+            )
+        ]
 
     def __str__(self):
         return f"Session<{self.id}> - {self.status} ({self.user.email})"
@@ -94,6 +109,8 @@ class OptimizationSuggestion(BaseModel):
         ACCEPTED = "ACCEPTED", "Accepted"
         REJECTED = "REJECTED", "Rejected"
         EDITED = "EDITED", "Edited"
+        APPLIED = "APPLIED", "Applied"
+        STALE = "STALE", "Stale"
 
     optimization_session = models.ForeignKey(
         OptimizationSession,
@@ -105,6 +122,10 @@ class OptimizationSuggestion(BaseModel):
         choices=SuggestionType.choices,
     )
     resume_path = models.CharField(max_length=255)
+    target_section = models.CharField(max_length=40, blank=True, default="")
+    target_item_id = models.UUIDField(null=True, blank=True)
+    target_field = models.CharField(max_length=80, blank=True, default="")
+    target_child_id = models.UUIDField(null=True, blank=True)
     original_value = models.TextField(blank=True, default="")
     ai_suggestion = models.TextField(blank=True, default="")
     user_edited_value = models.TextField(null=True, blank=True)
@@ -119,6 +140,10 @@ class OptimizationSuggestion(BaseModel):
     keywords = models.JSONField(default=list, blank=True)
     evidence_reference = models.JSONField(default=list, blank=True)
     confidence = models.CharField(max_length=20, default="HIGH")
+    severity = models.CharField(max_length=20, default="MEDIUM")
+    requires_confirmation = models.BooleanField(default=False)
+    decision_version = models.PositiveIntegerField(default=1)
+    applied_at = models.DateTimeField(null=True, blank=True)
     prompt_version = models.CharField(max_length=40, default="resume_optimizer_v1")
     revision_history = models.JSONField(default=list, blank=True)
 

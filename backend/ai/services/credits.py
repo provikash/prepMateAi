@@ -1,11 +1,14 @@
 """Transactional, backend-owned AI credit ledger."""
 
+import logging
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import APIException
 
 from ai.models import AICreditAccount, AICreditTransaction, AIUsage
+
+logger = logging.getLogger(__name__)
 
 
 class InsufficientCredits(APIException):
@@ -57,6 +60,7 @@ class CreditService:
             operation=operation, reference_id=reference_id,
             reference_type="optimizer", idempotency_key=idempotency_key,
         )
+        logger.info("credit_reserved user_id=%s transaction_id=%s reference_id=%s", user.pk, usage.pk, reference_id)
         return usage, True
 
     @staticmethod
@@ -88,6 +92,7 @@ class CreditService:
             operation=usage.operation, reference_id=usage.reference_id,
             reference_type="optimizer", idempotency_key=usage.idempotency_key or "",
         )
+        logger.info("credit_committed user_id=%s transaction_id=%s reference_id=%s", usage.user_id, usage.pk, usage.reference_id)
         return usage
 
     @staticmethod
@@ -110,6 +115,7 @@ class CreditService:
             operation=usage.operation, reference_id=usage.reference_id,
             reference_type="optimizer", idempotency_key=usage.idempotency_key or "",
         )
+        logger.info("credit_released user_id=%s transaction_id=%s reference_id=%s error_code=%s", usage.user_id, usage.pk, usage.reference_id, error_code[:60])
         return usage
 
     @staticmethod

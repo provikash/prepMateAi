@@ -179,3 +179,83 @@ cython_debug/
 # Nix
 /result
 /result-*
+
+# -----------------------------------------------------------------------------
+# Project-specific generated and local files
+# -----------------------------------------------------------------------------
+
+# Local editor/agent state
+.idea/
+.vscode/
+.agents/
+.codex/
+*.iml
+*.swp
+*.swo
+
+# Operating-system metadata and JVM/native crash output
+.DS_Store
+Thumbs.db
+Desktop.ini
+hs_err_pid*.log
+replay_pid*.log
+
+# Python tooling caches
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Django runtime data. Static assets are recreated by collectstatic; media is
+# user-uploaded/runtime content and belongs in persistent/object storage.
+backend/staticfiles/
+backend/media/
+backend/tmp*.json
+backend/backup*.json
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-shm
+*.sqlite3-wal
+*.dump
+
+# Flutter/Dart generated state and build products
+prepmate_mobile/.dart_tool/
+prepmate_mobile/.dart-appdata/
+prepmate_mobile/.flutter-plugins
+prepmate_mobile/.flutter-plugins-dependencies
+prepmate_mobile/.packages
+prepmate_mobile/build/
+prepmate_mobile/coverage/
+prepmate_mobile/artifacts/
+prepmate_mobile/test/failures/
+prepmate_mobile/android/.gradle/
+prepmate_mobile/android/.kotlin/
+prepmate_mobile/android/local.properties
+prepmate_mobile/android/key.properties
+prepmate_mobile/ios/Pods/
+prepmate_mobile/ios/.symlinks/
+prepmate_mobile/ios/Flutter/ephemeral/
+prepmate_mobile/ios/Flutter/Generated.xcconfig
+prepmate_mobile/ios/Flutter/flutter_export_environment.sh
+prepmate_mobile/macos/Pods/
+prepmate_mobile/macos/Flutter/ephemeral/
+prepmate_mobile/linux/flutter/ephemeral/
+prepmate_mobile/windows/flutter/ephemeral/
+prepmate_mobile/linux/flutter/generated_plugin_registrant.*
+prepmate_mobile/linux/flutter/generated_plugins.cmake
+prepmate_mobile/windows/flutter/generated_plugin_registrant.*
+prepmate_mobile/windows/flutter/generated_plugins.cmake
+prepmate_mobile/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Local inspection output, downloaded reference pages, and accidental shell files
+structure.txt
+**/tmp_template_detail.json
+**/Thomas Davis 2.html
+**/Thomas Davis 2_files/
+**/et --hard
+prepmate_mobile/code_excerpts.md
+prepmate_mobile/flutter_*.png

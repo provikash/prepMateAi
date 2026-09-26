@@ -1,171 +1,82 @@
 import 'package:dio/dio.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import '../../domain/entities/user.dart';
-import '../models/user_model.dart';
-import '../../../../core/services/storage.dart';
 
-/// Exception thrown when user cancels Google Sign-In
-class _GoogleSignInCancelledException implements Exception {
-  @override
-  String toString() => 'User cancelled Google Sign-In';
-}
+import '../../../../core/services/storage.dart';
+import '../../domain/entities/user.dart';
+import '../../domain/repositories/auth_repository.dart';
+import '../models/user_model.dart';
 
 class AuthRemoteDataSource {
+  AuthRemoteDataSource(this.dio);
   final Dio dio;
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-  bool _googleInitialized = false;
-
-  AuthRemoteDataSource(this.dio);
-
-  // ─── Email/Password Auth ──────────────────────────────────────────────────
-
-  Future<User?> login(String email, String password) async {
+  Future<OtpChallengeData> requestOtp(String phoneNumber) async {
     final response = await dio.post(
-      'auth/login/',
-      data: {'email': email, 'password': password},
+      'auth/otp/request/',
+      data: {'phone_number': phoneNumber},
     );
-
-    final tokens = response.data['tokens'] as Map<String, dynamic>?;
-    final accessToken = tokens?['access']?.toString();
-    final refreshToken = tokens?['refresh']?.toString();
-    final userData = response.data['user'];
-
-    if (accessToken != null && accessToken.isNotEmpty) {
-      await TokenService.saveTokens(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-      );
-      return UserModel.fromJson(userData as Map<String, dynamic>);
-    }
-
-    return null;
+    return _challenge(response.data as Map<String, dynamic>);
   }
 
-  Future<bool> signup(
-    String name,
-    String email,
-    String password,
-    String passwordConfirm,
+  Future<OtpChallengeData> resendOtp(
+    String phoneNumber,
+    String challengeId,
   ) async {
     final response = await dio.post(
-      'auth/register/',
+      'auth/otp/resend/',
+      data: {'phone_number': phoneNumber, 'challenge_id': challengeId},
+    );
+    return _challenge(response.data as Map<String, dynamic>);
+  }
+
+  OtpChallengeData _challenge(Map<String, dynamic> data) => OtpChallengeData(
+    challengeId: data['challenge_id'].toString(),
+    resendAfterSeconds:
+        (data['resend_available_in_seconds'] as num?)?.toInt() ?? 60,
+  );
+
+  Future<User> verifyOtp(
+    String phoneNumber,
+    String challengeId,
+    String otp,
+  ) async {
+    final response = await dio.post(
+      'auth/otp/verify/',
       data: {
-        'name': name,
-        'email': email,
-        'password': password,
-        'password_confirm': passwordConfirm,
+        'phone_number': phoneNumber,
+        'challenge_id': challengeId,
+        'otp': otp,
       },
     );
-
-    return response.statusCode == 200 || response.statusCode == 201;
-  }
-
-  // ─── Google Auth ──────────────────────────────────────────────────────────
-
-  Future<User?> signInWithGoogle() async {
-    if (!_googleInitialized) {
-      await _googleSignIn.initialize(
-        // Web OAuth 2.0 Client ID from Google Cloud Console.
-        // Required on Android so the plugin can mint a backend-verifiable idToken.
-        serverClientId: const String.fromEnvironment(
-          'GOOGLE_OAUTH_CLIENT_ID',
-          defaultValue:
-              '704944814931-bm2kaeef6tbf0p8s6aleriqsmo0o0ci6.apps.googleusercontent.com',
-        ),
-      );
-      _googleInitialized = true;
+    final data = response.data as Map<String, dynamic>;
+    final access = data['access']?.toString();
+    final refresh = data['refresh']?.toString();
+    final rawUser = data['user'];
+    if (access == null ||
+        access.isEmpty ||
+        refresh == null ||
+        refresh.isEmpty ||
+        rawUser is! Map<String, dynamic>) {
+      throw const FormatException('Invalid authentication response.');
     }
-
-    try {
-      final GoogleSignInAccount account = await _googleSignIn.authenticate();
-      final GoogleSignInAuthentication auth = account.authentication;
-      final String? idToken = auth.idToken;
-
-      if (idToken == null || idToken.isEmpty) {
-        throw Exception('Google sign-in failed: idToken is missing.');
-      }
-
-      final response = await dio.post(
-        'auth/google/',
-        data: {'id_token': idToken},
-      );
-
-      final data = response.data as Map<String, dynamic>;
-      final tokens = data['tokens'] as Map<String, dynamic>?;
-      final accessToken = tokens?['access']?.toString();
-      final refreshToken = tokens?['refresh']?.toString();
-      final userData = data['user'] as Map<String, dynamic>?;
-
-      if (accessToken == null || accessToken.isEmpty || userData == null) {
-        throw Exception('Google sign-in failed: backend response was invalid.');
-      }
-
-      await TokenService.saveTokens(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-      );
-
-      return UserModel.fromJson(userData);
-    } on _GoogleSignInCancelledException {
-      rethrow;
-    } catch (error) {
-      final message = error.toString().toLowerCase();
-      if (message.contains('cancel') || message.contains('dismiss')) {
-        throw _GoogleSignInCancelledException();
-      }
-      throw Exception('Google sign-in failed: $error');
-    }
+    await TokenService.saveTokens(accessToken: access, refreshToken: refresh);
+    return UserModel.fromJson(rawUser);
   }
-
-  // ─── OTP ─────────────────────────────────────────────────────────────────
-
-  Future<bool> verifyOtp(String email, String otp, String flow) async {
-    final endpoint = flow == 'login'
-        ? 'auth/verify-login-otp/'
-        : 'users/verify-otp/';
-
-    final response = await dio.post(
-      endpoint,
-      data: {'email': email, 'otp': otp},
-    );
-
-    return response.statusCode == 200;
-  }
-
-  // ─── Password ─────────────────────────────────────────────────────────────
-
-  Future<bool> forgotPassword(String email) async {
-    final response = await dio.post(
-      'auth/forgot-password/',
-      data: {'email': email},
-    );
-
-    return response.statusCode == 200;
-  }
-
-  // ─── Session ──────────────────────────────────────────────────────────────
 
   Future<void> logout() async {
-    final refreshToken = await TokenService.getRefreshToken();
+    final refresh = await TokenService.getRefreshToken();
     try {
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        await dio.post('auth/logout/', data: {'refresh': refreshToken});
+      if (refresh != null && refresh.isNotEmpty) {
+        await dio.post('auth/logout/', data: {'refresh': refresh});
       }
     } on DioException catch (error) {
-      if (error.response?.statusCode != 401 &&
-          error.response?.statusCode != 400) {
+      if (error.response?.statusCode != 400 &&
+          error.response?.statusCode != 401) {
         rethrow;
       }
     } finally {
       await TokenService.deleteToken();
     }
-    try {
-      await _googleSignIn.signOut();
-    } catch (_) {}
   }
-
-  // ─── Profile ──────────────────────────────────────────────────────────────
 
   Future<User?> getProfile() async {
     final summaryResponse = await dio.get('auth/me/');
@@ -175,29 +86,9 @@ class AuthRemoteDataSource {
         : summaryPayload;
     final profileResponse = await dio.get('profile/');
     return UserModel.fromJson({
+      ...profileResponse.data as Map<String, dynamic>,
       ...summary,
-      ...(profileResponse.data as Map<String, dynamic>),
     });
-  }
-
-  Future<bool> resetPassword(
-    String email,
-    String otp,
-    String newPassword,
-  ) async {
-    final response = await dio.post(
-      'auth/password-reset/confirm/',
-      data: {'email': email, 'otp': otp, 'new_password': newPassword},
-    );
-    return response.statusCode == 200;
-  }
-
-  Future<bool> resendVerification(String email) async {
-    final response = await dio.post(
-      'auth/verify-email/resend/',
-      data: {'email': email},
-    );
-    return response.statusCode == 200;
   }
 
   Future<User?> updateProfile(User user) async {
@@ -205,7 +96,6 @@ class AuthRemoteDataSource {
       'profile/',
       data: {
         'full_name': user.fullName ?? '',
-        'phone': user.phoneNumber ?? '',
         'location': user.location ?? '',
         'job_title': user.title ?? '',
         'bio': user.bio ?? '',
@@ -213,14 +103,15 @@ class AuthRemoteDataSource {
         'github': user.github ?? '',
       },
     );
-
-    final summaryResponse = await dio.get('profile/');
-    final merged = <String, dynamic>{
-      ...(summaryResponse.data as Map<String, dynamic>),
-      ...(response.data as Map<String, dynamic>),
-    };
-
-    return UserModel.fromJson(merged);
+    final summaryResponse = await dio.get('auth/me/');
+    final payload = summaryResponse.data as Map<String, dynamic>;
+    final summary = payload['data'] is Map<String, dynamic>
+        ? payload['data'] as Map<String, dynamic>
+        : payload;
+    return UserModel.fromJson({
+      ...response.data as Map<String, dynamic>,
+      ...summary,
+    });
   }
 
   Future<User?> uploadProfileImage(String filePath) async {
@@ -230,14 +121,7 @@ class AuthRemoteDataSource {
         filename: 'profile_image.jpg',
       ),
     });
-
-    final response = await dio.patch('profile/', data: formData);
-    final summaryResponse = await dio.get('profile/');
-    final merged = <String, dynamic>{
-      ...(summaryResponse.data as Map<String, dynamic>),
-      ...(response.data as Map<String, dynamic>),
-    };
-
-    return UserModel.fromJson(merged);
+    await dio.patch('profile/', data: formData);
+    return getProfile();
   }
 }

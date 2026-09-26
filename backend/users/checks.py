@@ -8,7 +8,7 @@ def authentication_policy_checks(app_configs, **kwargs):
     limits = {
         "OTP_LENGTH": (6, 10), "OTP_EXPIRY_SECONDS": (60, 1800),
         "OTP_MAX_ATTEMPTS": (1, 10), "OTP_RESEND_COOLDOWN_SECONDS": (1, 3600),
-        "OTP_ISSUE_WINDOW_SECONDS": (60, 86400), "OTP_MAX_ISSUES": (1, 20),
+        "OTP_ISSUE_WINDOW_SECONDS": (60, 86400), "OTP_MAX_ISSUES_PER_WINDOW": (1, 20),
     }
     for name, (minimum, maximum) in limits.items():
         if not minimum <= getattr(settings, name) <= maximum:
@@ -16,4 +16,8 @@ def authentication_policy_checks(app_configs, **kwargs):
     for name, duration in (("ACCESS_TOKEN_LIFETIME", 3600), ("REFRESH_TOKEN_LIFETIME", 30 * 86400)):
         if not 0 < settings.SIMPLE_JWT[name].total_seconds() <= duration:
             errors.append(Error(f"Unsafe {name}.", id="users.E002"))
+    if settings.ENABLE_TEST_OTP_LOGIN and (settings.DJANGO_ENV not in {"development", "test"} or not settings.DEBUG):
+        import sys
+        if not ("test" in sys.argv and settings.DJANGO_ENV in {"development", "test"}):
+            errors.append(Error("Test OTP login cannot run outside DEBUG development/test.", id="users.E003"))
     return errors

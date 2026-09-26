@@ -1,4 +1,5 @@
 import logging
+from django.db import transaction
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ from .serializers import (
 )
 from .services.jd_analyzer import JDAnalyzer
 from .services.matcher import RequirementMatcher
+from ai.services.entitlements import EntitlementService
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,46 @@ class OptimizationSessionListCreateView(generics.ListCreateAPIView):
         session = serializer.save()
         output_serializer = OptimizationSessionSerializer(session, context={"request": request})
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ResumeOptimizationCreateView(APIView):
+    """Compatibility facade for the public `/resume-optimizations/` contract."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        key = str(request.data.get("idempotency_key", "")).strip()
+        if not 8 <= len(key) <= 100:
+            return Response({"idempotency_key": "Use an 8 to 100 character key."}, status=400)
+        existing = OptimizationSession.objects.filter(user=request.user, request_id=key).first()
+        if existing:
+            return self._response(existing, request, status.HTTP_200_OK)
+        raw = request.data.copy()
+        if isinstance(raw.get("job_description"), str):
+            raw["job_description"] = {
+                "description": raw["job_description"],
+                "title": raw.get("job_title", ""),
+                "company": raw.get("company_name", ""),
+            }
+        serializer = OptimizationSessionCreateSerializer(data=raw, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        session = serializer.save()
+        session.request_id = key
+        session.save(update_fields=["request_id", "updated_at"])
+        return self._response(session, request, status.HTTP_201_CREATED)
+
+    @staticmethod
+    def _response(session, request, response_status):
+        credit = EntitlementService.get_user_entitlements(request.user)["ai_credits"]
+        return Response({
+            "id": str(session.pk),
+            "status": session.status.lower(),
+            "credit": {
+                "reserved": credit["reserved"],
+                "remaining": credit["available"],
+            },
+        }, status=response_status)
 
 
 class OptimizationSessionDetailView(generics.RetrieveAPIView):

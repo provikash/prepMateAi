@@ -2,6 +2,8 @@ enum RequirementMatch { matched, partial, missing, unclear }
 
 enum SuggestionStatus { pending, accepted, rejected, edited }
 
+enum SuggestionFilter { all, pending, accepted, edited, rejected, critical }
+
 class JobRequirement {
   const JobRequirement({
     required this.name,
@@ -69,6 +71,12 @@ class OptimizationSuggestion {
     this.status = SuggestionStatus.pending,
     this.resumePath = '',
     this.evidencePaths = const [],
+    this.severity = 'MEDIUM',
+    this.requiresConfirmation = false,
+    this.decisionVersion = 1,
+    this.targetItemId,
+    this.targetChildId,
+    this.targetField = '',
   });
 
   final String id;
@@ -82,6 +90,12 @@ class OptimizationSuggestion {
   final SuggestionStatus status;
   final String resumePath;
   final List<String> evidencePaths;
+  final String severity;
+  final bool requiresConfirmation;
+  final int decisionVersion;
+  final String? targetItemId;
+  final String? targetChildId;
+  final String targetField;
 
   factory OptimizationSuggestion.fromApi(Map<String, dynamic> json) {
     final rawStatus = json['status']?.toString().toUpperCase();
@@ -93,20 +107,30 @@ class OptimizationSuggestion {
     };
     final path = json['resume_path']?.toString() ?? '';
     final evidence = (json['evidence_reference'] as List<dynamic>? ?? const [])
-        .map((value) => value.toString()).toList();
+        .map((value) => value.toString())
+        .toList();
     return OptimizationSuggestion(
       id: json['id']?.toString() ?? '',
       section: path.split('.').first,
       current: json['original_value']?.toString() ?? '',
-      proposed: json['final_value']?.toString() ??
-          json['ai_suggestion']?.toString() ?? '',
+      proposed:
+          json['final_value']?.toString() ??
+          json['ai_suggestion']?.toString() ??
+          '',
       reason: json['reason']?.toString() ?? '',
       keywords: (json['keywords'] as List<dynamic>? ?? const [])
-          .map((value) => value.toString()).toList(),
+          .map((value) => value.toString())
+          .toList(),
       evidence: evidence.join(', '),
       status: status,
       resumePath: path,
       evidencePaths: evidence,
+      severity: json['severity']?.toString() ?? 'MEDIUM',
+      requiresConfirmation: json['requires_confirmation'] == true,
+      decisionVersion: (json['decision_version'] as num?)?.toInt() ?? 1,
+      targetItemId: json['target_item_id']?.toString(),
+      targetChildId: json['target_child_id']?.toString(),
+      targetField: json['target_field']?.toString() ?? '',
     );
   }
 
@@ -126,6 +150,12 @@ class OptimizationSuggestion {
       status: status ?? this.status,
       resumePath: resumePath,
       evidencePaths: evidencePaths,
+      severity: severity,
+      requiresConfirmation: requiresConfirmation,
+      decisionVersion: decisionVersion,
+      targetItemId: targetItemId,
+      targetChildId: targetChildId,
+      targetField: targetField,
     );
   }
 }
@@ -145,6 +175,8 @@ class OptimizationAnalysis {
     this.sessionId,
     this.beforeAtsScore,
     this.afterAtsScore,
+    this.sourceResumeVersion = 1,
+    this.suggestions = const [],
   });
 
   final int beforeScore;
@@ -160,6 +192,8 @@ class OptimizationAnalysis {
   final String? sessionId;
   final int? beforeAtsScore;
   final int? afterAtsScore;
+  final int sourceResumeVersion;
+  final List<OptimizationSuggestion> suggestions;
 
   OptimizationAnalysis copyWith({
     int? afterScore,
@@ -180,6 +214,7 @@ class OptimizationAnalysis {
     sessionId: sessionId,
     beforeAtsScore: beforeAtsScore ?? this.beforeAtsScore,
     afterAtsScore: afterAtsScore ?? this.afterAtsScore,
+    sourceResumeVersion: sourceResumeVersion,
   );
 }
 
@@ -226,6 +261,7 @@ class OptimizationSessionModel {
     this.jobDescription,
     this.analysisJson,
     this.matchResultsJson,
+    this.sourceResumeVersion = 1,
   });
 
   final String id;
@@ -235,6 +271,7 @@ class OptimizationSessionModel {
   final JobDescriptionModel? jobDescription;
   final Map<String, dynamic>? analysisJson;
   final Map<String, dynamic>? matchResultsJson;
+  final int sourceResumeVersion;
 
   factory OptimizationSessionModel.fromJson(Map<String, dynamic> json) {
     return OptimizationSessionModel(
@@ -243,10 +280,21 @@ class OptimizationSessionModel {
       sourceResumeTitle: json['source_resume_title'] as String? ?? 'Resume',
       status: json['status'] as String? ?? 'DRAFT',
       jobDescription: json['job_description'] is Map<String, dynamic>
-          ? JobDescriptionModel.fromJson(json['job_description'] as Map<String, dynamic>)
+          ? JobDescriptionModel.fromJson(
+              json['job_description'] as Map<String, dynamic>,
+            )
           : null,
       analysisJson: json['analysis_json'] as Map<String, dynamic>?,
       matchResultsJson: json['match_results_json'] as Map<String, dynamic>?,
+      sourceResumeVersion:
+          (json['source_resume_version'] as num?)?.toInt() ?? 1,
+      suggestions: (json['suggestions'] as List<dynamic>? ?? const [])
+          .map(
+            (item) => OptimizationSuggestion.fromApi(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
     );
   }
 }

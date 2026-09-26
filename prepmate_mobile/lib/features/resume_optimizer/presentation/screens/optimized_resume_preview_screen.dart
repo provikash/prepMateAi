@@ -93,8 +93,9 @@ class OptimizedResumePreviewScreen extends ConsumerWidget {
                       message:
                           'We could not render this optimized version. Please retry.',
                       actionLabel: 'Retry',
-                      onAction: () =>
-                          ref.invalidate(optimizedVersionPdfProvider(versionId)),
+                      onAction: () => ref.invalidate(
+                        optimizedVersionPdfProvider(versionId),
+                      ),
                     ),
                     data: (bytes) => SfPdfViewer.memory(
                       bytes,
@@ -149,15 +150,17 @@ class OptimizedResumePreviewScreen extends ConsumerWidget {
     String name,
   ) async {
     try {
-      await Share.shareXFiles(
-        [
-          XFile.fromData(
-            Uint8List.fromList(bytes),
-            mimeType: 'application/pdf',
-            name: '$name.pdf',
-          ),
-        ],
-        fileNameOverrides: ['$name.pdf'],
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              Uint8List.fromList(bytes),
+              mimeType: 'application/pdf',
+              name: '$name.pdf',
+            ),
+          ],
+          fileNameOverrides: ['$name.pdf'],
+        ),
       );
     } catch (_) {
       if (context.mounted) {

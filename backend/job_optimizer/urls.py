@@ -11,7 +11,7 @@ from .views import (
 from .workflow_views import (
     FinalizeOptimizationView, GenerateSuggestionsView, OptimizedVersionPDFView,
     OptimizedVersionView, RegenerateSuggestionView, SuggestionListView,
-    SuggestionReviewView,
+    SuggestionReviewView, SuggestionDecisionView, OptimizationPDFStatusView,
 )
 
 urlpatterns = [
@@ -22,8 +22,11 @@ urlpatterns = [
     path("sessions/<uuid:pk>/analyze/", OptimizationSessionAnalyzeView.as_view(), name="optimization-session-analyze"),
     path("sessions/<uuid:pk>/match/", OptimizationSessionMatchView.as_view(), name="optimization-session-match"),
     path("sessions/<uuid:pk>/suggestions/", SuggestionListView.as_view()),
+    path("sessions/<uuid:pk>/suggestions/<uuid:suggestion_pk>/", SuggestionDecisionView.as_view()),
     path("sessions/<uuid:pk>/suggestions/generate/", GenerateSuggestionsView.as_view()),
     path("sessions/<uuid:pk>/finalize/", FinalizeOptimizationView.as_view()),
+    path("sessions/<uuid:pk>/apply/", FinalizeOptimizationView.as_view()),
+    path("sessions/<uuid:pk>/pdf/", OptimizationPDFStatusView.as_view()),
     path("suggestions/<uuid:pk>/regenerate/", RegenerateSuggestionView.as_view()),
     path("suggestions/<uuid:pk>/<str:action>/", SuggestionReviewView.as_view()),
     path("versions/<uuid:pk>/", OptimizedVersionView.as_view()),

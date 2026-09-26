@@ -1,29 +1,23 @@
 import '../entities/user.dart';
 
 abstract class AuthRepository {
-  Future<User?> login(String email, String password);
-
-  Future<User?> signInWithGoogle();
-
-  Future<bool> signup(
-    String name,
-    String email,
-    String password,
-    String passwordConfirm,
-  );
-
-  Future<bool> verifyOtp(String email, String otp, String flow);
+  Future<OtpChallengeData> requestOtp(String phoneNumber);
+  Future<OtpChallengeData> resendOtp(String phoneNumber, String challengeId);
+  Future<User> verifyOtp(String phoneNumber, String challengeId, String otp);
 
   Future<void> logout();
-
-  Future<bool> forgotPassword(String email);
-
-  Future<bool> resetPassword(String email, String otp, String newPassword);
-
-  Future<bool> resendVerification(String email);
 
   Future<User?> getProfile();
 
   Future<User?> updateProfile(User user);
   Future<User?> uploadProfileImage(String filePath);
+}
+
+class OtpChallengeData {
+  const OtpChallengeData({
+    required this.challengeId,
+    required this.resendAfterSeconds,
+  });
+  final String challengeId;
+  final int resendAfterSeconds;
 }

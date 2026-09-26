@@ -2,6 +2,8 @@
 🚀 SmartResume AI
 </h1>
 
+> Authentication now uses passwordless Indian mobile OTP only. See [AUTHENTICATION.md](AUTHENTICATION.md) for the API contract, safe migration, Fast2SMS/DLT setup, Flutter configuration, rollback, and production checklist.
+
 <p align="center">
 AI Powered Resume Builder & Career Assistant
 </p>

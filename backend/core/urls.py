@@ -20,6 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .health import health
 from .media import serve_media
+from ai.credit_views import EntitlementsView
 
 urlpatterns = [
     path('health/', health, name='health'),
@@ -34,4 +35,6 @@ urlpatterns = [
     path('api/v1/', include('exports.urls')),
     path('api/v1/ai/', include('ai.urls')),
     path('api/v1/job-optimizer/', include('job_optimizer.urls')),
+    path('api/v1/resume-optimizations/', include('job_optimizer.contract_urls')),
+    path('api/v1/billing/entitlements/', EntitlementsView.as_view(), name='billing-entitlements'),
 ]

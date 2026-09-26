@@ -9,21 +9,15 @@ from rest_framework.views import APIView
 from .serializers import GuardedTokenRefreshSerializer, RefreshInputSerializer
 from .api import AccountResponseMixin
 from .throttles import AuthIPThrottle, AuthIdentityThrottle
-from .services.account_service import AccountService
 
 from resume.models import Resume
 
 
 from .serializers import (
     DashboardSerializer,
-    GoogleAuthSerializer,
-    LoginSerializer,
-    RegisterSerializer,
     UserProfileSerializer,
     UserSummarySerializer,
 )
-from .services import AuthService
-from .services.google_oauth import GoogleTokenError, verify_google_id_token
 from .models import UserProfile
 
 logger = logging.getLogger(__name__)
@@ -34,134 +28,12 @@ class AuthViewSet(AccountResponseMixin, viewsets.ViewSet):
     throttle_classes = [AuthIPThrottle, AuthIdentityThrottle]
     permission_classes = [AllowAny]
 
-    def register(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = AccountService.register(serializer)
-        summary = UserSummarySerializer(user).data
-        return Response({"success": True, "message": "Registration successful. Please verify your email.", "user": summary, "data": {"user": summary}}, status=201)
-
-    def login(self, request):
-        serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        user = AuthService.authenticate_user(
-            email=serializer.validated_data["email"],
-            password=serializer.validated_data["password"],
-        )
-
-        if not user or not user.is_verified or user.deleted_at:
-            return Response(
-                {"detail": "Invalid email or password."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        tokens = AuthService.issue_tokens(user)
-
-        return Response(
-            {
-                "success": True,
-                "data": {**tokens, "user": UserSummarySerializer(user).data},
-                "message": "Login successful.",
-                "user": UserSummarySerializer(user).data,
-                "tokens": tokens,
-            },
-            status=status.HTTP_200_OK,
-        )
-
     def refresh(self, request):
         input_serializer = RefreshInputSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         serializer = GuardedTokenRefreshSerializer(data=input_serializer.validated_data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
-
-
-class GoogleAuthView(AccountResponseMixin, APIView):
-    """
-    POST /api/v1/auth/google/
-    Body: { "id_token": "<Google ID token from client>" }
-
-    Verifies the Google ID token server-side using the google-auth library,
-    then finds-or-creates the local user and issues JWT tokens.
-    """
-
-    permission_classes = [AllowAny]
-    authentication_classes = []
-    throttle_classes = [AuthIPThrottle, AuthIdentityThrottle]
-    auth_scope = "login"
-
-    def post(self, request):
-        serializer = GoogleAuthSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            idinfo = verify_google_id_token(serializer.validated_data["id_token"])
-        except GoogleTokenError as exc:
-            logger.warning("Google token verification failed.")
-            return Response(
-                {"detail": "Invalid or expired Google token."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-        except Exception as exc:
-            logger.error("Google token verification unavailable.")
-            return Response(
-                {"detail": "Could not verify Google token."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        email = idinfo.get("email", "").strip().lower()
-        name = idinfo.get("name", "") or idinfo.get("email", "").split("@")[0]
-        picture = idinfo.get("picture") or ""
-
-        if not email or idinfo.get("email_verified") is not True:
-            return Response(
-                {"detail": "Could not retrieve email from Google token."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        from django.contrib.auth import get_user_model
-
-        User = get_user_model()
-
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={
-                "name": name,
-                "avatar_url": picture,
-                "is_verified": True,
-            },
-        )
-
-        if created:
-            user.set_unusable_password()
-            user.save(update_fields=["password"])
-
-        updates = []
-        if not user.name and name:
-            user.name = name
-            updates.append("name")
-        if picture and not user.avatar_url:
-            user.avatar_url = picture
-            updates.append("avatar_url")
-        if not user.is_verified:
-            user.is_verified = True
-            updates.append("is_verified")
-
-        if updates:
-            user.save(update_fields=updates)
-
-        tokens = AuthService.issue_tokens(user)
-
-        return Response(
-            {
-                "message": "Google login successful.",
-                "user": UserSummarySerializer(user).data,
-                "tokens": tokens,
-                "created": created,
-            },
-            status=status.HTTP_200_OK,
-        )
 
 
 class ProfileViewSet(AccountResponseMixin, viewsets.ViewSet):

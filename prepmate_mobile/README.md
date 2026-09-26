@@ -1,90 +1,12 @@
-<<<<<<< HEAD
-<h1 align="center">
-🚀 SmartResume AI
-</h1>
+# PrepMate mobile
 
-<p align="center">
-AI Powered Resume Builder & Career Assistant
-</p>
+The Flutter app uses passwordless Indian mobile-number OTP authentication. It contains no email/password or Google sign-in flow. JWT access and refresh tokens are stored with `flutter_secure_storage`; the existing interceptor performs a single refresh for concurrent 401 responses and clears rejected sessions.
 
-<p align="center">
+```console
+flutter pub get
+flutter run --dart-define=API_BASE_URL=https://api.example.com/api/v1/
+flutter analyze
+flutter test
+```
 
-<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=24&pause=1000&color=36BCF7&center=true&vCenter=true&width=600&lines=AI+Resume+Builder;ATS+Score+Analyzer;Career+Roadmap+Generator;Flutter+%2B+Django+Full+Stack+Project" />
-
-</p>
-
----
-
-# 🧠 Project Overview
-
-SmartResume AI is a **full-stack final year project** that helps users:
-
-✔ Build professional resumes  
-✔ Analyze **ATS score**  
-✔ Generate **career roadmaps**  
-✔ Get **job suggestions**
-
-Built with **Flutter + Django REST Framework + AI Logic**
-
----
-
-# 🛠 Tech Stack
-
-### Frontend
-![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter)
-
-### Backend
-![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django)
-
-### API
-![DRF](https://img.shields.io/badge/Django_REST_Framework-red?style=for-the-badge)
-
-### State Management
-![Riverpod](https://img.shields.io/badge/Riverpod-blue?style=for-the-badge)
-
-### Version Control
-![Git](https://img.shields.io/badge/Git-orange?style=for-the-badge)
-![GitHub](https://img.shields.io/badge/GitHub-black?style=for-the-badge)
-
----
-
-# 📱 App Preview
-
-<p align="center">
-
-<img src="docs/images/app_demo.gif" width="700"/>
-
-</p>
-
----
-
-# ⚡ Features
-
-✨ AI Resume Builder  
-✨ ATS Score Analysis  
-✨ Career Roadmap Generator  
-✨ Job Recommendation System  
-✨ Secure Authentication  
-✨ Modern Flutter UI  
-
----
-
-# 📂 Project Structure
-=======
-# prepmate_mobile
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
->>>>>>> master
+The API URL must use HTTPS outside local development and end in `/api/v1/`. Fast2SMS credentials must never be supplied as Dart defines or included in the app. See [../AUTHENTICATION.md](../AUTHENTICATION.md) for backend, DLT, migration, and deployment details.

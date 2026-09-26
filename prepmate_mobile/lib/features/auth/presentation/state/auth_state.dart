@@ -13,7 +13,9 @@ class AuthState {
   final AuthStatus status;
   final String? errorMessage;
   final String? infoMessage;
-  final String? email;
+  final String? phoneNumber;
+  final String? challengeId;
+  final int resendAfterSeconds;
   final User? user;
   final bool isLoading;
   final bool hasCheckedSession;
@@ -22,7 +24,9 @@ class AuthState {
     this.status = AuthStatus.initial,
     this.errorMessage,
     this.infoMessage,
-    this.email,
+    this.phoneNumber,
+    this.challengeId,
+    this.resendAfterSeconds = 0,
     this.user,
     this.isLoading = false,
     this.hasCheckedSession = false,
@@ -32,7 +36,9 @@ class AuthState {
     AuthStatus? status,
     String? errorMessage,
     String? infoMessage,
-    String? email,
+    String? phoneNumber,
+    String? challengeId,
+    int? resendAfterSeconds,
     User? user,
     bool? isLoading,
     bool? hasCheckedSession,
@@ -44,7 +50,9 @@ class AuthState {
       status: status ?? this.status,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       infoMessage: clearInfo ? null : (infoMessage ?? this.infoMessage),
-      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      challengeId: challengeId ?? this.challengeId,
+      resendAfterSeconds: resendAfterSeconds ?? this.resendAfterSeconds,
       user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
       hasCheckedSession: hasCheckedSession ?? this.hasCheckedSession,

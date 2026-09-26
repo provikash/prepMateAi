@@ -1,171 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/error_text.dart';
-import '../authWidgets/auth_field.dart';
 import '../authWidgets/auth_shell.dart';
 import '../state/auth_state.dart';
 import '../viewmodel/auth_viewmodel.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
-
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  Future<void> _onSignInPressed() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    await ref
-        .read(authViewModelProvider.notifier)
-        .login(_emailController.text.trim(), _passwordController.text);
-  }
-
-  Future<void> _onGoogleTap() async {
-    await ref.read(authViewModelProvider.notifier).signInWithGoogle();
-  }
+  final _phoneController = TextEditingController();
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _continue() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final sent = await ref
+        .read(authViewModelProvider.notifier)
+        .requestOtp(_phoneController.text);
+    if (sent && mounted) context.push('/verify-otp');
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(authProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated) {
-        if (next.infoMessage?.isNotEmpty ?? false) {
-          Fluttertoast.showToast(msg: next.infoMessage!);
-          ref.read(authProvider.notifier).clearMessages();
-        }
-        final intended = GoRouterState.of(context).uri.queryParameters['from'];
-        context.go(intended ?? '/home');
-      } else if (next.status == AuthStatus.error &&
-          next.errorMessage != null &&
-          next.errorMessage != previous?.errorMessage) {
-        Fluttertoast.showToast(msg: next.errorMessage!);
-      }
-    });
-    final state = ref.watch(authProvider);
-    final loading = state.status == AuthStatus.loading;
-    final colors = AppColors.of(context);
-
+    final state = ref.watch(authViewModelProvider);
     return AuthShell(
-      title: 'Welcome back',
-      subtitle: 'Sign in to continue building your professional future.',
+      title: 'Continue with mobile',
+      subtitle: 'Sign in or create your account with a one-time code.',
       showBack: false,
-      footer: Wrap(
-        alignment: WrapAlignment.center,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Text(
-            "Don't have an account?",
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-          ),
-          TextButton(
-            onPressed: () => context.push('/signup'),
-            child: const Text('Create account'),
-          ),
-        ],
-      ),
-      child: AutofillGroup(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Email address',
-                style: Theme.of(context).textTheme.labelLarge,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Indian mobile number',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            TextFormField(
+              key: const Key('mobileNumberField'),
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.telephoneNumberNational],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
+              decoration: const InputDecoration(
+                prefixText: '+91  ',
+                hintText: '9876543210',
               ),
-              const SizedBox(height: AppSpacing.xs),
-              AuthField(
-                controller: _emailController,
-                hint: 'name@company.com',
-                prefixIcon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  final email = value?.trim() ?? '';
-                  if (email.isEmpty) return 'Enter your email address';
-                  if (!RegExp(
-                    r'^[\w\-.]+@([\w-]+\.)+[\w-]{2,}$',
-                  ).hasMatch(email)) {
-                    return 'Enter a valid email address';
-                  }
-                  return null;
-                },
-                isPassword: false,
+              validator: (value) {
+                final digits = value ?? '';
+                if (digits.length != 10) {
+                  return 'Enter exactly 10 mobile digits';
+                }
+                if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(digits)) {
+                  return 'Enter a valid Indian mobile number';
+                }
+                return null;
+              },
+              onFieldSubmitted: (_) => _continue(),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'By continuing, you consent to receive an authentication SMS. Message rates may apply.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            ErrorText(message: state.errorMessage),
+            const SizedBox(height: AppSpacing.lg),
+            AppPrimaryButton(
+              label: 'Continue',
+              icon: Icons.arrow_forward_rounded,
+              loading: state.status == AuthStatus.loading,
+              onPressed: _continue,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              key: const Key('useTestAccountButton'),
+              onPressed: () {
+                _phoneController.text = '9999999999';
+                _continue();
+              },
+              icon: const Icon(Icons.developer_mode, size: 16),
+              label: const Text('Use Test Account (9999999999)'),
+              style: OutlinedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Password',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => context.push('/forgot-password'),
-                    child: const Text('Forgot password?'),
-                  ),
-                ],
-              ),
-              AuthField(
-                controller: _passwordController,
-                hint: 'Enter your password',
-                prefixIcon: Icons.lock_outline_rounded,
-                isPassword: true,
-                validator: (value) =>
-                    (value?.isEmpty ?? true) ? 'Enter your password' : null,
-              ),
-              ErrorText(message: state.errorMessage),
-              const SizedBox(height: AppSpacing.lg),
-              AppPrimaryButton(
-                label: 'Sign in',
-                icon: Icons.arrow_forward_rounded,
-                loading: loading,
-                onPressed: _onSignInPressed,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                    ),
-                    child: Text(
-                      'OR',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  const Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppSecondaryButton(
-                label: 'Continue with Google',
-                icon: Icons.g_mobiledata_rounded,
-                onPressed: loading ? null : _onGoogleTap,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

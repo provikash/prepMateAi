@@ -54,7 +54,9 @@ class MockOptimizationRepository implements OptimizationRepository {
   }
 
   @override
-  Future<OptimizationSessionModel> getOptimizationSession(String sessionId) async {
+  Future<OptimizationSessionModel> getOptimizationSession(
+    String sessionId,
+  ) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     return OptimizationSessionModel(
       id: sessionId,
@@ -65,7 +67,16 @@ class MockOptimizationRepository implements OptimizationRepository {
   }
 
   @override
-  Future<OptimizationSessionModel> analyzeJobDescription(String sessionId) async {
+  Future<OptimizationAnalysis> restoreOptimization(String sessionId) => analyze(
+    resumeId: 'mock',
+    jobDescription:
+        'A sufficiently detailed mock job description for session restoration.',
+  );
+
+  @override
+  Future<OptimizationSessionModel> analyzeJobDescription(
+    String sessionId,
+  ) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     return OptimizationSessionModel(
       id: sessionId,
@@ -109,13 +120,19 @@ class MockOptimizationRepository implements OptimizationRepository {
         'Integrate authenticated REST APIs with backend services',
         'Collaborate with product and design in Agile sprints',
       ],
-      qualifications: [
-        'Bachelor’s degree in Computer Science or equivalent',
-      ],
+      qualifications: ['Bachelor’s degree in Computer Science or equivalent'],
       experienceRequirements: [
         '1+ years of experience in mobile app development',
       ],
-      keywords: ['Flutter', 'Dart', 'Riverpod', 'REST APIs', 'Firebase', 'Git', 'Agile'],
+      keywords: [
+        'Flutter',
+        'Dart',
+        'Riverpod',
+        'REST APIs',
+        'Firebase',
+        'Git',
+        'Agile',
+      ],
       softSkills: ['Communication', 'Teamwork', 'Problem Solving'],
       domainTerms: ['Mobile Development', 'FinTech'],
     );
@@ -130,7 +147,8 @@ class MockOptimizationRepository implements OptimizationRepository {
         evidence: 'Flutter',
         evidencePath: 'projects[0].technologies[0]',
         evidenceContext: 'Projects → PrepMateAI',
-        explanation: 'Strong evidence across projects and skills: "Built mobile application using Flutter."',
+        explanation:
+            'Strong evidence across projects and skills: "Built mobile application using Flutter."',
       ),
       JobRequirement(
         id: 'req_002',
@@ -149,10 +167,12 @@ class MockOptimizationRepository implements OptimizationRepository {
         importance: 'Required',
         category: 'Technical Skill',
         match: RequirementMatch.matched,
-        evidence: 'Implemented authenticated REST APIs using Django REST Framework.',
+        evidence:
+            'Implemented authenticated REST APIs using Django REST Framework.',
         evidencePath: 'projects[0].highlights[1]',
         evidenceContext: 'Projects → PrepMateAI',
-        explanation: 'Direct evidence in PrepMateAI project highlights: "Implemented authenticated REST APIs."',
+        explanation:
+            'Direct evidence in PrepMateAI project highlights: "Implemented authenticated REST APIs."',
       ),
       JobRequirement(
         id: 'req_004',
@@ -174,7 +194,8 @@ class MockOptimizationRepository implements OptimizationRepository {
         evidence: 'Riverpod',
         evidencePath: 'skills[0].keywords[2]',
         evidenceContext: 'Skills → Mobile Development',
-        explanation: 'Riverpod is listed in skills, but scope and measurable ownership are not detailed.',
+        explanation:
+            'Riverpod is listed in skills, but scope and measurable ownership are not detailed.',
       ),
       JobRequirement(
         id: 'req_006',
@@ -185,7 +206,8 @@ class MockOptimizationRepository implements OptimizationRepository {
         evidence: 'Clean Architecture',
         evidencePath: 'basics.summary',
         evidenceContext: 'Basics → Summary',
-        explanation: 'Clean Architecture is documented, but additional mobile architecture patterns are not detailed.',
+        explanation:
+            'Clean Architecture is documented, but additional mobile architecture patterns are not detailed.',
       ),
       JobRequirement(
         id: 'req_007',
@@ -193,7 +215,8 @@ class MockOptimizationRepository implements OptimizationRepository {
         importance: 'Required',
         category: 'Technical Skill',
         match: RequirementMatch.missing,
-        explanation: 'No supporting evidence found. Riverpod is present, but Bloc is distinct and not found.',
+        explanation:
+            'No supporting evidence found. Riverpod is present, but Bloc is distinct and not found.',
       ),
       JobRequirement(
         id: 'req_008',
@@ -212,7 +235,8 @@ class MockOptimizationRepository implements OptimizationRepository {
         evidence: 'Cloud deployment and containerization',
         evidencePath: 'basics.summary',
         evidenceContext: 'Basics → Professional Summary',
-        explanation: 'Cloud deployment is mentioned in summary, but AWS is not explicitly documented.',
+        explanation:
+            'Cloud deployment is mentioned in summary, but AWS is not explicitly documented.',
       ),
     ];
 
@@ -220,8 +244,10 @@ class MockOptimizationRepository implements OptimizationRepository {
       OptimizationSuggestion(
         id: 'summary',
         section: 'Summary',
-        current: 'Mobile engineer with experience building Flutter applications.',
-        proposed: 'Mobile engineer experienced in building cross-platform Flutter applications with Dart, REST APIs, and clean architecture.',
+        current:
+            'Mobile engineer with experience building Flutter applications.',
+        proposed:
+            'Mobile engineer experienced in building cross-platform Flutter applications with Dart, REST APIs, and clean architecture.',
         reason: 'The JD emphasizes Flutter, Dart, and REST API development.',
         keywords: ['Flutter', 'Dart', 'REST APIs'],
         evidence: 'Projects → PrepMateAI and Skills',
@@ -231,8 +257,10 @@ class MockOptimizationRepository implements OptimizationRepository {
         id: 'project',
         section: 'Projects',
         current: 'Built mobile application using Flutter and Riverpod.',
-        proposed: 'Developed responsive Flutter mobile app with Riverpod state management and authenticated REST API integrations.',
-        reason: 'Highlights REST API integration and state management as required by the JD.',
+        proposed:
+            'Developed responsive Flutter mobile app with Riverpod state management and authenticated REST API integrations.',
+        reason:
+            'Highlights REST API integration and state management as required by the JD.',
         keywords: ['Flutter', 'REST APIs', 'Riverpod'],
         evidence: 'Projects[0] highlights',
         highImpact: true,
@@ -270,28 +298,44 @@ class MockOptimizationRepository implements OptimizationRepository {
   }
 
   @override
-  Future<List<OptimizationSuggestion>> generateSuggestions(String sessionId) async =>
+  Future<List<OptimizationSuggestion>> generateSuggestions(
+    String sessionId,
+  ) async =>
       (await analyze(resumeId: 'mock', jobDescription: 'mock')).suggestions;
 
   @override
   Future<OptimizationSuggestion> reviewSuggestion(
-    String id, SuggestionStatus status, {String? value}
-  ) async => throw UnsupportedError('Mock review is not persisted.');
+    String id,
+    SuggestionStatus status, {
+    String? value,
+    int? decisionVersion,
+  }) async => throw UnsupportedError('Mock review is not persisted.');
 
   @override
-  Future<OptimizationSuggestion> regenerateSuggestion(String id, String instruction) async =>
-      throw UnsupportedError('Mock regeneration is not persisted.');
+  Future<OptimizationSuggestion> regenerateSuggestion(
+    String id,
+    String instruction,
+  ) async => throw UnsupportedError('Mock regeneration is not persisted.');
 
   @override
-  Future<Map<String, dynamic>> finalizeOptimization(String sessionId, String name) async =>
-      throw UnsupportedError('Mock finalization is not persisted.');
+  Future<Map<String, dynamic>> finalizeOptimization(
+    String sessionId,
+    String name, {
+    required String idempotencyKey,
+    required int expectedSourceVersion,
+  }) async => throw UnsupportedError('Mock finalization is not persisted.');
 
   @override
   Future<int> getAvailableCredits() async => 0;
 
   @override
-  Future<Map<String, dynamic>> getCreditInfo() async =>
-      {'available_credits': 0, 'operation_costs': {'resume_optimization': 10, 'suggestion_regeneration': 1}};
+  Future<Map<String, dynamic>> getCreditInfo() async => {
+    'available_credits': 0,
+    'operation_costs': {
+      'resume_optimization': 10,
+      'suggestion_regeneration': 1,
+    },
+  };
 
   @override
   Future<List<int>> getOptimizedPdf(String versionId) async => const [];

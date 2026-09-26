@@ -70,22 +70,35 @@ class LoginSerializer(StrictInputMixin, serializers.Serializer):
         return value.strip().lower()
 
 
-class GoogleAuthSerializer(StrictInputMixin, serializers.Serializer):
-    id_token = serializers.CharField(write_only=True, trim_whitespace=True)
-
-    def validate_id_token(self, value):
-        token = value.strip()
-        if not token:
-            raise serializers.ValidationError("id_token is required.")
-        return token
-
-
 class UserSummarySerializer(StrictInputMixin, serializers.ModelSerializer):
     is_email_verified = serializers.BooleanField(source="is_verified", read_only=True)
     class Meta:
         model = User
-        fields = ("id", "email", "name", "first_name", "last_name", "avatar_url", "is_verified", "is_email_verified")
-        read_only_fields = ("id", "email", "is_verified")
+        fields = ("id", "phone_number", "email", "name", "first_name", "last_name", "avatar_url", "is_verified", "is_phone_verified", "profile_completed", "is_email_verified")
+        read_only_fields = ("id", "phone_number", "is_verified", "is_phone_verified")
+
+    def validate_email(self, value):
+        return value.strip().lower() if value else None
+
+
+class PhoneInputSerializer(StrictInputMixin, serializers.Serializer):
+    phone_number = serializers.CharField(max_length=40)
+
+    def validate_phone_number(self, value):
+        from .services.phone_service import InvalidPhoneNumber, normalize_indian_phone
+        try:
+            return normalize_indian_phone(value)
+        except InvalidPhoneNumber as exc:
+            raise serializers.ValidationError(str(exc), code="invalid_phone_number") from exc
+
+
+class OTPVerifySerializer(PhoneInputSerializer):
+    challenge_id = serializers.UUIDField()
+    otp = serializers.RegexField(r"^[0-9]{6}$", trim_whitespace=False)
+
+
+class OTPResendSerializer(PhoneInputSerializer):
+    challenge_id = serializers.UUIDField()
 
 
 class UserProfileSerializer(StrictInputMixin, serializers.ModelSerializer):
@@ -129,6 +142,14 @@ class UserProfileSerializer(StrictInputMixin, serializers.ModelSerializer):
         request = self.context.get("request")
         return media_url(request, obj.profile_image)
 
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        completed = bool(instance.full_name.strip())
+        if instance.user.profile_completed != completed:
+            instance.user.profile_completed = completed
+            instance.user.save(update_fields=["profile_completed", "updated_at"])
+        return instance
+
 
 class EmailSerializer(StrictInputMixin, serializers.Serializer):
     email = serializers.EmailField(max_length=255)
@@ -168,7 +189,7 @@ class GuardedTokenRefreshSerializer(TokenRefreshSerializer):
         try:
             token = self.token_class(attrs["refresh"])
             with transaction.atomic():
-                user = User.objects.select_for_update().get(pk=token["user_id"], is_active=True, is_verified=True, deleted_at__isnull=True)
+                user = User.objects.select_for_update().get(pk=token["user_id"], is_active=True, is_phone_verified=True, deleted_at__isnull=True)
                 if token.get("hash_password") != get_md5_hash_password(user.password):
                     raise InvalidToken("Credentials have changed. Please log in again.")
                 return super().validate(attrs)

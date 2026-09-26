@@ -33,15 +33,17 @@ class PdfViewScreen extends ConsumerWidget {
               ? null
               : () async {
                   try {
-                    await Share.shareXFiles(
-                      [
-                        XFile.fromData(
-                          pdf.asData!.value,
-                          mimeType: 'application/pdf',
-                          name: 'PrepMate-resume.pdf',
-                        ),
-                      ],
-                      fileNameOverrides: ['PrepMate-resume.pdf'],
+                    await SharePlus.instance.share(
+                      ShareParams(
+                        files: [
+                          XFile.fromData(
+                            pdf.asData!.value,
+                            mimeType: 'application/pdf',
+                            name: 'PrepMate-resume.pdf',
+                          ),
+                        ],
+                        fileNameOverrides: ['PrepMate-resume.pdf'],
+                      ),
                     );
                   } catch (_) {
                     if (context.mounted) {

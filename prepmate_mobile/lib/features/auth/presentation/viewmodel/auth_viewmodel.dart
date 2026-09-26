@@ -1,20 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/services/storage.dart';
-import '../../domain/repositories/auth_repository.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
 import '../state/auth_state.dart';
 
 final authViewModelProvider = NotifierProvider<AuthViewModel, AuthState>(
   () => AuthViewModel(),
 );
-
 final authProvider = authViewModelProvider;
 
 class AuthViewModel extends Notifier<AuthState> {
   late AuthRepository _repository;
+  bool _submitting = false;
 
   @override
   AuthState build() {
@@ -22,189 +23,126 @@ class AuthViewModel extends Notifier<AuthState> {
     return AuthState();
   }
 
-  void clearMessages() {
-    state = state.copyWith(clearError: true, clearInfo: true);
-  }
+  void clearMessages() =>
+      state = state.copyWith(clearError: true, clearInfo: true);
 
   Future<void> bootstrapSession() async {
     state = state.copyWith(status: AuthStatus.loading, clearError: true);
-    final accessToken = await TokenService.getAccessToken();
-    final refreshToken = await TokenService.getRefreshToken();
-    if ((accessToken == null || accessToken.isEmpty) &&
-        (refreshToken == null || refreshToken.isEmpty)) {
+    final access = await TokenService.getAccessToken();
+    final refresh = await TokenService.getRefreshToken();
+    if ((access == null || access.isEmpty) &&
+        (refresh == null || refresh.isEmpty)) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
         hasCheckedSession: true,
-        clearError: true,
       );
       return;
     }
-
-    final isValid = await getProfile(markSessionChecked: true);
-    if (!isValid && state.status == AuthStatus.unauthenticated) {
+    final valid = await getProfile(markSessionChecked: true);
+    if (!valid && state.status == AuthStatus.unauthenticated) {
       await TokenService.deleteToken();
+    }
+  }
+
+  Future<bool> requestOtp(String phoneNumber) async {
+    if (_submitting) return false;
+    _submitting = true;
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    try {
+      final challenge = await _repository.requestOtp(phoneNumber);
       state = state.copyWith(
-        status: AuthStatus.unauthenticated,
+        status: AuthStatus.success,
+        phoneNumber: phoneNumber,
+        challengeId: challenge.challengeId,
+        resendAfterSeconds: challenge.resendAfterSeconds,
+      );
+      return true;
+    } catch (error) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: _authError(error),
+      );
+      return false;
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<bool> resendOtp() async {
+    if (_submitting || state.phoneNumber == null || state.challengeId == null) {
+      return false;
+    }
+    _submitting = true;
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    try {
+      final challenge = await _repository.resendOtp(
+        state.phoneNumber!,
+        state.challengeId!,
+      );
+      state = state.copyWith(
+        status: AuthStatus.success,
+        challengeId: challenge.challengeId,
+        resendAfterSeconds: challenge.resendAfterSeconds,
+      );
+      return true;
+    } catch (error) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: _authError(error),
+      );
+      return false;
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<bool> verifyOtp(String otp) async {
+    if (_submitting || state.phoneNumber == null || state.challengeId == null) {
+      return false;
+    }
+    _submitting = true;
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    try {
+      final user = await _repository.verifyOtp(
+        state.phoneNumber!,
+        state.challengeId!,
+        otp,
+      );
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
+        user: user,
         hasCheckedSession: true,
-        infoMessage: 'Session expired, please login again',
+        infoMessage: 'Signed in successfully',
       );
-    }
-  }
-
-  Future<void> login(String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
-
-    try {
-      final user = await _repository.login(email, password);
-
-      if (user != null) {
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-          infoMessage: 'Login successful',
-          hasCheckedSession: true,
-          clearError: true,
-        );
-      } else {
-        state = state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: "Login failed",
-        );
-      }
-    } catch (e) {
+      return true;
+    } catch (error) {
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: _normalizeAuthError(e),
+        errorMessage: _authError(error),
       );
+      return false;
+    } finally {
+      _submitting = false;
     }
   }
 
-  Future<void> signup({
-    required String name,
-    required String email,
-    required String password,
-    required String passwordConfirm,
-  }) async {
-    state = state.copyWith(status: AuthStatus.loading);
-
-    try {
-      final success = await _repository.signup(
-        name,
-        email,
-        password,
-        passwordConfirm,
-      );
-
-      if (success) {
-        state = state.copyWith(status: AuthStatus.success, email: email);
-      } else {
-        state = state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: "Signup failed",
-        );
+  String _authError(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map &&
+          data['message'] != null &&
+          data['message'] != 'Request failed.') {
+        return data['message'].toString();
       }
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: _normalizeAuthError(e),
-      );
-    }
-  }
-
-  String _normalizeAuthError(Object error) {
-    dynamic payload = error;
-    if (error is DioException) payload = error.response?.data ?? error.message;
-    final messages = <String>[];
-    void collect(dynamic value) {
-      if (value == null) return;
-      if (value is Map) {
-        final preferred = value['detail'] ?? value['message'];
-        if (preferred != null && preferred.toString() != 'Request failed.') {
-          collect(preferred);
-        } else {
-          value.forEach((key, nested) {
-            if (!{'success', 'message'}.contains(key)) collect(nested);
-          });
-        }
-      } else if (value is Iterable) {
-        for (final nested in value) {
-          collect(nested);
-        }
-      } else {
-        final text = value.toString().replaceFirst('Exception: ', '').trim();
-        if (text.isNotEmpty && !messages.contains(text)) messages.add(text);
+      if (error.type == DioExceptionType.connectionError) {
+        return 'You appear to be offline. Check your connection.';
+      }
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout) {
+        return 'The request timed out. Please try again.';
       }
     }
-
-    collect(payload);
-    return messages.isEmpty
-        ? 'Unable to complete the request. Please try again.'
-        : messages.join(' ');
-  }
-
-  Future<void> verifyOtp(String email, String otp, String flow) async {
-    state = state.copyWith(status: AuthStatus.loading);
-    try {
-      final success = await _repository.verifyOtp(email, otp, flow);
-      if (success) {
-        state = state.copyWith(
-          status: AuthStatus.success,
-          infoMessage: 'Email verified. Please sign in.',
-          hasCheckedSession: true,
-          clearError: true,
-        );
-      } else {
-        state = state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: "Verification failed",
-        );
-      }
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      );
-    }
-  }
-
-  Future<void> signInWithGoogle() async {
-    state = state.copyWith(status: AuthStatus.loading);
-    try {
-      final user = await _repository.signInWithGoogle();
-      if (user != null) {
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-          infoMessage: 'Google login successful',
-          hasCheckedSession: true,
-          clearError: true,
-        );
-      } else {
-        state = state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: 'Google login failed',
-          hasCheckedSession: true,
-        );
-      }
-    } catch (e) {
-      final errorMsg = e.toString();
-
-      // Handle Google Sign-In cancellation gracefully
-      if (errorMsg.contains('cancelled') || errorMsg.contains('dismiss')) {
-        state = state.copyWith(
-          status: AuthStatus.unauthenticated,
-          hasCheckedSession: true,
-          clearError: true,
-        );
-        return;
-      }
-
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: errorMsg,
-        hasCheckedSession: true,
-      );
-    }
+    return 'Unable to complete the request. Please try again.';
   }
 
   Future<void> logout() async {
@@ -212,9 +150,7 @@ class AuthViewModel extends Notifier<AuthState> {
       await _repository.logout();
     } catch (error) {
       await TokenService.deleteToken();
-      debugPrint(
-        'Backend logout failed; local credentials were cleared: $error',
-      );
+      debugPrint('Logout failed after local cleanup: $error');
     }
     state = AuthState(
       status: AuthStatus.unauthenticated,
@@ -231,8 +167,6 @@ class AuthViewModel extends Notifier<AuthState> {
     );
   }
 
-  /// Fetches profile and validates token.
-  /// Returns true if token is valid and profile is fetched.
   Future<bool> getProfile({bool markSessionChecked = false}) async {
     try {
       final user = await _repository.getProfile();
@@ -247,106 +181,38 @@ class AuthViewModel extends Notifier<AuthState> {
         );
         return true;
       }
-      state = state.copyWith(
-        status: AuthStatus.unauthenticated,
-        hasCheckedSession: markSessionChecked ? true : state.hasCheckedSession,
-      );
-      return false;
-    } catch (e) {
-      debugPrint("Error fetching profile: $e");
-      final unauthorized = e is DioException && e.response?.statusCode == 401;
+    } catch (error) {
+      final unauthorized =
+          error is DioException && error.response?.statusCode == 401;
       state = state.copyWith(
         status: unauthorized ? AuthStatus.unauthenticated : AuthStatus.error,
         hasCheckedSession: markSessionChecked ? true : state.hasCheckedSession,
-        errorMessage: unauthorized
-            ? null
-            : 'Unable to verify your session. Check your connection and try again.',
+        errorMessage: unauthorized ? null : 'Unable to restore your session.',
         clearError: unauthorized,
       );
       return false;
     }
+    state = state.copyWith(
+      status: AuthStatus.unauthenticated,
+      hasCheckedSession: markSessionChecked ? true : state.hasCheckedSession,
+    );
+    return false;
   }
 
   Future<void> updateProfile(User user) async {
-    state = state.copyWith(status: AuthStatus.loading);
-    try {
-      final updatedUser = await _repository.updateProfile(user);
-      if (updatedUser != null) {
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          user: updatedUser,
-        );
-      } else {
-        state = state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: "Failed to update profile",
-        );
-      }
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      );
-    }
-  }
-
-  Future<bool> forgotPassword(String email) async {
-    state = state.copyWith(status: AuthStatus.loading);
-
-    try {
-      final success = await _repository.forgotPassword(email);
-
-      if (success) {
-        state = state.copyWith(status: AuthStatus.success);
-      } else {
-        state = state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: "Failed to send OTP",
-        );
-      }
-      return success;
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      );
-      return false;
-    }
-  }
-
-  Future<bool> resetPassword(
-    String email,
-    String otp,
-    String newPassword,
-  ) async {
     state = state.copyWith(status: AuthStatus.loading, clearError: true);
     try {
-      final success = await _repository.resetPassword(email, otp, newPassword);
+      final updated = await _repository.updateProfile(user);
       state = state.copyWith(
-        status: success ? AuthStatus.success : AuthStatus.error,
-        infoMessage: success ? 'Password changed. Please sign in.' : null,
-        errorMessage: success ? null : 'Password reset failed.',
-        hasCheckedSession: true,
+        status: updated == null ? AuthStatus.error : AuthStatus.authenticated,
+        user: updated,
+        errorMessage: updated == null ? 'Failed to update profile.' : null,
       );
-      return success;
     } catch (error) {
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: _normalizeAuthError(error),
+        errorMessage: _authError(error),
       );
-      return false;
-    }
-  }
-
-  Future<bool> resendVerification(String email) async {
-    try {
-      return await _repository.resendVerification(email);
-    } catch (error) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: _normalizeAuthError(error),
-      );
-      return false;
     }
   }
 }

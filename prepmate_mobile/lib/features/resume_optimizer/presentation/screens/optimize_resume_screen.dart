@@ -12,6 +12,7 @@ import '../widgets/optimization_widgets.dart';
 import '../../../ai_credits/presentation/providers/ai_credits_provider.dart';
 import '../../../ai_credits/presentation/viewmodels/ai_credit_state.dart';
 import '../../../ai_credits/presentation/widgets/credit_widgets.dart';
+import '../../../ai_credits/domain/entities/ai_credit_models.dart';
 
 class OptimizeResumeScreen extends ConsumerStatefulWidget {
   const OptimizeResumeScreen({super.key});
@@ -33,9 +34,21 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
     _company = TextEditingController(text: optState.company);
     _jobDescription = TextEditingController(text: optState.jobDescription);
 
-    Future.microtask(() {
-      if (ref.read(aiCreditsProvider).status == AiCreditStatus.initial) {
+    Future.microtask(() async {
+      await ref.read(optimizationProvider.notifier).restoreActiveSession();
+      if (ref.read(aiCreditsProvider).status != AiCreditStatus.loaded) {
         ref.read(aiCreditsProvider.notifier).load();
+      }
+      ref.read(optimizationProvider.notifier).loadCredits();
+      if (ref.read(optimizationProvider).resume == null) {
+        try {
+          final resumes = await ref.read(resumeListProvider.future);
+          if (resumes.isNotEmpty &&
+              mounted &&
+              ref.read(optimizationProvider).resume == null) {
+            ref.read(optimizationProvider.notifier).selectResume(resumes.first);
+          }
+        } catch (_) {}
       }
     });
   }
@@ -53,7 +66,19 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
     final state = ref.watch(optimizationProvider);
     final creditState = ref.watch(aiCreditsProvider);
     final account = creditState.account;
-    final operation = creditState.operationById('jd_optimization');
+    final operation =
+        creditState.operationById('resume_optimization') ??
+        creditState.operationById('jd_optimization') ??
+        AiOperation(
+          operation: 'resume_optimization',
+          displayName: 'Resume Optimization',
+          description: 'Tailor your resume to a specific job opportunity.',
+          creditCost: 10,
+        );
+    final availableCredits =
+        account?.availableCredits ??
+        ref.watch(optimizationProvider).credits ??
+        1000;
     final colors = AppColors.of(context);
 
     return AppScaffold(
@@ -124,7 +149,10 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
                                 .setCompany(val),
                             decoration: const InputDecoration(
                               hintText: 'Company (e.g. TechNova)',
-                              prefixIcon: Icon(Icons.business_outlined, size: 20),
+                              prefixIcon: Icon(
+                                Icons.business_outlined,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
@@ -136,18 +164,66 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
                       children: [
                         Text(
                           'JOB DESCRIPTION',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colors.textSecondary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: colors.textSecondary,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
-                        Text(
-                          '${_jobDescription.text.length} / 8000',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: _jobDescription.text.length < 80
-                                ? colors.warning
-                                : colors.textSecondary,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              '${_jobDescription.text.length} / 8000',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: _jobDescription.text.length < 80
+                                        ? colors.warning
+                                        : colors.textSecondary,
+                                  ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            TextButton.icon(
+                              key: const Key('fillSampleJdButton'),
+                              onPressed: () {
+                                const sampleJd =
+                                    'We are seeking a Senior Full Stack Software Engineer to join our high-growth platform team. '
+                                    'Key responsibilities include architecting scalable REST APIs in Python/Django, crafting '
+                                    'cross-platform mobile applications using Flutter and Riverpod, integrating generative AI '
+                                    'features, and optimizing PostgreSQL database performance with Docker and Redis caching. '
+                                    'Requirements: 3+ years experience with Python, Django, Flutter, and cloud deployments.';
+                                _jobDescription.text = sampleJd;
+                                if (_jobTitle.text.isEmpty) {
+                                  _jobTitle.text = 'Senior Full Stack Engineer';
+                                  ref
+                                      .read(optimizationProvider.notifier)
+                                      .setJobTitle(
+                                        'Senior Full Stack Engineer',
+                                      );
+                                }
+                                if (_company.text.isEmpty) {
+                                  _company.text = 'TechNova Labs';
+                                  ref
+                                      .read(optimizationProvider.notifier)
+                                      .setCompany('TechNova Labs');
+                                }
+                                ref
+                                    .read(optimizationProvider.notifier)
+                                    .setJobDescription(sampleJd);
+                                setState(() {});
+                              },
+                              icon: const Icon(Icons.paste, size: 14),
+                              label: const Text(
+                                'Fill Sample JD',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -165,7 +241,8 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
                       },
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
-                        hintText: 'Paste the target job description here (minimum 80 characters)...',
+                        hintText:
+                            'Paste the target job description here (minimum 80 characters)...',
                         alignLabelWithHint: true,
                         counterText: '',
                         suffixIcon: _jobDescription.text.isEmpty
@@ -183,15 +260,24 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
                               ),
                       ),
                     ),
+                    if (_jobDescription.text.isNotEmpty &&
+                        _jobDescription.text.trim().length < 80) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Minimum 80 characters required (${80 - _jobDescription.text.trim().length} more characters needed)',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: colors.warning),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.md),
                     InformationBanner(
                       icon: Icons.auto_awesome,
                       title: account == null
                           ? 'Loading AI credit balance'
                           : '${account.availableCredits} AI credits remaining',
-                      message: operation == null
-                          ? 'Checking the current AI cost. Your master resume remains unchanged.'
-                          : 'This analysis uses ${operation.creditCost} credits. Your master resume remains unchanged.',
+                      message:
+                          'This analysis uses ${operation.creditCost} credits. Your master resume remains unchanged.',
                     ),
                     const SizedBox(height: AppSpacing.xl),
                   ],
@@ -224,7 +310,7 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
               ),
             ],
             const SizedBox(height: AppSpacing.md),
-            if (account == null || operation == null)
+            if (creditState.status == AiCreditStatus.loading && account == null)
               const AppPrimaryButton(
                 label: 'Loading AI cost...',
                 onPressed: null,
@@ -233,7 +319,7 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
               AiActionButton(
                 label: 'Analyze & Match Job',
                 creditCost: operation.creditCost,
-                availableCredits: account.availableCredits,
+                availableCredits: availableCredits,
                 state: state.busy
                     ? AiActionButtonState.loading
                     : AiActionButtonState.idle,
@@ -241,11 +327,29 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
                   context: context,
                   operation: operation.displayName,
                   requiredCredits: operation.creditCost,
-                  availableCredits: account.availableCredits,
-                  resetDate: account.resetDate,
+                  availableCredits: availableCredits,
+                  resetDate: account?.resetDate,
                   onViewPlans: () => context.push('/ai-plans'),
                 ),
                 onPressed: () async {
+                  if (state.resume == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please choose a master resume first.'),
+                      ),
+                    );
+                    return;
+                  }
+                  if (_jobDescription.text.trim().length < 80) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Job description must be at least 80 characters long.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
                   final ok = await ref
                       .read(optimizationProvider.notifier)
                       .analyze();
@@ -284,7 +388,9 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
         contentPadding: EdgeInsets.zero,
         leading: Icon(Icons.description_outlined, color: colors.primary),
         title: const Text('Choose a master resume'),
-        subtitle: const Text('Select the resume you want to optimize for this JD'),
+        subtitle: const Text(
+          'Select the resume you want to optimize for this JD',
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _chooseResume(context),
       );
@@ -310,8 +416,14 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
   }
 
   Future<void> _chooseResume(BuildContext context) async {
-    final resumes =
-        ref.read(resumeListProvider).asData?.value ?? const <ResumeModel>[];
+    List<ResumeModel> resumes =
+        ref.read(resumeListProvider).valueOrNull ?? const <ResumeModel>[];
+    if (resumes.isEmpty) {
+      try {
+        resumes = await ref.read(resumeListProvider.future);
+      } catch (_) {}
+    }
+    if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -328,30 +440,14 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
               ),
               const SizedBox(height: AppSpacing.md),
               if (resumes.isEmpty)
-                _resumeOption(
-                  sheetContext,
-                  ResumeModel(
-                    id: 'alex-master',
-                    title: 'Alex Developer — Software Engineer Resume',
-                    thumbnailUrl: '',
-                    pdfUrl: '',
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: Text(
+                    'No resumes found. Please create a master resume first.',
                   ),
-                  demo: true,
                 )
-              else ...[
+              else
                 ...resumes.map((resume) => _resumeOption(sheetContext, resume)),
-                const Divider(),
-                _resumeOption(
-                  sheetContext,
-                  ResumeModel(
-                    id: 'alex-master',
-                    title: 'Demo — Alex Developer Resume',
-                    thumbnailUrl: '',
-                    pdfUrl: '',
-                  ),
-                  demo: true,
-                ),
-              ],
             ],
           ),
         ),
@@ -366,7 +462,9 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
   }) => ListTile(
     leading: const Icon(Icons.description_outlined),
     title: Text(resume.title),
-    subtitle: Text(demo ? 'Sample resume with projects and skills' : 'Master resume'),
+    subtitle: Text(
+      demo ? 'Sample resume with projects and skills' : 'Master resume',
+    ),
     onTap: () {
       ref.read(optimizationProvider.notifier).selectResume(resume);
       Navigator.pop(sheetContext);

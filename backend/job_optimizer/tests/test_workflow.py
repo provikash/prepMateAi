@@ -13,6 +13,7 @@ from ai.services.openrouter import AIResult, OpenRouterProvider
 from job_optimizer.models import JobDescription, OptimizationSession, OptimizationSuggestion
 from job_optimizer.services.suggestions import SuggestionValidator
 from resume.models import Resume, ResumeTemplate, ResumeVersion
+from exports.services.pdf_validation import PDFValidationError, validate_optimized_pdf
 
 
 class SuggestionValidationTest(SimpleTestCase):
@@ -51,6 +52,26 @@ class SuggestionValidationTest(SimpleTestCase):
             with self.subTest(patch_data=patch_data), self.assertRaises(Exception):
                 SuggestionValidator().validate({**self.proposal, **patch_data},
                                                candidate=self.candidate, resume_data=self.resume)
+
+
+class OptimizedPDFValidationTest(SimpleTestCase):
+    def test_requires_pages_identity_and_applied_content(self):
+        import fitz
+
+        document = fitz.open()
+        page = document.new_page()
+        page.insert_text((72, 72), "Alex Developer\nBuilt a Flutter app using Dio.")
+        pdf = document.tobytes()
+        document.close()
+        version = Mock(data={"basics": {"name": "Alex Developer"}})
+        result = validate_optimized_pdf(
+            pdf,
+            version=version,
+            applied_values=["Built a Flutter app using Dio."],
+        )
+        self.assertEqual(result.page_count, 1)
+        with self.assertRaises(PDFValidationError):
+            validate_optimized_pdf(pdf, version=version, applied_values=["Missing accepted text"])
 
 
 @override_settings(OPENROUTER_API_KEY="test-key", OPENROUTER_MODEL_NAME="test/model")
@@ -132,7 +153,8 @@ class OptimizationWorkflowTest(TestCase):
         suggestion_id = response.data[0]["id"]
         accepted = self.client.post(f"{self.root}suggestions/{suggestion_id}/accept/")
         self.assertEqual(accepted.status_code, 200)
-        self.assertEqual(self.client.post(f"{self.root}suggestions/{suggestion_id}/reject/").status_code, 409)
+        self.assertEqual(self.client.post(f"{self.root}suggestions/{suggestion_id}/reject/").status_code, 200)
+        self.assertEqual(self.client.post(f"{self.root}suggestions/{suggestion_id}/accept/").status_code, 200)
         finalized = self.client.post(f"{self.root}sessions/{self.session.pk}/finalize/")
         self.assertEqual(finalized.status_code, 200)
         version = ResumeVersion.objects.get(id=finalized.data["resume_version_id"])
@@ -167,6 +189,30 @@ class OptimizationWorkflowTest(TestCase):
         self.account.refresh_from_db()
         self.assertEqual(self.account.balance, 20)
         self.assertEqual(AICreditTransaction.objects.count(), 0)
+
+    def test_reviewed_suggestion_can_be_revised_before_finalization(self):
+        suggestion = OptimizationSuggestion.objects.create(
+            optimization_session=self.session, suggestion_type="PROJECT_BULLET_IMPROVEMENT",
+            resume_path="projects[0].highlights[0]", original_value="Built Flutter app with Dio.",
+            ai_suggestion="Built a Flutter app using Dio.",
+        )
+        root = f"{self.root}suggestions/{suggestion.pk}"
+
+        accepted = self.client.post(f"{root}/accept/")
+        self.assertEqual(accepted.status_code, 200)
+        edited = self.client.post(
+            f"{root}/edit/", {"value": "Developed a Flutter app using Dio."}
+        )
+        self.assertEqual(edited.status_code, 200)
+        self.assertEqual(edited.data["status"], "EDITED")
+        self.assertEqual(edited.data["final_value"], "Developed a Flutter app using Dio.")
+
+        rejected = self.client.post(f"{root}/reject/")
+        self.assertEqual(rejected.status_code, 200)
+        self.assertEqual(rejected.data["status"], "REJECTED")
+        restored = self.client.post(f"{root}/accept/")
+        self.assertEqual(restored.status_code, 200)
+        self.assertEqual(restored.data["final_value"], "Built a Flutter app using Dio.")
 
     @patch("ai.services.openrouter.AIService.generate_json")
     def test_regeneration_uses_one_credit_and_keeps_revision(self, generate):
@@ -252,6 +298,7 @@ class OptimizationWorkflowTest(TestCase):
         version.save(update_fields=["template"])
         with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root), \
              patch("job_optimizer.workflow_views.ResumeRenderService.render_resume", return_value="<p>Optimized</p>") as render, \
+             patch("job_optimizer.workflow_views.validate_optimized_pdf"), \
              patch("weasyprint.HTML") as html:
             html.return_value.write_pdf.return_value = b"%PDF-1.4 optimized"
             pdf = self.client.get(f"{self.root}versions/{version.pk}/pdf/")
@@ -320,3 +367,93 @@ class OptimizationWorkflowTest(TestCase):
         response = self.client.post(f"{self.root}sessions/{self.session.pk}/finalize/")
         self.assertEqual(response.status_code, 400)
         self.assertFalse(ResumeVersion.objects.exists())
+
+    def test_suggestion_patch_uses_optimistic_concurrency_and_bulk_is_atomic(self):
+        first = OptimizationSuggestion.objects.create(
+            optimization_session=self.session,
+            suggestion_type="PROJECT_BULLET_IMPROVEMENT",
+            resume_path="projects[0].highlights[0]",
+            original_value="Built Flutter app with Dio.",
+            ai_suggestion="Built a Flutter app using Dio.",
+        )
+        url = f"{self.root}sessions/{self.session.pk}/suggestions/{first.pk}/"
+        accepted = self.client.patch(url, {"status": "accepted", "decision_version": 1}, format="json")
+        self.assertEqual(accepted.status_code, 200)
+        self.assertEqual(accepted.data["decision_version"], 2)
+        stale = self.client.patch(url, {"status": "rejected", "decision_version": 1}, format="json")
+        self.assertEqual(stale.status_code, 400)
+        first.refresh_from_db()
+        self.assertEqual(first.status, OptimizationSuggestion.Status.ACCEPTED)
+
+        bulk = self.client.patch(
+            f"{self.root}sessions/{self.session.pk}/suggestions/",
+            {"updates": [
+                {"id": str(first.pk), "status": "rejected", "decision_version": 2},
+                {"id": "00000000-0000-0000-0000-000000000001", "status": "accepted"},
+            ]},
+            format="json",
+        )
+        self.assertEqual(bulk.status_code, 400)
+        first.refresh_from_db()
+        self.assertEqual(first.status, OptimizationSuggestion.Status.ACCEPTED)
+
+    def test_apply_idempotency_and_source_conflict(self):
+        suggestion = OptimizationSuggestion.objects.create(
+            optimization_session=self.session,
+            suggestion_type="PROJECT_BULLET_IMPROVEMENT",
+            resume_path="projects[0].highlights[0]",
+            original_value="Built Flutter app with Dio.",
+            ai_suggestion="Built a Flutter app using Dio.",
+            final_value="Built a Flutter app using Dio.",
+            status=OptimizationSuggestion.Status.ACCEPTED,
+        )
+        apply_url = f"{self.root}sessions/{self.session.pk}/apply/"
+        payload = {"idempotency_key": "apply-same-123", "expected_source_version": 1}
+        first = self.client.post(apply_url, payload, format="json")
+        second = self.client.post(apply_url, payload, format="json")
+        self.assertEqual((first.status_code, second.status_code), (200, 200))
+        self.assertEqual(first.data["resume_version_id"], second.data["resume_version_id"])
+        self.assertEqual(ResumeVersion.objects.count(), 1)
+        suggestion.refresh_from_db()
+        self.assertEqual(suggestion.status, OptimizationSuggestion.Status.APPLIED)
+
+        other_session = OptimizationSession.objects.create(
+            user=self.user, source_resume=self.resume, job_description=self.jd,
+            source_data_snapshot=deepcopy(self.resume.data),
+            status=OptimizationSession.Status.READY_FOR_REVIEW,
+        )
+        OptimizationSuggestion.objects.create(
+            optimization_session=other_session,
+            suggestion_type="PROJECT_BULLET_IMPROVEMENT",
+            resume_path="projects[0].highlights[0]",
+            original_value="Built Flutter app with Dio.",
+            ai_suggestion="Built a Flutter app using Dio.",
+            final_value="Built a Flutter app using Dio.",
+            status=OptimizationSuggestion.Status.ACCEPTED,
+        )
+        self.resume.data["projects"][0]["highlights"][0] = "Changed after analysis."
+        self.resume.save(update_fields=["data"])
+        conflict = self.client.post(
+            f"{self.root}sessions/{other_session.pk}/apply/",
+            {"idempotency_key": "apply-conflict-123", "expected_source_version": 1},
+            format="json",
+        )
+        self.assertEqual(conflict.status_code, 400)
+        self.assertEqual(ResumeVersion.objects.count(), 1)
+
+    def test_contract_creation_entitlements_and_request_idempotency(self):
+        payload = {
+            "resume_id": str(self.resume.pk),
+            "job_description": "Build Flutter applications using Dio and REST APIs.",
+            "job_title": "Flutter Developer",
+            "company_name": "Example",
+            "optimization_mode": "balanced",
+            "idempotency_key": "analysis-request-123",
+        }
+        first = self.client.post("/api/v1/resume-optimizations/", payload, format="json")
+        second = self.client.post("/api/v1/resume-optimizations/", payload, format="json")
+        self.assertEqual((first.status_code, second.status_code), (201, 200))
+        self.assertEqual(first.data["id"], second.data["id"])
+        entitlements = self.client.get("/api/v1/billing/entitlements/")
+        self.assertEqual(entitlements.status_code, 200)
+        self.assertEqual(entitlements.data["ai_credits"]["available"], 20)

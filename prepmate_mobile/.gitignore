@@ -160,3 +160,48 @@ cython_debug/
 # Nix
 /result
 /result-*
+
+# Flutter/Dart generated state and build products
+.dart_tool/
+.dart-appdata/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+coverage/
+artifacts/
+test/failures/
+android/.gradle/
+android/.kotlin/
+android/local.properties
+android/key.properties
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+macos/Pods/
+macos/Flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+linux/flutter/generated_plugin_registrant.*
+linux/flutter/generated_plugins.cmake
+windows/flutter/generated_plugin_registrant.*
+windows/flutter/generated_plugins.cmake
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Local editor, test, inspection, and downloaded reference output
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+Desktop.ini
+tmp_template_detail.json
+structure.txt
+Thomas Davis 2.html
+Thomas Davis 2_files/
+et --hard
+code_excerpts.md
+flutter_*.png
+*.dump

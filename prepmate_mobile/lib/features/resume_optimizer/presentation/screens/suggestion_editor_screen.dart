@@ -9,7 +9,6 @@ import '../../../../core/widgets/app_state.dart';
 import '../providers/optimization_provider.dart';
 import '../widgets/optimization_widgets.dart';
 import '../../../ai_credits/presentation/providers/ai_credits_provider.dart';
-import '../../../ai_credits/presentation/widgets/credit_widgets.dart';
 
 class SuggestionEditorScreen extends ConsumerStatefulWidget {
   const SuggestionEditorScreen({super.key, required this.suggestionId});
@@ -21,6 +20,17 @@ class SuggestionEditorScreen extends ConsumerStatefulWidget {
 class _State extends ConsumerState<SuggestionEditorScreen> {
   TextEditingController? controller;
   bool generating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(optimizationProvider.notifier).loadCredits();
+      ref.read(aiCreditsProvider.notifier).load();
+    });
+  }
+
   @override
   void dispose() {
     controller?.dispose();
@@ -31,7 +41,10 @@ class _State extends ConsumerState<SuggestionEditorScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(optimizationProvider);
     final creditState = ref.watch(aiCreditsProvider);
-    final credits = creditState.account?.availableCredits ?? 0;
+    final credits = creditState.account?.availableCredits ?? state.credits ?? 0;
+    final regenerationCost =
+        creditState.operationById('suggestion_regeneration')?.creditCost ??
+        state.regenerationCost;
     final matches =
         state.analysis?.suggestions
             .where((s) => s.id == widget.suggestionId)
@@ -118,7 +131,7 @@ class _State extends ConsumerState<SuggestionEditorScreen> {
                         ),
                       ),
                       Text(
-                        'Uses 1 credit',
+                        'Uses $regenerationCost credit${regenerationCost == 1 ? '' : 's'}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.textSecondary,
                         ),
@@ -145,33 +158,10 @@ class _State extends ConsumerState<SuggestionEditorScreen> {
                                   size: 16,
                                 ),
                                 label: Text(label),
-                                onPressed: generating
+                                onPressed:
+                                    generating || credits < regenerationCost
                                     ? null
-                                    : () {
-                                        final account = creditState.account;
-                                        final operation = creditState
-                                            .operationById('improve_bullet');
-                                        if (account == null ||
-                                            operation == null) {
-                                          return;
-                                        }
-                                        if (account.availableCredits <
-                                            operation.creditCost) {
-                                          showInsufficientCreditsSheet(
-                                            context: context,
-                                            operation: operation.displayName,
-                                            requiredCredits:
-                                                operation.creditCost,
-                                            availableCredits:
-                                                account.availableCredits,
-                                            resetDate: account.resetDate,
-                                            onViewPlans: () =>
-                                                context.push('/ai-plans'),
-                                          );
-                                          return;
-                                        }
-                                        _regenerate(label);
-                                      },
+                                    : () => _regenerate(label),
                               ),
                             )
                             .toList(),
@@ -181,6 +171,15 @@ class _State extends ConsumerState<SuggestionEditorScreen> {
                     const LinearProgressIndicator(),
                     const SizedBox(height: 6),
                     const Text('Generating suggestion...'),
+                  ],
+                  if (!generating && credits < regenerationCost) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'You need $regenerationCost AI credit${regenerationCost == 1 ? '' : 's'} to regenerate. Manual editing and Apply remain free.',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: colors.warning),
+                    ),
                   ],
                   const SizedBox(height: AppSpacing.xl),
                 ],
@@ -199,7 +198,10 @@ class _State extends ConsumerState<SuggestionEditorScreen> {
                   child: AppPrimaryButton(
                     label: 'Apply',
                     icon: Icons.check,
-                    onPressed: controller!.text.trim().isEmpty
+                    loading: state.processingSuggestionId == item.id,
+                    onPressed:
+                        controller!.text.trim().isEmpty ||
+                            state.processingSuggestionId != null
                         ? null
                         : () async {
                             final ok = await ref
@@ -212,9 +214,14 @@ class _State extends ConsumerState<SuggestionEditorScreen> {
                             if (ok) {
                               context.pop();
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text(ref.read(optimizationProvider).error ?? 'Edit failed.'),
-                              ));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    ref.read(optimizationProvider).error ??
+                                        'Edit failed.',
+                                  ),
+                                ),
+                              );
                             }
                           },
                   ),

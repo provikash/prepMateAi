@@ -62,6 +62,14 @@ class AuthenticatedAccountView(AccountResponseMixin, APIView):
             return self.http_method_not_allowed(request)
         return Response({"success": True, "data": UserSummarySerializer(request.user).data})
 
+    def patch(self, request):
+        if self.action != "me":
+            return self.http_method_not_allowed(request)
+        serializer = UserSummarySerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"success": True, "data": serializer.data})
+
     def post(self, request):
         if self.action == "logout":
             serializer = RefreshInputSerializer(data=request.data)

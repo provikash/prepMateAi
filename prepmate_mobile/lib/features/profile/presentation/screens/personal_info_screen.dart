@@ -105,6 +105,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
         if (userId != null && userId.isNotEmpty) {
           await ref.read(homeRepositoryProvider).invalidateDashboard(userId);
         }
+        if (!mounted) return;
         ref.invalidate(dashboardProvider);
         ScaffoldMessenger.of(
           context,
@@ -122,7 +123,7 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
 
   Map<String, String> _currentValues() => {
     'full_name': _nameController.text.trim(),
-    'phone': _phoneController.text.trim(),
+    'email': _emailController.text.trim(),
     'location': _locationController.text.trim(),
     'linkedin': _linkedinController.text.trim(),
     'github': _githubController.text.trim(),
@@ -280,7 +281,6 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                   _buildTextField(
                     controller: _emailController,
                     fieldKey: 'email',
-                    enabled: false,
                     hint: 'email@example.com',
                     colors: colors,
                   ),
@@ -289,8 +289,8 @@ class _PersonalInfoScreenState extends ConsumerState<PersonalInfoScreen> {
                   _buildTextField(
                     controller: _phoneController,
                     fieldKey: 'phone',
-                    backendError: profileState.fieldErrors['phone'],
-                    hint: '+1 123 456 7890',
+                    enabled: false,
+                    hint: '+91 98765 43210',
                     colors: colors,
                   ),
 

@@ -123,6 +123,9 @@ class ProfileRemoteDataSource {
   Future<UserModel> updateProfile(Map<String, dynamic> data) async {
     final payload = normalizeProfilePatch(data);
     try {
+      if (data.containsKey('email')) {
+        await dio.patch('auth/me/', data: {'email': data['email']});
+      }
       final response = await dio.patch('profile/', data: payload);
       _logResult(response, payload.keys);
       final summary = await _summary();

@@ -45,6 +45,7 @@ class ResumeDetailSerializer(serializers.ModelSerializer):
             "title",
             "template",
             "template_version",
+            "revision",
             "data",
             "metadata",
             "thumbnail",
@@ -54,7 +55,7 @@ class ResumeDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "created_at", "updated_at", "thumbnail_url", "pdf_url"]
+        read_only_fields = ["id", "user", "revision", "created_at", "updated_at", "thumbnail_url", "pdf_url"]
 
     def _build_absolute_file_url(self, file_field):
         if not file_field:
@@ -98,6 +99,7 @@ class ResumeSerializer(serializers.ModelSerializer):
             "template",
             "template_id",
             "template_version",
+            "revision",
             "data",
             "metadata",
             "thumbnail",
@@ -107,7 +109,7 @@ class ResumeSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "user", "template_version", "created_at", "updated_at", "thumbnail_url", "pdf_url"]
+        read_only_fields = ["id", "user", "template_version", "revision", "created_at", "updated_at", "thumbnail_url", "pdf_url"]
 
     def _build_absolute_file_url(self, file_field):
         if not file_field:
@@ -184,13 +186,16 @@ class ResumeSerializer(serializers.ModelSerializer):
             validated_data["template_version"] = template.version
         updated = super().update(instance, validated_data)
         if render_input_changed:
+            updated.revision += 1
             # A stored export/thumbnail represents the previous data and template
             # version. Clear it so the next GET /pdf/ renders the saved revision.
             if old_pdf:
                 old_pdf.delete(save=False)
             if old_thumbnail:
                 old_thumbnail.delete(save=False)
-            Resume.objects.filter(pk=updated.pk).update(pdf_file="", thumbnail="")
+            Resume.objects.filter(pk=updated.pk).update(
+                pdf_file="", thumbnail="", revision=updated.revision,
+            )
             updated.pdf_file = ""
             updated.thumbnail = ""
         return updated

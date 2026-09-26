@@ -245,19 +245,43 @@ class ResumeOptimizationService:
 
     @staticmethod
     @transaction.atomic
-    def finalize(session, name=""):
+    def finalize(session, name="", *, idempotency_key="", expected_source_version=None):
         session = OptimizationSession.objects.select_for_update().select_related(
             "source_resume", "job_description"
         ).get(pk=session.pk)
         if session.status == OptimizationSession.Status.COMPLETED:
+            if idempotency_key and session.apply_idempotency_key and idempotency_key != session.apply_idempotency_key:
+                raise ValidationError({
+                    "code": "optimization_already_applied",
+                    "message": "This optimization session has already been applied.",
+                })
             return session.optimized_version
         if session.status != OptimizationSession.Status.READY_FOR_REVIEW:
             raise ValidationError("Session must be matched before finalization.")
         if session.source_resume.user_id != session.user_id or session.job_description.user_id != session.user_id:
             raise ValidationError("Session ownership is invalid.")
+        if expected_source_version is not None and expected_source_version != session.source_resume_version:
+            raise ValidationError({
+                "code": "source_resume_changed",
+                "message": "This resume was edited after the analysis. Run the optimizer again.",
+            })
         source = session.source_data_snapshot
         if not isinstance(source, dict) or not source:
             raise ValidationError("This session has no saved source resume snapshot. Start a new analysis.")
+        if session.source_resume.revision != session.source_resume_version or session.source_resume.data != source or (
+            session.source_resume_updated_at
+            and session.source_resume.updated_at != session.source_resume_updated_at
+        ):
+            session.suggestions.exclude(status=OptimizationSuggestion.Status.REJECTED).update(
+                status=OptimizationSuggestion.Status.STALE
+            )
+            raise ValidationError({
+                "code": "source_resume_changed",
+                "message": "This resume was edited after the analysis. Run the optimizer again.",
+            })
+        session.status = OptimizationSession.Status.APPLYING
+        session.apply_idempotency_key = idempotency_key
+        session.save(update_fields=["status", "apply_idempotency_key", "updated_at"])
         optimized = deepcopy(source)
         changed_paths = set()
         approved = session.suggestions.filter(status__in=[
@@ -290,8 +314,12 @@ class ResumeOptimizationService:
             template=session.source_resume.template,
             template_version=session.source_resume.template_version,
         )
+        now = timezone.now()
+        approved.update(status=OptimizationSuggestion.Status.APPLIED, applied_at=now)
         session.final_analysis_json = final_match
         session.status = OptimizationSession.Status.COMPLETED
-        session.completed_at = timezone.now()
-        session.save(update_fields=["final_analysis_json", "status", "completed_at", "updated_at"])
+        session.completed_at = now
+        session.save(update_fields=[
+            "final_analysis_json", "status", "completed_at", "apply_idempotency_key", "updated_at",
+        ])
         return version

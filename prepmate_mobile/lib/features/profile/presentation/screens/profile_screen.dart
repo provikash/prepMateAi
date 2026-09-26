@@ -90,12 +90,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         subtitle: 'Name, contact details and career profile',
                         onTap: () => context.push('/profile/edit'),
                       ),
-                      _SettingsTile(
-                        icon: Icons.lock_outline_rounded,
-                        title: 'Change password',
-                        subtitle: 'Reset your account password securely',
-                        onTap: () => context.push('/forgot-password'),
-                      ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),

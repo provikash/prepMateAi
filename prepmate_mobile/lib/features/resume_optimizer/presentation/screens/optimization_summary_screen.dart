@@ -69,7 +69,11 @@ class OptimizationSummaryScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  AppCard(child: Text('Current JD alignment: ${a.beforeScore}%. The new score will be calculated after finalization.')),
+                  AppCard(
+                    child: Text(
+                      'Current JD alignment: ${a.beforeScore}%. The new score will be calculated after finalization.',
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   const InformationBanner(
                     icon: Icons.copy_all_outlined,
@@ -102,7 +106,21 @@ class OptimizationSummaryScreen extends ConsumerWidget {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
+                                  subtitle:
+                                      s.status == SuggestionStatus.accepted ||
+                                          s.status == SuggestionStatus.edited
+                                      ? const Text(
+                                          'Tap to revise before creating the version',
+                                        )
+                                      : null,
                                   trailing: StatusPill(status: s.status),
+                                  onTap:
+                                      s.status == SuggestionStatus.accepted ||
+                                          s.status == SuggestionStatus.edited
+                                      ? () => context.push(
+                                          '/resume/optimize/suggestions/${s.id}/edit',
+                                        )
+                                      : null,
                                 ),
                               )
                               .toList(),
@@ -134,6 +152,31 @@ class OptimizationSummaryScreen extends ConsumerWidget {
               icon: Icons.add_circle_outline,
               loading: state.busy,
               onPressed: () async {
+                final pending = a.suggestions
+                    .where((item) => item.status == SuggestionStatus.pending)
+                    .length;
+                if (pending > 0) {
+                  final proceed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Suggestions still need review'),
+                      content: Text(
+                        '$pending pending suggestion${pending == 1 ? '' : 's'} will not be applied. Review them now, or continue with only your accepted and edited changes.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('Review'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: const Text('Continue'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (proceed != true) return;
+                }
                 final ok = await ref
                     .read(optimizationProvider.notifier)
                     .createVersion();

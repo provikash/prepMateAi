@@ -8,47 +8,21 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this.remote);
 
   @override
-  Future<User?> login(String email, String password) {
-    return remote.login(email, password);
-  }
+  Future<OtpChallengeData> requestOtp(String phoneNumber) =>
+      remote.requestOtp(phoneNumber);
 
   @override
-  Future<User?> signInWithGoogle() {
-    return remote.signInWithGoogle();
-  }
+  Future<OtpChallengeData> resendOtp(String phoneNumber, String challengeId) =>
+      remote.resendOtp(phoneNumber, challengeId);
 
   @override
-  Future<bool> signup(
-    String name,
-    String email,
-    String password,
-    String passwordConfirm,
-  ) {
-    return remote.signup(name, email, password, passwordConfirm);
-  }
-
-  @override
-  Future<bool> verifyOtp(String email, String otp, String flow) {
-    return remote.verifyOtp(email, otp, flow);
-  }
+  Future<User> verifyOtp(String phoneNumber, String challengeId, String otp) =>
+      remote.verifyOtp(phoneNumber, challengeId, otp);
 
   @override
   Future<void> logout() {
     return remote.logout();
   }
-
-  @override
-  Future<bool> forgotPassword(String email) {
-    return remote.forgotPassword(email);
-  }
-
-  @override
-  Future<bool> resetPassword(String email, String otp, String newPassword) =>
-      remote.resetPassword(email, otp, newPassword);
-
-  @override
-  Future<bool> resendVerification(String email) =>
-      remote.resendVerification(email);
 
   @override
   Future<User?> getProfile() {

@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from .models import AICreditTransaction
 from .services.credits import CreditService
+from .services.entitlements import EntitlementService
 
 
 class AICreditsView(APIView):
@@ -42,3 +43,10 @@ class AIOperationsView(APIView):
         return Response([{"operation": operation, "credit_cost": cost,
                           "display_name": operation.replace("_", " ").title()}
                          for operation, cost in settings.AI_OPERATION_COSTS.items()])
+
+
+class EntitlementsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response(EntitlementService.get_user_entitlements(request.user))

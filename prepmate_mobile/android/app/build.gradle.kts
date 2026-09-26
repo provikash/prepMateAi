@@ -14,7 +14,7 @@ if (signingFile.exists()) signingFile.inputStream().use { signingProperties.load
 
 android {
     namespace = "com.example.prepmate_mobile"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -66,8 +66,4 @@ gradle.taskGraph.whenReady {
 
 flutter {
     source = "../.."
-}
-
-dependencies {
-    implementation("com.google.android.gms:play-services-auth:21.0.1")
 }

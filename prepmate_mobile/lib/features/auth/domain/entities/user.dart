@@ -10,6 +10,7 @@ class User {
   final String? bio;
   final String? title;
   final String? profileImage;
+  final bool profileCompleted;
 
   User({
     required this.id,
@@ -23,6 +24,7 @@ class User {
     this.bio,
     this.title,
     this.profileImage,
+    this.profileCompleted = false,
   });
 
   User copyWith({
@@ -37,6 +39,7 @@ class User {
     String? bio,
     String? title,
     String? profileImage,
+    bool? profileCompleted,
   }) {
     return User(
       id: id ?? this.id,
@@ -50,6 +53,7 @@ class User {
       bio: bio ?? this.bio,
       title: title ?? this.title,
       profileImage: profileImage ?? this.profileImage,
+      profileCompleted: profileCompleted ?? this.profileCompleted,
     );
   }
 }

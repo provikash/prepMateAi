@@ -1,7 +1,6 @@
 param(
     [Parameter(Mandatory=$true)][string]$ApiBaseUrl,
-    [Parameter(Mandatory=$true)][string]$ApplicationId,
-    [Parameter(Mandatory=$true)][string]$GoogleOAuthClientId
+    [Parameter(Mandatory=$true)][string]$ApplicationId
 )
 $ErrorActionPreference = 'Stop'
 if ($ApiBaseUrl -notmatch '^https://[^/]+/api/v1/$') { throw 'Use an HTTPS API URL ending in /api/v1/.' }
@@ -19,7 +18,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Analysis failed.' }
     flutter test
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
-    flutter build appbundle --release "--dart-define=API_BASE_URL=$ApiBaseUrl" "--dart-define=GOOGLE_OAUTH_CLIENT_ID=$GoogleOAuthClientId" --obfuscate --split-debug-info=build/symbols
+    flutter build appbundle --release "--dart-define=API_BASE_URL=$ApiBaseUrl" --obfuscate --split-debug-info=build/symbols
     if ($LASTEXITCODE -ne 0) { throw 'Android build failed.' }
 } finally {
     $env:ORG_GRADLE_PROJECT_applicationId = $previousApplicationId

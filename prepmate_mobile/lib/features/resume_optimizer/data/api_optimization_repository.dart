@@ -12,14 +12,19 @@ class ApiOptimizationRepository implements OptimizationRepository {
   @override
   Future<List<ResumeModel>> getResumes() async {
     final response = await _dio.get('resumes/');
-      final dynamic data = response.data;
-      final List<dynamic> list = data is List
-          ? data
-          : (data is Map && data['results'] is List ? data['results'] as List : []);
+    final dynamic data = response.data;
+    final List<dynamic> list = data is List
+        ? data
+        : (data is Map && data['results'] is List
+              ? data['results'] as List
+              : []);
 
     return list
-          .map((item) => ResumeModel.fromJson(Map<String, dynamic>.from(item as Map)))
-          .toList();
+        .map(
+          (item) =>
+              ResumeModel.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList();
   }
 
   @override
@@ -38,7 +43,9 @@ class ApiOptimizationRepository implements OptimizationRepository {
         'source_url': sourceUrl ?? '',
       },
     );
-    return JobDescriptionModel.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return JobDescriptionModel.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override
@@ -48,30 +55,47 @@ class ApiOptimizationRepository implements OptimizationRepository {
   }) async {
     final response = await _dio.post(
       'job-optimizer/sessions/',
-      data: {
-        'resume_id': resumeId,
-        'job_description_id': jobDescriptionId,
-      },
+      data: {'resume_id': resumeId, 'job_description_id': jobDescriptionId},
     );
-    return OptimizationSessionModel.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return OptimizationSessionModel.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override
-  Future<OptimizationSessionModel> getOptimizationSession(String sessionId) async {
+  Future<OptimizationSessionModel> getOptimizationSession(
+    String sessionId,
+  ) async {
     final response = await _dio.get('job-optimizer/sessions/$sessionId/');
-    return OptimizationSessionModel.fromJson(Map<String, dynamic>.from(response.data as Map));
+    return OptimizationSessionModel.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override
-  Future<OptimizationSessionModel> analyzeJobDescription(String sessionId) async {
-    final response = await _dio.post('job-optimizer/sessions/$sessionId/analyze/');
-    return OptimizationSessionModel.fromJson(Map<String, dynamic>.from(response.data as Map));
+  Future<OptimizationAnalysis> restoreOptimization(String sessionId) async =>
+      _parseSessionToAnalysis(await getOptimizationSession(sessionId));
+
+  @override
+  Future<OptimizationSessionModel> analyzeJobDescription(
+    String sessionId,
+  ) async {
+    final response = await _dio.post(
+      'job-optimizer/sessions/$sessionId/analyze/',
+    );
+    return OptimizationSessionModel.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override
   Future<OptimizationSessionModel> matchRequirements(String sessionId) async {
-    final response = await _dio.post('job-optimizer/sessions/$sessionId/match/');
-    return OptimizationSessionModel.fromJson(Map<String, dynamic>.from(response.data as Map));
+    final response = await _dio.post(
+      'job-optimizer/sessions/$sessionId/match/',
+    );
+    return OptimizationSessionModel.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override
@@ -104,7 +128,9 @@ class ApiOptimizationRepository implements OptimizationRepository {
     return _parseSessionToAnalysis(matchedSession);
   }
 
-  OptimizationAnalysis _parseSessionToAnalysis(OptimizationSessionModel session) {
+  OptimizationAnalysis _parseSessionToAnalysis(
+    OptimizationSessionModel session,
+  ) {
     final analysisJson = session.analysisJson ?? {};
     final matchJson = session.matchResultsJson ?? {};
 
@@ -131,7 +157,8 @@ class ApiOptimizationRepository implements OptimizationRepository {
         final first = Map<String, dynamic>.from(evidenceList.first as Map);
         evidenceStr = first['text'] as String?;
         evidencePath = first['path'] as String?;
-        evidenceContext = '${first['section'] ?? ''} → ${first['context'] ?? ''}'.trim();
+        evidenceContext =
+            '${first['section'] ?? ''} → ${first['context'] ?? ''}'.trim();
       }
 
       return JobRequirement(
@@ -153,12 +180,22 @@ class ApiOptimizationRepository implements OptimizationRepository {
       company: analysisJson['company'] as String? ?? '',
       seniority: analysisJson['seniority'] as String? ?? '',
       requiredSkills: List<String>.from(analysisJson['required_skills'] ?? []),
-      preferredSkills: List<String>.from(analysisJson['preferred_skills'] ?? []),
-      responsibilities: List<String>.from(analysisJson['responsibilities'] ?? []),
+      preferredSkills: List<String>.from(
+        analysisJson['preferred_skills'] ?? [],
+      ),
+      responsibilities: List<String>.from(
+        analysisJson['responsibilities'] ?? [],
+      ),
       qualifications: List<String>.from(analysisJson['qualifications'] ?? []),
-      experienceRequirements: List<String>.from(analysisJson['experience_requirements'] ?? []),
-      keywords: (analysisJson['keywords'] as List<dynamic>?)
-              ?.map((k) => (k is Map ? k['keyword']?.toString() : k.toString()) ?? '')
+      experienceRequirements: List<String>.from(
+        analysisJson['experience_requirements'] ?? [],
+      ),
+      keywords:
+          (analysisJson['keywords'] as List<dynamic>?)
+              ?.map(
+                (k) =>
+                    (k is Map ? k['keyword']?.toString() : k.toString()) ?? '',
+              )
               .where((k) => k.isNotEmpty)
               .toList() ??
           [],
@@ -167,21 +204,26 @@ class ApiOptimizationRepository implements OptimizationRepository {
     );
 
     final alignmentScore = (summary['alignment_score'] as num?)?.toInt() ?? 0;
-    final total = (summary['total_requirements'] as num?)?.toInt() ?? requirements.length;
-    final matched = (summary['matched'] as num?)?.toInt() ??
+    final total =
+        (summary['total_requirements'] as num?)?.toInt() ?? requirements.length;
+    final matched =
+        (summary['matched'] as num?)?.toInt() ??
         requirements.where((r) => r.match == RequirementMatch.matched).length;
-    final partial = (summary['partial'] as num?)?.toInt() ??
+    final partial =
+        (summary['partial'] as num?)?.toInt() ??
         requirements.where((r) => r.match == RequirementMatch.partial).length;
-    final missing = (summary['missing'] as num?)?.toInt() ??
+    final missing =
+        (summary['missing'] as num?)?.toInt() ??
         requirements.where((r) => r.match == RequirementMatch.missing).length;
-    final unclear = (summary['unclear'] as num?)?.toInt() ??
+    final unclear =
+        (summary['unclear'] as num?)?.toInt() ??
         requirements.where((r) => r.match == RequirementMatch.unclear).length;
 
     return OptimizationAnalysis(
       beforeScore: alignmentScore,
       afterScore: alignmentScore,
       requirements: requirements,
-      suggestions: const [],
+      suggestions: session.suggestions,
       overview: overview,
       totalRequirements: total,
       matchedCount: matched,
@@ -189,6 +231,7 @@ class ApiOptimizationRepository implements OptimizationRepository {
       missingCount: missing,
       unclearCount: unclear,
       sessionId: session.id,
+      sourceResumeVersion: session.sourceResumeVersion,
     );
   }
 
@@ -199,49 +242,83 @@ class ApiOptimizationRepository implements OptimizationRepository {
 
   @override
   Future<void> createVersion(String name) async {
-    throw UnsupportedError('Creating an optimized version is not available yet.');
+    throw UnsupportedError(
+      'Creating an optimized version is not available yet.',
+    );
   }
 
   @override
-  Future<List<OptimizationSuggestion>> generateSuggestions(String sessionId) async {
-    final response = await _dio.post('job-optimizer/sessions/$sessionId/suggestions/generate/');
+  Future<List<OptimizationSuggestion>> generateSuggestions(
+    String sessionId,
+  ) async {
+    final response = await _dio.post(
+      'job-optimizer/sessions/$sessionId/suggestions/generate/',
+    );
     return (response.data as List<dynamic>)
-        .map((value) => OptimizationSuggestion.fromApi(Map<String, dynamic>.from(value as Map)))
+        .map(
+          (value) => OptimizationSuggestion.fromApi(
+            Map<String, dynamic>.from(value as Map),
+          ),
+        )
         .toList();
   }
 
   @override
   Future<OptimizationSuggestion> reviewSuggestion(
-    String id, SuggestionStatus status, {String? value}
-  ) async {
+    String id,
+    SuggestionStatus status, {
+    String? value,
+    int? decisionVersion,
+  }) async {
     final action = switch (status) {
       SuggestionStatus.accepted => 'accept',
       SuggestionStatus.rejected => 'reject',
       SuggestionStatus.edited => 'edit',
-      SuggestionStatus.pending => throw ArgumentError('Pending is not a review action.'),
+      SuggestionStatus.pending => 'undo',
     };
     final response = await _dio.post(
       'job-optimizer/suggestions/$id/$action/',
-      data: value == null ? null : {'value': value},
+      data: {
+        if (value != null) 'value': value,
+        if (decisionVersion != null) 'decision_version': decisionVersion,
+      },
     );
-    return OptimizationSuggestion.fromApi(Map<String, dynamic>.from(response.data as Map));
+    return OptimizationSuggestion.fromApi(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override
-  Future<OptimizationSuggestion> regenerateSuggestion(String id, String instruction) async {
+  Future<OptimizationSuggestion> regenerateSuggestion(
+    String id,
+    String instruction,
+  ) async {
     final key = 'regen-$id-${DateTime.now().microsecondsSinceEpoch}';
     final response = await _dio.post(
       'job-optimizer/suggestions/$id/regenerate/',
       data: {'instruction': instruction},
       options: Options(headers: {'Idempotency-Key': key}),
     );
-    return OptimizationSuggestion.fromApi(Map<String, dynamic>.from(response.data as Map));
+    return OptimizationSuggestion.fromApi(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override
-  Future<Map<String, dynamic>> finalizeOptimization(String sessionId, String name) async {
+  Future<Map<String, dynamic>> finalizeOptimization(
+    String sessionId,
+    String name, {
+    required String idempotencyKey,
+    required int expectedSourceVersion,
+  }) async {
     final response = await _dio.post(
-      'job-optimizer/sessions/$sessionId/finalize/', data: {'name': name},
+      'job-optimizer/sessions/$sessionId/apply/',
+      data: {
+        'name': name,
+        'idempotency_key': idempotencyKey,
+        'expected_source_version': expectedSourceVersion,
+      },
+      options: Options(headers: {'Idempotency-Key': idempotencyKey}),
     );
     return Map<String, dynamic>.from(response.data as Map);
   }

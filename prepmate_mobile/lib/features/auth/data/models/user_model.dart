@@ -13,6 +13,7 @@ class UserModel extends User {
     super.bio,
     super.title,
     super.profileImage,
+    super.profileCompleted,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -20,7 +21,7 @@ class UserModel extends User {
       id: json['id'].toString(),
       email: json['email'] ?? '',
       fullName: json['full_name'] ?? json['name'] ?? json['username'],
-      phoneNumber: json['phone'] ?? json['phone_number'],
+      phoneNumber: json['phone_number'] ?? json['phone'],
       location: json['location'],
       linkedin: json['linkedin'],
       github: json['github'],
@@ -31,6 +32,7 @@ class UserModel extends User {
           json['profile_image_url'] ??
           json['profile_image'] ??
           json['avatar_url'],
+      profileCompleted: json['profile_completed'] == true,
     );
   }
 
@@ -47,6 +49,7 @@ class UserModel extends User {
       'bio': bio,
       'job_title': title,
       'profile_image': profileImage,
+      'profile_completed': profileCompleted,
     };
   }
 }

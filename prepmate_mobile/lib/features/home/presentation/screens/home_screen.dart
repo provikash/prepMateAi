@@ -418,7 +418,7 @@ class HomeResumeCard extends StatelessWidget {
   final String thumbnailUrl;
   final VoidCallback onTap;
 
-  const HomeResumeCard({
+  const HomeResumeCard({super.key,
     required this.title,
     required this.thumbnailUrl,
     required this.onTap,

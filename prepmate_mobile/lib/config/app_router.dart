@@ -6,11 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:prepmate_mobile/features/home/presentation/screens/home_screen.dart';
 import 'package:prepmate_mobile/features/home/presentation/screens/pdf_view_screen.dart';
 import 'package:prepmate_mobile/features/auth/presentation/screens/login_screen.dart';
-import 'package:prepmate_mobile/features/auth/presentation/screens/signup_screen.dart';
-import 'package:prepmate_mobile/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:prepmate_mobile/features/auth/presentation/screens/otp_verification_screen.dart';
-import 'package:prepmate_mobile/features/auth/presentation/screens/password_changed_screen.dart';
-import 'package:prepmate_mobile/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:prepmate_mobile/features/auth/presentation/state/auth_state.dart';
 import 'package:prepmate_mobile/features/auth/presentation/viewmodel/auth_viewmodel.dart';
 import 'package:prepmate_mobile/features/profile/presentation/screens/profile_screen.dart';
@@ -39,24 +35,23 @@ import 'package:prepmate_mobile/features/ai_credits/presentation/screens/ai_tran
 String? authRedirect(AuthState authState, Uri uri) {
   final path = uri.path;
   final isAuthenticated = authState.status == AuthStatus.authenticated;
-  const publicPaths = {
-    '/splash',
-    '/login',
-    '/signup',
-    '/forgot-password',
-    '/verify-otp',
-    '/reset-password',
-    '/password-changed',
-  };
+  const publicPaths = {'/splash', '/login', '/verify-otp'};
   final isPublic = publicPaths.contains(path);
 
   if (!authState.hasCheckedSession && path != '/splash') return '/splash';
   if (path == '/splash' && authState.hasCheckedSession) {
-    return isAuthenticated ? '/home' : '/login';
+    return isAuthenticated
+        ? (authState.user?.profileCompleted == true ? '/home' : '/profile/edit')
+        : '/login';
   }
   if (!isAuthenticated && !isPublic) {
     final destination = Uri.encodeComponent(uri.toString());
     return '/login?from=$destination';
+  }
+  if (isAuthenticated &&
+      authState.user?.profileCompleted != true &&
+      path != '/profile/edit') {
+    return '/profile/edit';
   }
   if (isAuthenticated && publicPaths.contains(path) && path != '/splash') {
     final destination = uri.queryParameters['from'];
@@ -114,10 +109,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(
-        path: '/signup',
-        builder: (context, state) => const SignupScreen(),
-      ),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/profile',
@@ -140,32 +131,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/verify-otp',
-        builder: (context, state) {
-          final email =
-              state.extra?.toString() ??
-              state.uri.queryParameters['email'] ??
-              '';
-          final flow = state.uri.queryParameters['flow'] ?? 'register';
-          return OtpVerificationScreen(email: email, flow: flow);
-        },
-      ),
-      GoRoute(
-        path: '/reset-password',
-        builder: (context, state) {
-          final values = state.extra is Map ? state.extra as Map : const {};
-          return ResetPasswordScreen(
-            email: values['email']?.toString() ?? '',
-            otp: values['otp']?.toString() ?? '',
-          );
-        },
-      ),
-      GoRoute(
-        path: '/password-changed',
-        builder: (context, state) => const PasswordChangedScreen(),
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        builder: (context, state) => const OtpVerificationScreen(),
       ),
 
       // Resume Builder Routes

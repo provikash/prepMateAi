@@ -79,6 +79,7 @@ class Resume(BaseModel):
         related_name="resumes",
     )
     template_version = models.PositiveIntegerField(default=1)
+    revision = models.PositiveIntegerField(default=1)
     data = models.JSONField(default=dict)
     metadata = models.JSONField(default=dict, blank=True)
 
@@ -124,6 +125,9 @@ class ResumeVersion(BaseModel):
     template = models.ForeignKey(ResumeTemplate, on_delete=models.SET_NULL, null=True, blank=True)
     template_version = models.PositiveIntegerField(default=1)
     pdf_file = models.FileField(upload_to="resumes/versions/", blank=True, null=True)
+    pdf_status = models.CharField(max_length=20, default="NOT_REQUESTED")
+    pdf_error_code = models.CharField(max_length=60, blank=True, default="")
+    pdf_generated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]

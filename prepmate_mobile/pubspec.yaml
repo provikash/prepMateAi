@@ -35,9 +35,8 @@ dependencies:
   flutter_riverpod: ^2.5.1
   flutter_hooks: ^0.20.5
   http: ^1.6.0
-  google_sign_in: ^7.2.0
-  shared_preferences: ^2.1.0
-  pinput: ^3.0.1
+  shared_preferences: ^2.5.4
+  pinput: ^6.0.2
   intl: ^0.19.0
   go_router: ^17.1.0
   dio: ^5.9.2
@@ -49,10 +48,11 @@ dependencies:
   url_launcher: ^6.3.1
   flutter_html: ^3.0.0
   shimmer: ^3.0.0
-  syncfusion_flutter_pdfviewer: ^28.1.33
+  syncfusion_flutter_pdfviewer: 33.2.13
   path_provider: ^2.1.5
-  share_plus: ^10.0.2
-  fluttertoast: ^8.2.8
+  # 13.1+ currently conflicts with stable file_picker via win32 6.x vs 5.x.
+  share_plus: ^11.1.0
+  fluttertoast: ^10.0.0
 
 dev_dependencies:
   flutter_test:

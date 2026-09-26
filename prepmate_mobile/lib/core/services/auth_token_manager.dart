@@ -92,15 +92,9 @@ class AuthTokenManager {
 
   bool _isAuthEndpoint(RequestOptions options) {
     final path = options.path;
-    return path.contains('auth/login') ||
-        path.contains('auth/register') ||
+    return path.contains('auth/otp/') ||
         path.contains('auth/refresh') ||
-        path.contains('auth/google') ||
-        path.contains('auth/verify-email') ||
-        path.contains('auth/password-reset') ||
-        path.contains('auth/forgot-password') ||
-        path.contains('verify-otp') ||
-        path.contains('verify-login-otp');
+        path.contains('auth/token/refresh');
   }
 
   bool _shouldBypassAuth(RequestOptions options) {

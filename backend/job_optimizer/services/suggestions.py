@@ -2,6 +2,7 @@
 
 import json
 import re
+import uuid
 
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
@@ -36,6 +37,30 @@ SAFE_REPHRASE_WORDS = {
     "app", "apps", "integrated", "integrate", "implemented", "implement",
     "supported", "support", "as", "at", "is", "was", "were",
 }
+
+
+def target_metadata(session_id, path):
+    """Build immutable locator IDs for the source snapshot represented by a session.
+
+    Legacy resumes store bullet text as strings, so IDs cannot be embedded without
+    breaking the JSON Resume contract. UUID5 sidecar identifiers give API clients a
+    stable target while resume_path remains a backwards-compatible implementation
+    detail. Apply still verifies the exact original value before writing.
+    """
+    parts = path.split(".")
+    section = parts[0].split("[")[0]
+    indexed = re.findall(r"([A-Za-z][A-Za-z0-9_]*)\[(\d+)\]", path)
+    field = parts[-1].split("[")[0]
+    namespace = uuid.UUID(str(session_id))
+    item_path = parts[0] if "[" in parts[0] else section
+    item_id = uuid.uuid5(namespace, item_path) if indexed else None
+    child_id = uuid.uuid5(namespace, path) if "[" in parts[-1] else None
+    return {
+        "target_section": section,
+        "target_item_id": item_id,
+        "target_field": field,
+        "target_child_id": child_id,
+    }
 
 
 def get_path(data, path):
