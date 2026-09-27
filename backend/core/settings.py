@@ -40,7 +40,14 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 
 load_dotenv()
 
-database_url = os.getenv("DATABASE_URL")
+database_url = os.getenv("DATABASE_URL", "").strip()
+DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.sqlite3")
+DB_NAME = os.getenv("DB_NAME", "db.sqlite3")
+DB_USER = os.getenv("DB_USER", "")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_HOST = os.getenv("DB_HOST", "")
+DB_PORT = os.getenv("DB_PORT", "")
+
 if database_url:
     DATABASES = {
         "default": dj_database_url.parse(
@@ -50,24 +57,22 @@ if database_url:
         )
     }
 else:
-    database_name = os.getenv("DB_NAME", "db.sqlite3")
+    database_name = (
+        str(BASE_DIR / DB_NAME)
+        if DB_ENGINE == "django.db.backends.sqlite3" and not Path(DB_NAME).is_absolute()
+        else DB_NAME
+    )
     DATABASES = {
         "default": {
-            "ENGINE": os.getenv(
-                "DB_ENGINE",
-                "django.db.backends.sqlite3",
-            ),
-            "NAME": BASE_DIR / database_name,
+            "ENGINE": DB_ENGINE,
+            "NAME": database_name,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASSWORD,
+            "HOST": DB_HOST,
+            "PORT": DB_PORT,
+            "CONN_MAX_AGE": 60,
         }
     }
-
-ALLOWED_HOSTS = ['chubby-chameleon-tgnewvideo-0d9ca0c1.koyeb.app', 'localhost', '127.0.0.1']
-
-CSRF_TRUSTED_ORIGINS = [
-    'https://chubby-chameleon-tgnewvideo-0d9ca0c1.koyeb.app',
-    'https://*.koyeb.app',
-]
-
 
 # Application definition
 
@@ -128,28 +133,6 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.sqlite3")
-DB_NAME = os.getenv("DB_NAME", str(BASE_DIR / "db.sqlite3"))
-DB_USER = os.getenv("DB_USER", "")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-DB_HOST = os.getenv("DB_HOST", "")
-DB_PORT = os.getenv("DB_PORT", "")
-
-
-# If DATABASE_URL env var is not set, use individual DB settings from .env
-if not os.getenv("DATABASE_URL"):
-    DATABASES["default"] = {
-        "ENGINE": DB_ENGINE,
-        "NAME": DB_NAME,
-        "USER": DB_USER,
-        "PASSWORD": DB_PASSWORD,
-        "HOST": DB_HOST,
-        "PORT": DB_PORT,
-        "CONN_MAX_AGE": 60,
-        "OPTIONS": {},
-    }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -329,6 +312,9 @@ AUTH_THROTTLE_RATES = {
     "verify": "10/min", "resend": "3/min", "reset_request": "3/min",
     "reset_confirm": "10/min", "logout": "10/min", "change_password": "5/min",
     "deactivate": "5/min", "account": "5/min", "me": "60/min",
+    "account_action_request": "3/hour", "account_deactivate": "5/hour",
+    "account_delete": "3/hour", "phone_change_request": "3/hour",
+    "phone_change_verify": "10/hour", "logout_all": "5/hour",
 }
 for scope in AUTH_THROTTLE_RATES:
     AUTH_THROTTLE_RATES[scope] = os.getenv("AUTH_RATE_" + scope.upper(), AUTH_THROTTLE_RATES[scope])
@@ -374,6 +360,8 @@ if PRODUCTION:
         raise ImproperlyConfigured("ENABLE_TEST_OTP_LOGIN must never be enabled in production.")
     if OTP_PROVIDER != "fast2sms" or not FAST2SMS_API_KEY or not FAST2SMS_OTP_ID:
         raise ImproperlyConfigured("Production requires the Fast2SMS OTP provider and credentials.")
+    if not OPENROUTER_API_KEY:
+        raise ImproperlyConfigured("Production requires OPENROUTER_API_KEY for AI features.")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

@@ -53,6 +53,16 @@ class SuggestionValidationTest(SimpleTestCase):
                 SuggestionValidator().validate({**self.proposal, **patch_data},
                                                candidate=self.candidate, resume_data=self.resume)
 
+    def test_allows_ordinary_professional_rephrasing(self):
+        proposal = {
+            **self.proposal,
+            "suggested_value": "Developed a production-ready Flutter application by integrating Dio.",
+        }
+        result = SuggestionValidator().validate(
+            proposal, candidate=self.candidate, resume_data=self.resume
+        )
+        self.assertEqual(result["ai_suggestion"], proposal["suggested_value"])
+
 
 class OptimizedPDFValidationTest(SimpleTestCase):
     def test_requires_pages_identity_and_applied_content(self):
@@ -72,6 +82,27 @@ class OptimizedPDFValidationTest(SimpleTestCase):
         self.assertEqual(result.page_count, 1)
         with self.assertRaises(PDFValidationError):
             validate_optimized_pdf(pdf, version=version, applied_values=["Missing accepted text"])
+
+    def test_allows_renderer_line_wrapping_in_applied_content(self):
+        import fitz
+
+        document = fitz.open()
+        page = document.new_page()
+        page.insert_text(
+            (72, 72),
+            "Alex Developer\nBuilt a Flutter app\nusing Dio.",
+        )
+        pdf = document.tobytes()
+        document.close()
+        version = Mock(data={"basics": {"name": "Alex Developer"}})
+
+        result = validate_optimized_pdf(
+            pdf,
+            version=version,
+            applied_values=["Built a Flutter app using Dio."],
+        )
+
+        self.assertEqual(result.page_count, 1)
 
 
 @override_settings(OPENROUTER_API_KEY="test-key", OPENROUTER_MODEL_NAME="test/model")
@@ -172,6 +203,23 @@ class OptimizationWorkflowTest(TestCase):
         self.account.refresh_from_db()
         self.assertEqual((self.account.balance, self.account.reserved_credits), (20, 0))
         self.assertEqual(OptimizationSuggestion.objects.count(), 0)
+
+    @patch("ai.services.openrouter.AIService.generate_json")
+    def test_failed_generation_can_be_retried(self, generate):
+        generate.side_effect = [
+            self._ai_result("Built Flutter app with AWS and 40% growth."),
+            self._ai_result("Developed a production-ready Flutter application using Dio."),
+        ]
+        path = f"{self.root}sessions/{self.session.pk}/suggestions/generate/"
+
+        self.assertEqual(self.client.post(path).status_code, 422)
+        retried = self.client.post(path)
+
+        self.assertEqual(retried.status_code, 200)
+        self.assertEqual(len(retried.data), 1)
+        self.assertEqual(AIUsage.objects.count(), 2)
+        self.account.refresh_from_db()
+        self.assertEqual((self.account.balance, self.account.reserved_credits), (10, 0))
 
     def test_manual_edit_is_free_and_ownership_enforced(self):
         suggestion = OptimizationSuggestion.objects.create(
@@ -297,7 +345,10 @@ class OptimizationWorkflowTest(TestCase):
         version.template = template
         version.save(update_fields=["template"])
         with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root), \
-             patch("job_optimizer.workflow_views.ResumeRenderService.render_resume", return_value="<p>Optimized</p>") as render, \
+             patch(
+                 "job_optimizer.workflow_views.ResumeRenderService.render_resume",
+                 return_value="<style>@media print {p{color:red}}</style><p>Optimized</p>",
+             ) as render, \
              patch("job_optimizer.workflow_views.validate_optimized_pdf"), \
              patch("weasyprint.HTML") as html:
             html.return_value.write_pdf.return_value = b"%PDF-1.4 optimized"
@@ -317,6 +368,42 @@ class OptimizationWorkflowTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, [])
         self.assertFalse(AIUsage.objects.exists())
+
+    def test_user_can_confirm_missing_skill_for_optimized_version(self):
+        self.session.match_results_json = {"results": [{
+            "id": "r-missing-aws", "name": "AWS", "status": "MISSING",
+            "importance": "REQUIRED", "evidence": [],
+        }]}
+        self.session.save(update_fields=["match_results_json"])
+        path = f"{self.root}sessions/{self.session.pk}/suggestions/confirm-missing-skill/"
+
+        response = self.client.post(path, {
+            "requirement_id": "r-missing-aws", "value": "AWS",
+        })
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["status"], "EDITED")
+        self.assertTrue(response.data["requires_confirmation"])
+        # Missing-only sessions keep the confirmed suggestion when generation is requested.
+        generated = self.client.post(
+            f"{self.root}sessions/{self.session.pk}/suggestions/generate/"
+        )
+        self.assertEqual(len(generated.data), 1)
+        finalized = self.client.post(f"{self.root}sessions/{self.session.pk}/finalize/")
+        self.assertEqual(finalized.status_code, 200)
+        version = ResumeVersion.objects.get(pk=finalized.data["resume_version_id"])
+        self.assertIn("AWS", version.data["skills"][0]["keywords"])
+        self.resume.refresh_from_db()
+        self.assertNotIn("skills", self.resume.data)
+        self.assertFalse(AIUsage.objects.exists())
+
+    def test_cannot_confirm_a_skill_that_is_not_missing(self):
+        response = self.client.post(
+            f"{self.root}sessions/{self.session.pk}/suggestions/confirm-missing-skill/",
+            {"requirement_id": "r1", "value": "Flutter"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(OptimizationSuggestion.objects.exists())
 
     def test_mixed_review_changes_only_approved_snapshot_fields(self):
         source = {"projects": [{"highlights": [

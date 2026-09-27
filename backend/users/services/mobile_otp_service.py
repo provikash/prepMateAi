@@ -41,7 +41,16 @@ def _bump(key, limit, timeout):
 class MobileOTPService:
     @staticmethod
     @sensitive_variables("code")
-    def issue(phone_number, request_ip="", device_id="", previous_challenge=None):
+    def issue(
+        phone_number,
+        request_ip="",
+        device_id="",
+        previous_challenge=None,
+        *,
+        purpose=OTPChallenge.Purpose.AUTHENTICATION,
+        requested_by=None,
+        action="",
+    ):
         now = timezone.now()
         is_test_account = bool(settings.ENABLE_TEST_OTP_LOGIN and phone_number in settings.TEST_OTP_PHONE_NUMBERS)
         if not is_test_account:
@@ -55,7 +64,13 @@ class MobileOTPService:
             _bump("otp:global", settings.OTP_GLOBAL_HOURLY_LIMIT, 3600)
 
         if previous_challenge:
-            previous = OTPChallenge.objects.filter(pk=previous_challenge, phone_number=phone_number).first()
+            previous = OTPChallenge.objects.filter(
+                pk=previous_challenge,
+                phone_number=phone_number,
+                purpose=purpose,
+                requested_by=requested_by,
+                action=action,
+            ).first()
             if not previous:
                 raise OTPFlowError("challenge_not_found", "OTP challenge was not found.")
             if not is_test_account:
@@ -71,12 +86,15 @@ class MobileOTPService:
             with transaction.atomic():
                 OTPChallenge.objects.select_for_update().filter(
                     phone_number=phone_number,
-                    purpose=OTPChallenge.Purpose.AUTHENTICATION,
+                    purpose=purpose,
                     consumed_at__isnull=True,
                     invalidated_at__isnull=True,
                 ).update(invalidated_at=now)
                 challenge = OTPChallenge.objects.create(
                     phone_number=phone_number,
+                    purpose=purpose,
+                    requested_by=requested_by,
+                    action=action,
                     otp_hash=make_password(code),
                     expires_at=now + timedelta(seconds=settings.OTP_EXPIRY_SECONDS),
                     resend_available_at=now + timedelta(seconds=settings.OTP_RESEND_COOLDOWN_SECONDS),
@@ -101,50 +119,99 @@ class MobileOTPService:
         return challenge
 
     @staticmethod
+    def _consume_locked(
+        challenge_id,
+        phone_number,
+        otp,
+        *,
+        purpose,
+        requested_by_id=None,
+        action="",
+    ):
+        """Consume a challenge inside the caller's transaction.
+
+        Returns ``(challenge, error)`` so failed-attempt counters can commit
+        before the API layer raises the public error.
+        """
+        challenge = OTPChallenge.objects.select_for_update().filter(pk=challenge_id).first()
+        now = timezone.now()
+        error = None
+        if (
+            not challenge
+            or challenge.phone_number != phone_number
+            or challenge.purpose != purpose
+            or challenge.requested_by_id != requested_by_id
+            or challenge.action != action
+        ):
+            error = OTPFlowError("challenge_not_found", "OTP challenge was not found.", 401)
+        elif challenge.consumed_at:
+            error = OTPFlowError("challenge_consumed", "This OTP has already been used.", 401)
+        elif challenge.invalidated_at:
+            error = OTPFlowError("challenge_not_found", "This OTP challenge is no longer active.", 401)
+        elif challenge.expires_at <= now:
+            challenge.invalidated_at = now
+            challenge.save(update_fields=["invalidated_at"])
+            error = OTPFlowError("otp_expired", "This OTP has expired.", 401)
+        elif challenge.attempts >= challenge.maximum_attempts:
+            error = OTPFlowError("otp_attempts_exceeded", "Too many incorrect attempts. Request a new OTP.", 401)
+        else:
+            challenge.attempts += 1
+            if not check_password(otp, challenge.otp_hash):
+                fields = ["attempts"]
+                code = "otp_invalid"
+                message = "The OTP is incorrect."
+                if challenge.attempts >= challenge.maximum_attempts:
+                    challenge.invalidated_at = now
+                    fields.append("invalidated_at")
+                    code = "otp_attempts_exceeded"
+                    message = "Too many incorrect attempts. Request a new OTP."
+                challenge.save(update_fields=fields)
+                error = OTPFlowError(code, message, 401)
+            else:
+                challenge.consumed_at = now
+                challenge.save(update_fields=["attempts", "consumed_at"])
+        return challenge, error
+
+    @staticmethod
     @sensitive_variables("otp")
     def verify(challenge_id, phone_number, otp):
         result = None
         with transaction.atomic():
-            challenge = OTPChallenge.objects.select_for_update().filter(pk=challenge_id).first()
+            _challenge, result = MobileOTPService._consume_locked(
+                challenge_id,
+                phone_number,
+                otp,
+                purpose=OTPChallenge.Purpose.AUTHENTICATION,
+            )
             now = timezone.now()
-            if not challenge or challenge.phone_number != phone_number:
-                result = OTPFlowError("challenge_not_found", "OTP challenge was not found.", 401)
-            elif challenge.consumed_at:
-                result = OTPFlowError("challenge_consumed", "This OTP has already been used.", 401)
-            elif challenge.invalidated_at:
-                result = OTPFlowError("challenge_not_found", "This OTP challenge is no longer active.", 401)
-            elif challenge.expires_at <= now:
-                challenge.invalidated_at = now
-                challenge.save(update_fields=["invalidated_at"])
-                result = OTPFlowError("otp_expired", "This OTP has expired.", 401)
-            elif challenge.attempts >= challenge.maximum_attempts:
-                result = OTPFlowError("otp_attempts_exceeded", "Too many incorrect attempts. Request a new OTP.", 401)
-            else:
-                challenge.attempts += 1
-                if not check_password(otp, challenge.otp_hash):
-                    fields = ["attempts"]
-                    code = "otp_invalid"
-                    message = "The OTP is incorrect."
-                    if challenge.attempts >= challenge.maximum_attempts:
-                        challenge.invalidated_at = now
-                        fields.append("invalidated_at")
-                        code = "otp_attempts_exceeded"
-                        message = "Too many incorrect attempts. Request a new OTP."
-                    challenge.save(update_fields=fields)
-                    result = OTPFlowError(code, message, 401)
+            if not result:
+                user = User.objects.select_for_update().filter(phone_number=phone_number).first()
+                is_new = user is None
+                if is_new:
+                    user = User.objects.create_mobile_user(phone_number)
+                if user.deleted_at or (not user.is_active and not user.deactivated_at):
+                    result = OTPFlowError("account_disabled", "This account is disabled.", 403)
                 else:
-                    challenge.consumed_at = now
-                    challenge.save(update_fields=["attempts", "consumed_at"])
-                    user = User.objects.select_for_update().filter(phone_number=phone_number).first()
-                    is_new = user is None
-                    if is_new:
-                        user = User.objects.create_mobile_user(phone_number)
-                    if not user.is_active or user.deleted_at:
-                        raise OTPFlowError("account_disabled", "This account is disabled.", 403)
+                    if user.deactivated_at:
+                        user.is_active = True
+                        user.deactivated_at = None
                     user.is_phone_verified = True
                     user.phone_verified_at = now
-                    user.save(update_fields=["is_phone_verified", "phone_verified_at", "updated_at"])
-                    OTPChallenge.objects.filter(phone_number=phone_number, purpose=OTPChallenge.Purpose.AUTHENTICATION, consumed_at__isnull=True, invalidated_at__isnull=True).update(invalidated_at=now)
+                    user.save(
+                        update_fields=[
+                            "is_active",
+                            "deactivated_at",
+                            "is_phone_verified",
+                            "phone_verified_at",
+                            "updated_at",
+                        ]
+                    )
+                    OTPChallenge.objects.filter(
+                        phone_number=phone_number,
+                        purpose=OTPChallenge.Purpose.AUTHENTICATION,
+                        consumed_at__isnull=True,
+                        invalidated_at__isnull=True,
+                    ).update(invalidated_at=now)
         if result:
             logger.info("otp_verification_failed phone=%s code=%s", mask_phone(phone_number), result.code)
             raise result

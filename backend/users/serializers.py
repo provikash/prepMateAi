@@ -94,11 +94,34 @@ class PhoneInputSerializer(StrictInputMixin, serializers.Serializer):
 
 class OTPVerifySerializer(PhoneInputSerializer):
     challenge_id = serializers.UUIDField()
-    otp = serializers.RegexField(r"^[0-9]{6}$", trim_whitespace=False)
+    otp = serializers.CharField(trim_whitespace=False)
+
+    def validate_otp(self, value):
+        if len(value) != settings.OTP_LENGTH or not value.isascii() or not value.isdigit():
+            raise serializers.ValidationError("Invalid code format.", code="invalid_otp_format")
+        return value
 
 
 class OTPResendSerializer(PhoneInputSerializer):
     challenge_id = serializers.UUIDField()
+
+
+class LifecycleOTPSerializer(StrictInputMixin, serializers.Serializer):
+    challenge_id = serializers.UUIDField()
+    otp = serializers.CharField(trim_whitespace=False)
+
+    def validate_otp(self, value):
+        if len(value) != settings.OTP_LENGTH or not value.isascii() or not value.isdigit():
+            raise serializers.ValidationError("Invalid code format.", code="invalid_otp_format")
+        return value
+
+
+class AccountActionRequestSerializer(StrictInputMixin, serializers.Serializer):
+    action = serializers.ChoiceField(choices=("deactivate", "delete"))
+
+
+class PhoneChangeVerifySerializer(OTPVerifySerializer):
+    pass
 
 
 class UserProfileSerializer(StrictInputMixin, serializers.ModelSerializer):

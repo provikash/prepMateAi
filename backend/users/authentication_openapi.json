@@ -1,12 +1,18 @@
 {
   "openapi": "3.0.3",
-  "info": {"title": "PrepMateAI Mobile Authentication", "version": "2.0.0"},
+  "info": {"title": "PrepMateAI Mobile Authentication", "version": "3.0.0"},
   "paths": {
     "/api/v1/auth/otp/request/": {"post": {"summary": "Request an authentication OTP", "security": [], "responses": {"201": {"description": "OTP challenge created"}, "429": {"description": "Rate limited"}, "503": {"description": "SMS provider unavailable"}}}},
     "/api/v1/auth/otp/resend/": {"post": {"summary": "Replace an OTP challenge after its cooldown", "security": [], "responses": {"200": {"description": "Replacement challenge created"}, "429": {"description": "Cooldown or rate limit active"}}}},
     "/api/v1/auth/otp/verify/": {"post": {"summary": "Verify OTP and create or log in a mobile user", "security": [], "responses": {"200": {"description": "JWT tokens and user profile"}, "401": {"description": "Invalid, expired, consumed, or over-attempted OTP"}, "403": {"description": "Account disabled"}}}},
     "/api/v1/auth/token/refresh/": {"post": {"summary": "Rotate a refresh token", "responses": {"200": {"description": "New access and refresh tokens"}}}},
     "/api/v1/auth/logout/": {"post": {"summary": "Blacklist a refresh token", "responses": {"200": {"description": "Logged out"}}}},
+    "/api/v1/auth/logout-all/": {"post": {"summary": "Revoke every access and refresh token for the account", "responses": {"200": {"description": "All sessions revoked"}}}},
+    "/api/v1/auth/phone/change/request/": {"post": {"summary": "Send an OTP to a new, unused phone number", "responses": {"201": {"description": "Phone-change challenge created"}, "400": {"description": "Phone number is invalid or unavailable"}}}},
+    "/api/v1/auth/phone/change/verify/": {"post": {"summary": "Verify the new number, update the account, and revoke all sessions", "responses": {"200": {"description": "Phone changed; sign-in required"}, "401": {"description": "Invalid or expired challenge"}, "409": {"description": "Phone number became unavailable"}}}},
+    "/api/v1/auth/account/verification/request/": {"post": {"summary": "Request a step-up OTP for account deactivation or deletion", "responses": {"201": {"description": "Action-bound challenge created"}}}},
+    "/api/v1/auth/account/deactivate/": {"post": {"summary": "Deactivate the account after OTP confirmation and revoke all sessions", "responses": {"200": {"description": "Account deactivated"}, "401": {"description": "Invalid or mismatched challenge"}}}},
+    "/api/v1/auth/account/": {"delete": {"summary": "Permanently delete the account and owned data after OTP confirmation", "responses": {"204": {"description": "Account deleted"}, "401": {"description": "Invalid or mismatched challenge"}}}},
     "/api/v1/auth/me/": {"get": {"summary": "Get the authenticated user", "responses": {"200": {"description": "User profile"}}}, "patch": {"summary": "Update optional contact/profile data", "responses": {"200": {"description": "Updated profile"}}}}
   },
   "components": {"securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}},

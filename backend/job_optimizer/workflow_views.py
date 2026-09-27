@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from django.db import transaction
 from django.http import HttpResponse
@@ -111,6 +112,65 @@ class SuggestionListView(APIView):
         return Response(OptimizationSuggestionSerializer(changed, many=True).data)
 
 
+class ConfirmMissingSkillView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, pk):
+        session = owned_session(request, pk)
+        session = OptimizationSession.objects.select_for_update().get(pk=session.pk)
+        if session.status != OptimizationSession.Status.READY_FOR_REVIEW:
+            return Response({"error": "Session is not open for review."}, status=409)
+        requirement_id = str(request.data.get("requirement_id", "")).strip()
+        value = str(request.data.get("value", "")).strip()
+        if not requirement_id:
+            raise ValidationError({"requirement_id": "Choose a missing requirement."})
+        if not 1 <= len(value) <= 100:
+            raise ValidationError({"value": "Enter a skill name of 1 to 100 characters."})
+        requirement = next((
+            item for item in session.match_results_json.get("results", [])
+            if str(item.get("id", "")) == requirement_id
+        ), None)
+        if not requirement or requirement.get("status") not in {"MISSING", "UNCLEAR"}:
+            raise ValidationError({"requirement_id": "Only missing or unclear skills can be confirmed."})
+        existing_skills = {
+            str(keyword).strip().casefold()
+            for group in session.source_data_snapshot.get("skills", [])
+            if isinstance(group, dict)
+            for keyword in group.get("keywords", [])
+        }
+        if value.casefold() in existing_skills:
+            raise ValidationError({"value": "This skill is already present in the resume."})
+        reference = f"requirement:{requirement_id}"
+        existing = next((
+            item for item in session.suggestions.filter(
+                suggestion_type=OptimizationSuggestion.SuggestionType.MISSING_EVIDENCE,
+            )
+            if reference in item.evidence_reference
+        ), None)
+        if existing:
+            return Response(OptimizationSuggestionSerializer(existing).data)
+        suggestion = OptimizationSuggestion.objects.create(
+            optimization_session=session,
+            suggestion_type=OptimizationSuggestion.SuggestionType.MISSING_EVIDENCE,
+            resume_path="skills",
+            target_section="skills",
+            target_field="keywords",
+            original_value="Not listed in resume",
+            ai_suggestion=value,
+            user_edited_value=value,
+            final_value=value,
+            status=OptimizationSuggestion.Status.EDITED,
+            reason="User confirmed this missing job skill as truthful before adding it.",
+            keywords=[value],
+            evidence_reference=[reference],
+            confidence="USER_CONFIRMED",
+            severity="HIGH" if requirement.get("importance") == "REQUIRED" else "MEDIUM",
+            requires_confirmation=True,
+        )
+        return Response(OptimizationSuggestionSerializer(suggestion).data, status=201)
+
+
 class SuggestionDecisionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -138,19 +198,40 @@ class GenerateSuggestionsView(APIView):
         logger.info("optimization_apply_started user_id=%s optimization_session_id=%s", request.user.pk, session.pk)
         if session.status != OptimizationSession.Status.READY_FOR_REVIEW:
             return Response({"error": "Match the resume before generating suggestions."}, status=409)
-        if session.suggestions.exists():
+        if session.suggestions.exclude(
+            suggestion_type=OptimizationSuggestion.SuggestionType.MISSING_EVIDENCE
+        ).exists():
             return Response(OptimizationSuggestionSerializer(session.suggestions.all(), many=True).data)
         engine = SuggestionEngine()
         if not engine.candidates(session):
-            return Response([])
+            return Response(OptimizationSuggestionSerializer(session.suggestions.all(), many=True).data)
+        base_key = f"optimizer-generate:{session.pk}"
+        client_key = request.headers.get("Idempotency-Key", "").strip()
+        if client_key and not 8 <= len(client_key) <= 40:
+            raise ValidationError({
+                "Idempotency-Key": "Use an 8-40 character idempotency key."
+            })
+        idempotency_key = f"{base_key}:{client_key}" if client_key else base_key
         usage, created = CreditService.reserve(
             user=request.user, operation="resume_optimization",
-            idempotency_key=f"optimizer-generate:{session.pk}", reference_id=session.pk,
+            idempotency_key=idempotency_key, reference_id=session.pk,
         )
+        # Older clients used one fixed key per session. A failed attempt must remain
+        # in the audit trail, but it must not permanently prevent that session from
+        # being retried.
+        if not created and not client_key and usage.status in {
+            usage.Status.FAILED, usage.Status.CANCELLED, usage.Status.REFUNDED,
+        }:
+            usage, created = CreditService.reserve(
+                user=request.user,
+                operation="resume_optimization",
+                idempotency_key=f"{base_key}:retry:{uuid.uuid4().hex[:12]}",
+                reference_id=session.pk,
+            )
         if not created:
             if usage.status == usage.Status.SUCCEEDED:
                 return Response(OptimizationSuggestionSerializer(session.suggestions.all(), many=True).data)
-            return Response({"error": "This AI request is already processing or failed."}, status=409)
+            return Response({"error": "This AI request is already processing."}, status=409)
         try:
             proposals, result = engine.generate(session)
             if not proposals:
@@ -329,8 +410,6 @@ class OptimizedVersionPDFView(APIView):
                 version.save(update_fields=["pdf_status", "pdf_error_code", "updated_at"])
                 from weasyprint import HTML
                 html = ResumeRenderService.render_resume(version.data, version.template, resume_title=version.title)
-                if any(token in html for token in ("{{", "}}", "undefined", ">null<")):
-                    raise ValueError("Unresolved template output")
                 pdf = HTML(string=html).write_pdf()
                 applied_values = version.optimization_session.suggestions.filter(
                     status=OptimizationSuggestion.Status.APPLIED

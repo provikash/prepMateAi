@@ -41,7 +41,15 @@ class Migration(migrations.Migration):
     dependencies = [("resume", "0002_resumetemplate_alter_resume_options_and_more")]
     operations = [
         migrations.AddField(model_name="resumetemplate", name="description", field=models.TextField(blank=True, default="")),
-        migrations.AddField(model_name="resumetemplate", name="slug", field=models.SlugField(blank=True, max_length=120, null=True)),
+        # Avoid creating a temporary non-unique PostgreSQL pattern index here.
+        # The final unique SlugField below creates the required index after the
+        # data migration; scheduling both indexes in one migration gives them
+        # the same generated name on PostgreSQL.
+        migrations.AddField(
+            model_name="resumetemplate",
+            name="slug",
+            field=models.SlugField(blank=True, db_index=False, max_length=120, null=True),
+        ),
         migrations.AddField(model_name="resumetemplate", name="theme_identifier", field=models.SlugField(default="professional", max_length=120)),
         migrations.AddField(model_name="resumetemplate", name="version", field=models.PositiveIntegerField(default=1)),
         migrations.AddField(model_name="resume", name="template_version", field=models.PositiveIntegerField(default=1)),

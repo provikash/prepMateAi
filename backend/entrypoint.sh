@@ -2,7 +2,6 @@
 set -eu
 python manage.py check --deploy --fail-level WARNING
 python manage.py migrate --noinput
-python manage.py createcachetable
 python manage.py ensure_professional_template
 python manage.py ensure_thomas_themes
 python manage.py collectstatic --noinput

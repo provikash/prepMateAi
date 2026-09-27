@@ -1,6 +1,7 @@
 """Validation for PDFs rendered from immutable resume-version snapshots."""
 
 from dataclasses import dataclass
+import re
 
 
 class PDFValidationError(ValueError):
@@ -11,6 +12,11 @@ class PDFValidationError(ValueError):
 class PDFValidationResult:
     page_count: int
     extracted_text: str
+
+
+def _normalized_pdf_text(value):
+    """Normalize layout whitespace introduced by PDF line wrapping."""
+    return re.sub(r"\s+", " ", str(value)).strip().casefold()
 
 
 def validate_optimized_pdf(pdf_bytes, *, version, applied_values=()):
@@ -35,11 +41,12 @@ def validate_optimized_pdf(pdf_bytes, *, version, applied_values=()):
     lowered = text.lower()
     if any(token in lowered for token in ("undefined", "{{", "}}", ">null<")):
         raise PDFValidationError("unresolved_template_output")
+    normalized_text = _normalized_pdf_text(text)
     expected_name = str((version.data.get("basics") or {}).get("name", "")).strip()
-    if expected_name and expected_name.casefold() not in text.casefold():
+    if expected_name and _normalized_pdf_text(expected_name) not in normalized_text:
         raise PDFValidationError("expected_name_missing")
     for value in applied_values:
         value = str(value).strip()
-        if value and value.casefold() not in text.casefold():
+        if value and _normalized_pdf_text(value) not in normalized_text:
             raise PDFValidationError("applied_content_missing")
     return PDFValidationResult(page_count=page_count, extracted_text=text)

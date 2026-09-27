@@ -74,6 +74,7 @@ class User(AbstractUser):
     name = models.CharField(max_length=255, blank=True, default="")
     avatar_url = models.URLField(max_length=1024, blank=True, null=True)
     is_verified = models.BooleanField(default=False)
+    deactivated_at = models.DateTimeField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True, editable=False)
@@ -151,10 +152,19 @@ class OTPChallenge(models.Model):
         AUTHENTICATION = "authentication", "Authentication"
         CHANGE_PHONE = "change_phone", "Change phone"
         ACCOUNT_RECOVERY = "account_recovery", "Account recovery"
+        ACCOUNT_ACTION = "account_action", "Account action"
 
     id = models.UUIDField(primary_key=True, default=__import__("uuid").uuid4, editable=False)
     phone_number = models.CharField(max_length=13, db_index=True)
     purpose = models.CharField(max_length=32, choices=Purpose.choices, default=Purpose.AUTHENTICATION)
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="lifecycle_otp_challenges",
+        null=True,
+        blank=True,
+    )
+    action = models.CharField(max_length=32, blank=True, default="")
     otp_hash = models.CharField(max_length=128)
     expires_at = models.DateTimeField(db_index=True)
     attempts = models.PositiveSmallIntegerField(default=0)

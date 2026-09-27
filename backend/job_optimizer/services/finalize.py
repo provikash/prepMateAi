@@ -231,6 +231,28 @@ def _resume_text_from_structured(structured_data: dict) -> str:
 
 class ResumeOptimizationService:
     @staticmethod
+    def add_confirmed_skill(resume_data, value):
+        skills = resume_data.setdefault("skills", [])
+        if not isinstance(skills, list):
+            raise ValidationError("The resume skills section is invalid.")
+        normalized = value.casefold()
+        if any(
+            normalized == str(keyword).strip().casefold()
+            for group in skills if isinstance(group, dict)
+            for keyword in group.get("keywords", [])
+        ):
+            raise ValidationError("The confirmed skill is already in the optimized resume.")
+        group = next((
+            item for item in skills
+            if isinstance(item, dict) and isinstance(item.get("keywords"), list)
+            and str(item.get("name", "")).casefold() in {"skills", "technical skills", "additional skills"}
+        ), None)
+        if group is None:
+            group = {"name": "Additional Skills", "keywords": []}
+            skills.append(group)
+        group["keywords"].append(value)
+
+    @staticmethod
     def ats_analysis(resume_data, alignment_score):
         structured = ResumeValidationService.normalize_resume_data(resume_data)
         text = _resume_text_from_structured(structured)
@@ -288,6 +310,20 @@ class ResumeOptimizationService:
             OptimizationSuggestion.Status.ACCEPTED, OptimizationSuggestion.Status.EDITED,
         ])
         for suggestion in approved:
+            if (
+                suggestion.suggestion_type == OptimizationSuggestion.SuggestionType.MISSING_EVIDENCE
+                and suggestion.resume_path == "skills"
+            ):
+                if not isinstance(suggestion.final_value, str) or not suggestion.final_value.strip():
+                    raise ValidationError("Confirmed skill has no final value.")
+                skill_key = f"skills:{suggestion.final_value.strip().casefold()}"
+                if skill_key in changed_paths:
+                    raise ValidationError("The same skill was confirmed more than once.")
+                changed_paths.add(skill_key)
+                ResumeOptimizationService.add_confirmed_skill(
+                    optimized, suggestion.final_value.strip()
+                )
+                continue
             if suggestion.resume_path in changed_paths:
                 raise ValidationError("Conflicting suggestions target the same resume field.")
             changed_paths.add(suggestion.resume_path)

@@ -1,6 +1,7 @@
 """Evidence-limited suggestion generation and deterministic validation."""
 
 import json
+import logging
 import re
 import uuid
 
@@ -9,12 +10,19 @@ from rest_framework.exceptions import ValidationError
 
 from ai.services.openrouter import AIService
 
+logger = logging.getLogger(__name__)
+
 PROMPT_VERSION = "resume_optimizer_v1"
 SYSTEM_PROMPT = """You are a resume optimization assistant. Rewrite only supplied resume text.
 Use only facts explicitly supported by the supplied resume evidence. Never invent skills,
 technologies, employers, projects, certifications, degrees, achievements, metrics, years,
 responsibilities, tools or qualifications. A missing requirement is not experience.
-If evidence is insufficient, return no suggestion. Preserve factual meaning.
+The supplied candidates were preselected because their evidence matches or partially matches
+the requirement. Produce one useful rewrite for every candidate, emphasizing that requirement
+without adding facts. Only omit a candidate when its evidence truly cannot support a rewrite.
+Preserve factual meaning.
+For every suggestion, copy resume_path, original_value and evidence_paths exactly from one
+input candidate. You may add ordinary connecting words for clear, professional grammar.
 Return one JSON object with a suggestions array matching the requested schema.
 """
 ALLOWED_TYPES = {
@@ -30,15 +38,6 @@ RISKY_TERMS = {
     "certified", "certification", "managed", "led", "increased", "reduced",
     "improved", "saved", "deployed", "architected", "launched",
 }
-SAFE_REPHRASE_WORDS = {
-    "a", "an", "the", "to", "for", "from", "in", "on", "of", "by", "and",
-    "or", "with", "using", "used", "that", "which", "through", "across",
-    "built", "build", "developed", "develop", "application", "applications",
-    "app", "apps", "integrated", "integrate", "implemented", "implement",
-    "supported", "support", "as", "at", "is", "was", "were",
-}
-
-
 def target_metadata(session_id, path):
     """Build immutable locator IDs for the source snapshot represented by a session.
 
@@ -127,8 +126,6 @@ class SuggestionValidator:
         supported_words = set(re.findall(r"[a-z][a-z+#]*", supported_text.lower()))
         if (value_words & RISKY_TERMS) - supported_words:
             raise ValidationError("Suggestion contains an unsupported claim or technology.")
-        if value_words - supported_words - SAFE_REPHRASE_WORDS:
-            raise ValidationError("Suggestion introduces details absent from resume evidence.")
         reason = proposal.get("reason")
         if not isinstance(reason, str) or not reason.strip():
             raise ValidationError("Suggestion reason is required.")
@@ -190,6 +187,10 @@ class SuggestionEngine:
         prompt = {
             "prompt_version": PROMPT_VERSION,
             "instruction": instruction[:300],
+            "task": (
+                "Return one clearer, keyword-aligned, evidence-backed rewrite for each "
+                "candidate. Do not return an empty suggestions array when candidates exist."
+            ),
             "candidates": candidates,
             "schema": {"suggestions": [{
                 "should_suggest": True, "suggestion_type": "PROJECT_BULLET_IMPROVEMENT",
@@ -216,6 +217,12 @@ class SuggestionEngine:
                     proposal, candidate=candidate,
                     resume_data=session.source_data_snapshot or session.source_resume.data or {},
                 ))
-            except ValidationError:
+            except ValidationError as exc:
+                logger.info(
+                    "optimization_suggestion_rejected session_id=%s resume_path=%s reason=%s",
+                    session.pk,
+                    candidate["resume_path"],
+                    exc.detail,
+                )
                 continue
         return accepted, response

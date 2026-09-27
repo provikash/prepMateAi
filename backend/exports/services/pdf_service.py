@@ -19,7 +19,14 @@ class PDFExportService:
     @staticmethod
     def _get_resume_for_user(resume_id, user):
         try:
-            return Resume.objects.select_for_update().select_related("template").get(id=resume_id, user=user)
+            # ``template`` is nullable, so PostgreSQL represents this as an
+            # outer join and refuses to lock both sides. Only the resume is
+            # mutated during PDF generation; lock that row explicitly.
+            return (
+                Resume.objects.select_related("template")
+                .select_for_update(of=("self",))
+                .get(id=resume_id, user=user)
+            )
         except Resume.DoesNotExist as exc:
             raise NotFound("Resume not found.") from exc
 
