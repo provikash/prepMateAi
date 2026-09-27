@@ -17,6 +17,10 @@ class InsufficientCredits(APIException):
     default_code = "insufficient_ai_credits"
 
 
+class InvalidCreditAdjustment(ValueError):
+    """Raised when an operator adjustment would violate ledger invariants."""
+
+
 class CreditService:
     @staticmethod
     def account(user):
@@ -30,6 +34,93 @@ class CreditService:
     @classmethod
     def check_balance(cls, user, operation):
         return cls.account(user).available >= cls.cost(operation)
+
+    @classmethod
+    @transaction.atomic
+    def adjust(
+        cls,
+        *,
+        account,
+        delta,
+        reason,
+        performed_by=None,
+        idempotency_key="",
+    ):
+        """Apply an audited manual balance adjustment.
+
+        Positive values grant credits. Negative values deduct credits, but can
+        never reduce the balance below credits reserved by in-flight requests.
+        """
+        if performed_by is not None and not performed_by.is_staff:
+            raise PermissionError("Only staff users can adjust AI credits.")
+        try:
+            delta = int(delta)
+        except (TypeError, ValueError) as exc:
+            raise InvalidCreditAdjustment("Enter a whole-number adjustment.") from exc
+        reason = (reason or "").strip()
+        idempotency_key = str(idempotency_key or "").strip()[:100]
+        if delta == 0:
+            raise InvalidCreditAdjustment("Adjustment cannot be zero.")
+        if abs(delta) > settings.AI_ADMIN_MAX_ADJUSTMENT:
+            raise InvalidCreditAdjustment(
+                f"One adjustment cannot exceed {settings.AI_ADMIN_MAX_ADJUSTMENT} credits."
+            )
+        if not reason:
+            raise InvalidCreditAdjustment("A reason is required.")
+        if len(reason) > 255:
+            raise InvalidCreditAdjustment("Reason must contain at most 255 characters.")
+
+        locked = AICreditAccount.objects.select_for_update().select_related("user").get(
+            pk=account.pk
+        )
+        if idempotency_key:
+            existing = AICreditTransaction.objects.filter(
+                account=locked,
+                operation="admin_adjustment",
+                idempotency_key=idempotency_key,
+            ).first()
+            if existing:
+                return locked, existing, False
+
+        balance_after = locked.balance + delta
+        if balance_after < locked.reserved_credits:
+            raise InvalidCreditAdjustment(
+                "The balance cannot be lower than currently reserved credits."
+            )
+        if balance_after > settings.AI_CREDIT_MAX_BALANCE:
+            raise InvalidCreditAdjustment(
+                f"The balance cannot exceed {settings.AI_CREDIT_MAX_BALANCE} credits."
+            )
+        before = locked.balance
+        locked.balance = balance_after
+        if delta > 0:
+            locked.lifetime_earned += delta
+        locked.save(update_fields=["balance", "lifetime_earned", "updated_at"])
+        ledger_entry = AICreditTransaction.objects.create(
+            user=locked.user,
+            account=locked,
+            performed_by=performed_by,
+            transaction_type=(
+                AICreditTransaction.Type.GRANT
+                if delta > 0
+                else AICreditTransaction.Type.ADJUSTMENT
+            ),
+            amount=abs(delta),
+            balance_before=before,
+            balance_after=balance_after,
+            operation="admin_adjustment",
+            reference_type="django_admin" if performed_by else "operator",
+            idempotency_key=idempotency_key,
+            description=reason,
+        )
+        logger.info(
+            "credit_adjusted user_id=%s actor_id=%s delta=%s transaction_id=%s",
+            locked.user_id,
+            getattr(performed_by, "pk", None),
+            delta,
+            ledger_entry.pk,
+        )
+        return locked, ledger_entry, True
 
     @classmethod
     @transaction.atomic

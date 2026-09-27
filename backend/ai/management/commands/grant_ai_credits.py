@@ -1,8 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-
-from ai.models import AICreditAccount, AICreditTransaction
+from ai.services.credits import CreditService
 
 
 class Command(BaseCommand):
@@ -11,6 +9,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("identifier", help="Email or phone number of the user")
         parser.add_argument("amount", type=int, help="Number of AI credits to grant")
+        parser.add_argument(
+            "--reason",
+            required=True,
+            help="Required audit reason for this manual grant",
+        )
 
     def handle(self, *args, **options):
         amount = options["amount"]
@@ -31,16 +34,10 @@ class Command(BaseCommand):
                 pass
         if user is None:
             raise CommandError(f"User not found for identifier: '{identifier}'.")
-        with transaction.atomic():
-            account, _ = AICreditAccount.objects.get_or_create(user=user)
-            account = AICreditAccount.objects.select_for_update().get(pk=account.pk)
-            before = account.balance
-            account.balance += amount
-            account.lifetime_earned += amount
-            account.save(update_fields=["balance", "lifetime_earned", "updated_at"])
-            AICreditTransaction.objects.create(
-                user=user, account=account, transaction_type=AICreditTransaction.Type.GRANT,
-                amount=amount, balance_before=before, balance_after=account.balance,
-                operation="manual_grant", description="Operator grant",
-            )
+        account = CreditService.account(user)
+        CreditService.adjust(
+            account=account,
+            delta=amount,
+            reason=options["reason"],
+        )
         self.stdout.write(self.style.SUCCESS(f"Granted {amount} AI credits."))

@@ -28,6 +28,13 @@ class AICreditTransaction(BaseModel):
         ADJUSTMENT = "ADJUSTMENT"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="performed_credit_adjustments",
+        null=True,
+        blank=True,
+    )
     account = models.ForeignKey(AICreditAccount, on_delete=models.CASCADE, related_name="transactions")
     transaction_type = models.CharField(max_length=20, choices=Type.choices)
     amount = models.PositiveIntegerField()

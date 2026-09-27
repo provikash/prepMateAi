@@ -156,7 +156,10 @@ class OptimizationWorkflowTest(TestCase):
                 "evidence": [{"path": "projects[0].highlights[0]", "text": "Built Flutter app with Dio."}],
             }]},
         )
-        self.account = AICreditAccount.objects.create(user=self.user, balance=20)
+        self.account, _ = AICreditAccount.objects.update_or_create(
+            user=self.user,
+            defaults={"balance": 20, "lifetime_earned": 20},
+        )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
         self.root = "/api/v1/job-optimizer/"

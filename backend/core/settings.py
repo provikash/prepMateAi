@@ -242,6 +242,8 @@ AI_OPERATION_COSTS = {
     "resume_optimization": int(os.getenv("AI_COST_RESUME_OPTIMIZATION", "10")),
     "suggestion_regeneration": int(os.getenv("AI_COST_SUGGESTION_REGENERATION", "1")),
 }
+AI_ADMIN_MAX_ADJUSTMENT = int(os.getenv("AI_ADMIN_MAX_ADJUSTMENT", "1000000"))
+AI_CREDIT_MAX_BALANCE = int(os.getenv("AI_CREDIT_MAX_BALANCE", "100000000"))
 
 LOGGING = {
     "version": 1,
