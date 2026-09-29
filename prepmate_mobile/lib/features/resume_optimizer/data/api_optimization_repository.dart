@@ -251,8 +251,10 @@ class ApiOptimizationRepository implements OptimizationRepository {
   Future<List<OptimizationSuggestion>> generateSuggestions(
     String sessionId,
   ) async {
+    final key = 'generate-${DateTime.now().microsecondsSinceEpoch}';
     final response = await _dio.post(
       'job-optimizer/sessions/$sessionId/suggestions/generate/',
+      options: Options(headers: {'Idempotency-Key': key}),
     );
     return (response.data as List<dynamic>)
         .map(
@@ -261,6 +263,21 @@ class ApiOptimizationRepository implements OptimizationRepository {
           ),
         )
         .toList();
+  }
+
+  @override
+  Future<OptimizationSuggestion> confirmMissingSkill(
+    String sessionId,
+    String requirementId,
+    String value,
+  ) async {
+    final response = await _dio.post(
+      'job-optimizer/sessions/$sessionId/suggestions/confirm-missing-skill/',
+      data: {'requirement_id': requirementId, 'value': value},
+    );
+    return OptimizationSuggestion.fromApi(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override

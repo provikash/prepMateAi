@@ -77,6 +77,7 @@ else:
 # Application definition
 
 INSTALLED_APPS = [
+    'core',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -174,6 +175,15 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 # Ensure a single MIDDLEWARE setting is used (defined above).
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path(os.getenv('MEDIA_ROOT', str(BASE_DIR / 'media')))
+MEDIA_STORAGE_BACKEND = os.getenv("MEDIA_STORAGE_BACKEND", "local").strip().lower()
+R2_MEDIA_BUCKET = os.getenv("R2_MEDIA_BUCKET", "").strip()
+R2_ENDPOINT_URL = os.getenv("R2_ENDPOINT_URL", "").strip().rstrip("/")
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "").strip()
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "").strip()
+R2_REGION = os.getenv("R2_REGION", "auto").strip() or "auto"
+R2_SIGNED_URL_EXPIRY_SECONDS = int(
+    os.getenv("R2_SIGNED_URL_EXPIRY_SECONDS", "300")
+)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -244,6 +254,34 @@ AI_OPERATION_COSTS = {
 }
 AI_ADMIN_MAX_ADJUSTMENT = int(os.getenv("AI_ADMIN_MAX_ADJUSTMENT", "1000000"))
 AI_CREDIT_MAX_BALANCE = int(os.getenv("AI_CREDIT_MAX_BALANCE", "100000000"))
+AI_RESERVATION_STALE_MINUTES = int(os.getenv("AI_RESERVATION_STALE_MINUTES", "30"))
+OPTIMIZATION_STALE_MINUTES = int(os.getenv("OPTIMIZATION_STALE_MINUTES", "30"))
+
+# Production monitoring. Request bodies and personally identifiable information
+# are intentionally excluded from error reports.
+SENTRY_DSN = os.getenv("SENTRY_DSN", "").strip()
+SENTRY_ENVIRONMENT = os.getenv("SENTRY_ENVIRONMENT", DJANGO_ENV)
+SENTRY_RELEASE = (
+    os.getenv("SENTRY_RELEASE", "").strip()
+    or os.getenv("RENDER_GIT_COMMIT", "").strip()
+    or None
+)
+SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
+SENTRY_PROFILES_SAMPLE_RATE = float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.0"))
+SLOW_REQUEST_THRESHOLD_MS = int(os.getenv("SLOW_REQUEST_THRESHOLD_MS", "1500"))
+
+if SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=SENTRY_ENVIRONMENT,
+        release=SENTRY_RELEASE,
+        send_default_pii=False,
+        max_request_body_size="never",
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+        profiles_sample_rate=SENTRY_PROFILES_SAMPLE_RATE,
+    )
 
 LOGGING = {
     "version": 1,
@@ -263,6 +301,11 @@ LOGGING = {
         "core.request": {
             "handlers": ["console"],
             "level": os.getenv("REQUEST_LOG_LEVEL", "INFO"),
+            "propagate": False,
+        },
+        "core.operations": {
+            "handlers": ["console"],
+            "level": "INFO",
             "propagate": False,
         },
         "resume": {
@@ -364,6 +407,30 @@ if PRODUCTION:
         raise ImproperlyConfigured("Production requires the Fast2SMS OTP provider and credentials.")
     if not OPENROUTER_API_KEY:
         raise ImproperlyConfigured("Production requires OPENROUTER_API_KEY for AI features.")
+    if not SENTRY_DSN:
+        raise ImproperlyConfigured("Production requires SENTRY_DSN for error monitoring.")
+    if MEDIA_STORAGE_BACKEND != "r2":
+        raise ImproperlyConfigured("Production requires private Cloudflare R2 media storage.")
+    missing_r2 = [
+        name
+        for name, value in {
+            "R2_MEDIA_BUCKET": R2_MEDIA_BUCKET,
+            "R2_ENDPOINT_URL": R2_ENDPOINT_URL,
+            "R2_ACCESS_KEY_ID": R2_ACCESS_KEY_ID,
+            "R2_SECRET_ACCESS_KEY": R2_SECRET_ACCESS_KEY,
+        }.items()
+        if not value
+    ]
+    if missing_r2:
+        raise ImproperlyConfigured(
+            "Production R2 configuration is incomplete: " + ", ".join(missing_r2)
+        )
+    if not R2_ENDPOINT_URL.startswith("https://"):
+        raise ImproperlyConfigured("R2_ENDPOINT_URL must use HTTPS.")
+    if not 60 <= R2_SIGNED_URL_EXPIRY_SECONDS <= 3600:
+        raise ImproperlyConfigured(
+            "R2_SIGNED_URL_EXPIRY_SECONDS must be between 60 and 3600."
+        )
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -390,3 +457,21 @@ STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
 }
+if MEDIA_STORAGE_BACKEND == "r2":
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "access_key": R2_ACCESS_KEY_ID,
+            "secret_key": R2_SECRET_ACCESS_KEY,
+            "bucket_name": R2_MEDIA_BUCKET,
+            "endpoint_url": R2_ENDPOINT_URL,
+            "region_name": R2_REGION,
+            "signature_version": "s3v4",
+            "addressing_style": "path",
+            "default_acl": None,
+            "querystring_auth": True,
+            "querystring_expire": R2_SIGNED_URL_EXPIRY_SECONDS,
+            "file_overwrite": False,
+            "max_memory_size": FILE_UPLOAD_MAX_MEMORY_SIZE,
+        },
+    }

@@ -304,6 +304,24 @@ class MockOptimizationRepository implements OptimizationRepository {
       (await analyze(resumeId: 'mock', jobDescription: 'mock')).suggestions;
 
   @override
+  Future<OptimizationSuggestion> confirmMissingSkill(
+    String sessionId,
+    String requirementId,
+    String value,
+  ) async => OptimizationSuggestion(
+    id: 'confirmed-$requirementId',
+    section: 'skills',
+    current: 'Not listed in resume',
+    proposed: value,
+    reason: 'User confirmed this skill.',
+    keywords: [value],
+    evidence: 'User confirmation',
+    status: SuggestionStatus.edited,
+    resumePath: 'skills',
+    requiresConfirmation: true,
+  );
+
+  @override
   Future<OptimizationSuggestion> reviewSuggestion(
     String id,
     SuggestionStatus status, {

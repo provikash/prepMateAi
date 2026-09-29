@@ -1,0 +1,342 @@
+services:
+  - type: web
+    name: prepmate-api
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: core.production
+      - key: DJANGO_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        fromService:
+          type: web
+          name: prepmate-api
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - key: TRUST_PROXY_HEADERS
+        value: "True"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prepmate-db
+          property: connectionString
+      - key: CACHE_BACKEND
+        value: django_redis.cache.RedisCache
+      - key: CACHE_LOCATION
+        fromService:
+          type: keyvalue
+          name: prepmate-cache
+          property: connectionString
+      - key: CACHE_KEY_PREFIX
+        value: prepmate
+      - key: OTP_PROVIDER
+        value: fast2sms
+      - key: FAST2SMS_API_KEY
+        sync: false
+      - key: FAST2SMS_OTP_ID
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_API_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: OPENROUTER_MODEL_NAME
+        value: openai/gpt-4o-mini
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.1"
+      - key: SLOW_REQUEST_THRESHOLD_MS
+        value: "1500"
+      - key: ENABLE_TEST_OTP_LOGIN
+        value: "False"
+      - key: MEDIA_STORAGE_BACKEND
+        value: r2
+      - key: R2_MEDIA_BUCKET
+        sync: false
+      - key: R2_ENDPOINT_URL
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_REGION
+        value: auto
+      - key: R2_SIGNED_URL_EXPIRY_SECONDS
+        value: "300"
+      - key: WEB_CONCURRENCY
+        value: "2"
+      - key: WEB_THREADS
+        value: "2"
+
+  - type: cron
+    name: prepmate-clean-expired-otp
+    runtime: docker
+    region: singapore
+    schedule: "15 0 * * *"
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: python manage.py cleanup_expired_otp --retention-days 7 --apply
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: core.production
+      - key: DJANGO_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: ENABLE_TEST_OTP_LOGIN
+        value: "False"
+      - key: OTP_PROVIDER
+        value: fast2sms
+      - key: SECRET_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: SECRET_KEY}
+      - key: ALLOWED_HOSTS
+        fromService: {type: web, name: prepmate-api, envVarKey: ALLOWED_HOSTS}
+      - key: FAST2SMS_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_API_KEY}
+      - key: FAST2SMS_OTP_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_OTP_ID}
+      - key: OPENROUTER_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: OPENROUTER_API_KEY}
+      - key: SENTRY_DSN
+        fromService: {type: web, name: prepmate-api, envVarKey: SENTRY_DSN}
+      - key: MEDIA_STORAGE_BACKEND
+        value: r2
+      - key: R2_MEDIA_BUCKET
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_MEDIA_BUCKET}
+      - key: R2_ENDPOINT_URL
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ENDPOINT_URL}
+      - key: R2_ACCESS_KEY_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ACCESS_KEY_ID}
+      - key: R2_SECRET_ACCESS_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_SECRET_ACCESS_KEY}
+      - key: DATABASE_URL
+        fromDatabase: {name: prepmate-db, property: connectionString}
+      - key: CACHE_BACKEND
+        value: django_redis.cache.RedisCache
+      - key: CACHE_LOCATION
+        fromService: {type: keyvalue, name: prepmate-cache, property: connectionString}
+
+  - type: cron
+    name: prepmate-clean-jwt-blacklist
+    runtime: docker
+    region: singapore
+    schedule: "30 0 * * *"
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: python manage.py flushexpiredtokens
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: core.production
+      - key: DJANGO_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: ENABLE_TEST_OTP_LOGIN
+        value: "False"
+      - key: OTP_PROVIDER
+        value: fast2sms
+      - key: SECRET_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: SECRET_KEY}
+      - key: ALLOWED_HOSTS
+        fromService: {type: web, name: prepmate-api, envVarKey: ALLOWED_HOSTS}
+      - key: FAST2SMS_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_API_KEY}
+      - key: FAST2SMS_OTP_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_OTP_ID}
+      - key: OPENROUTER_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: OPENROUTER_API_KEY}
+      - key: SENTRY_DSN
+        fromService: {type: web, name: prepmate-api, envVarKey: SENTRY_DSN}
+      - key: MEDIA_STORAGE_BACKEND
+        value: r2
+      - key: R2_MEDIA_BUCKET
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_MEDIA_BUCKET}
+      - key: R2_ENDPOINT_URL
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ENDPOINT_URL}
+      - key: R2_ACCESS_KEY_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ACCESS_KEY_ID}
+      - key: R2_SECRET_ACCESS_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_SECRET_ACCESS_KEY}
+      - key: DATABASE_URL
+        fromDatabase: {name: prepmate-db, property: connectionString}
+      - key: CACHE_BACKEND
+        value: django_redis.cache.RedisCache
+      - key: CACHE_LOCATION
+        fromService: {type: keyvalue, name: prepmate-cache, property: connectionString}
+
+  - type: cron
+    name: prepmate-reconcile-ai-credits
+    runtime: docker
+    region: singapore
+    schedule: "*/15 * * * *"
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: python manage.py reconcile_ai_credits --stale-minutes 30 --apply
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: core.production
+      - key: DJANGO_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: ENABLE_TEST_OTP_LOGIN
+        value: "False"
+      - key: OTP_PROVIDER
+        value: fast2sms
+      - key: SECRET_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: SECRET_KEY}
+      - key: ALLOWED_HOSTS
+        fromService: {type: web, name: prepmate-api, envVarKey: ALLOWED_HOSTS}
+      - key: FAST2SMS_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_API_KEY}
+      - key: FAST2SMS_OTP_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_OTP_ID}
+      - key: OPENROUTER_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: OPENROUTER_API_KEY}
+      - key: SENTRY_DSN
+        fromService: {type: web, name: prepmate-api, envVarKey: SENTRY_DSN}
+      - key: MEDIA_STORAGE_BACKEND
+        value: r2
+      - key: R2_MEDIA_BUCKET
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_MEDIA_BUCKET}
+      - key: R2_ENDPOINT_URL
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ENDPOINT_URL}
+      - key: R2_ACCESS_KEY_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ACCESS_KEY_ID}
+      - key: R2_SECRET_ACCESS_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_SECRET_ACCESS_KEY}
+      - key: DATABASE_URL
+        fromDatabase: {name: prepmate-db, property: connectionString}
+      - key: CACHE_BACKEND
+        value: django_redis.cache.RedisCache
+      - key: CACHE_LOCATION
+        fromService: {type: keyvalue, name: prepmate-cache, property: connectionString}
+
+  - type: cron
+    name: prepmate-monitor-optimizations
+    runtime: docker
+    region: singapore
+    schedule: "*/15 * * * *"
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: python manage.py monitor_optimization_sessions --stale-minutes 30 --failure-lookback-minutes 20 --apply
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: core.production
+      - key: DJANGO_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: ENABLE_TEST_OTP_LOGIN
+        value: "False"
+      - key: OTP_PROVIDER
+        value: fast2sms
+      - key: SECRET_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: SECRET_KEY}
+      - key: ALLOWED_HOSTS
+        fromService: {type: web, name: prepmate-api, envVarKey: ALLOWED_HOSTS}
+      - key: FAST2SMS_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_API_KEY}
+      - key: FAST2SMS_OTP_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_OTP_ID}
+      - key: OPENROUTER_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: OPENROUTER_API_KEY}
+      - key: SENTRY_DSN
+        fromService: {type: web, name: prepmate-api, envVarKey: SENTRY_DSN}
+      - key: MEDIA_STORAGE_BACKEND
+        value: r2
+      - key: R2_MEDIA_BUCKET
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_MEDIA_BUCKET}
+      - key: R2_ENDPOINT_URL
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ENDPOINT_URL}
+      - key: R2_ACCESS_KEY_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ACCESS_KEY_ID}
+      - key: R2_SECRET_ACCESS_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_SECRET_ACCESS_KEY}
+      - key: DATABASE_URL
+        fromDatabase: {name: prepmate-db, property: connectionString}
+      - key: CACHE_BACKEND
+        value: django_redis.cache.RedisCache
+      - key: CACHE_LOCATION
+        fromService: {type: keyvalue, name: prepmate-cache, property: connectionString}
+
+  - type: cron
+    name: prepmate-database-backup
+    runtime: docker
+    region: singapore
+    schedule: "0 2 * * *"
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: python manage.py backup_database
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: core.production
+      - key: DJANGO_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: ENABLE_TEST_OTP_LOGIN
+        value: "False"
+      - key: OTP_PROVIDER
+        value: fast2sms
+      - key: SECRET_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: SECRET_KEY}
+      - key: ALLOWED_HOSTS
+        fromService: {type: web, name: prepmate-api, envVarKey: ALLOWED_HOSTS}
+      - key: FAST2SMS_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_API_KEY}
+      - key: FAST2SMS_OTP_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: FAST2SMS_OTP_ID}
+      - key: OPENROUTER_API_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: OPENROUTER_API_KEY}
+      - key: SENTRY_DSN
+        fromService: {type: web, name: prepmate-api, envVarKey: SENTRY_DSN}
+      - key: MEDIA_STORAGE_BACKEND
+        value: r2
+      - key: R2_MEDIA_BUCKET
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_MEDIA_BUCKET}
+      - key: R2_ENDPOINT_URL
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ENDPOINT_URL}
+      - key: R2_ACCESS_KEY_ID
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_ACCESS_KEY_ID}
+      - key: R2_SECRET_ACCESS_KEY
+        fromService: {type: web, name: prepmate-api, envVarKey: R2_SECRET_ACCESS_KEY}
+      - key: DATABASE_URL
+        fromDatabase: {name: prepmate-db, property: connectionString}
+      - key: CACHE_BACKEND
+        value: django_redis.cache.RedisCache
+      - key: CACHE_LOCATION
+        fromService: {type: keyvalue, name: prepmate-cache, property: connectionString}
+      - key: BACKUP_S3_BUCKET
+        sync: false
+      - key: BACKUP_S3_PREFIX
+        value: prepmate
+      - key: BACKUP_S3_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+
+  - type: keyvalue
+    name: prepmate-cache
+    region: singapore
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  - name: prepmate-db
+    region: singapore
+    postgresMajorVersion: "15"
+    databaseName: prepmate
+    user: prepmate
+    ipAllowList: []

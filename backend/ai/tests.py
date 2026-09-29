@@ -1,12 +1,15 @@
 import uuid
+from datetime import timedelta
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APITestCase
 
-from .models import AICreditAccount, AICreditTransaction
+from .models import AICreditAccount, AICreditTransaction, AIUsage
 from .services.credits import CreditService, InvalidCreditAdjustment
 from .services.openrouter import AIResult, AIService
 from .services.resume_service import ResumeAIService
@@ -229,3 +232,26 @@ class CreditAdministrationTests(TestCase):
             reverse("admin:ai_aicredittransaction_delete", args=[entry.pk])
         )
         self.assertEqual(delete.status_code, 403)
+
+    def test_reconciliation_releases_stale_processing_reservation(self):
+        self.account.balance = 20
+        self.account.reserved_credits = 10
+        self.account.save(update_fields=["balance", "reserved_credits"])
+        usage = AIUsage.objects.create(
+            user=self.user,
+            operation="resume_optimization",
+            credits_reserved=10,
+            status=AIUsage.Status.PROCESSING,
+            idempotency_key="stale-maintenance-test",
+        )
+        AIUsage.objects.filter(pk=usage.pk).update(
+            updated_at=timezone.now() - timedelta(hours=2)
+        )
+
+        call_command("reconcile_ai_credits", stale_minutes=30, apply=True)
+
+        usage.refresh_from_db()
+        self.account.refresh_from_db()
+        self.assertEqual(usage.status, AIUsage.Status.FAILED)
+        self.assertEqual(usage.error_code, "stale_reservation")
+        self.assertEqual(self.account.reserved_credits, 0)

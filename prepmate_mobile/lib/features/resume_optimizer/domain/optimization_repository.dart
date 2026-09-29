@@ -26,6 +26,11 @@ abstract interface class OptimizationRepository {
   Future<String> regenerate(String text, String instruction);
   Future<void> createVersion(String name);
   Future<List<OptimizationSuggestion>> generateSuggestions(String sessionId);
+  Future<OptimizationSuggestion> confirmMissingSkill(
+    String sessionId,
+    String requirementId,
+    String value,
+  );
   Future<OptimizationSuggestion> reviewSuggestion(
     String id,
     SuggestionStatus status, {

@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
@@ -10,6 +12,8 @@ from resume.thumbnail_utils import (
     generate_thumbnail_from_html,
     generate_thumbnail_from_pdf,
 )
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -89,12 +93,19 @@ class Resume(BaseModel):
         if self.thumbnail or not self.pdf_file:
             return
 
+        pdf_bytes = b""
         try:
-            pdf_path = self.pdf_file.path
+            self.pdf_file.open("rb")
+            pdf_bytes = self.pdf_file.read()
         except Exception:
-            pdf_path = ""
+            logger.exception("Unable to read resume PDF for thumbnail generation")
+        finally:
+            try:
+                self.pdf_file.close()
+            except Exception:
+                pass
 
-        content_file, _ = generate_thumbnail_from_pdf(pdf_path)
+        content_file, _ = generate_thumbnail_from_pdf(pdf_bytes)
         if not content_file:
             return
 

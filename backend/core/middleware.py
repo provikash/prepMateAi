@@ -4,6 +4,7 @@ import re
 import time
 import uuid
 
+from django.conf import settings
 from django.utils.cache import patch_vary_headers
 
 
@@ -29,17 +30,23 @@ class RequestIdMiddleware:
         elif request.headers.get("Authorization"):
             response.setdefault("Cache-Control", "private, no-cache")
             patch_vary_headers(response, ("Authorization",))
-        request_logger.info(
-            json.dumps(
-                {
-                    "event": "http_request",
-                    "request_id": request_id,
-                    "method": request.method,
-                    "path": request.path,
-                    "status": response.status_code,
-                    "duration_ms": round((time.monotonic() - started) * 1000, 2),
-                },
-                separators=(",", ":"),
-            )
+        duration_ms = round((time.monotonic() - started) * 1000, 2)
+        payload = json.dumps(
+            {
+                "event": "http_request",
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.path,
+                "status": response.status_code,
+                "duration_ms": duration_ms,
+                "slow": duration_ms >= settings.SLOW_REQUEST_THRESHOLD_MS,
+            },
+            separators=(",", ":"),
         )
+        if response.status_code >= 500:
+            request_logger.error(payload)
+        elif response.status_code >= 400 or duration_ms >= settings.SLOW_REQUEST_THRESHOLD_MS:
+            request_logger.warning(payload)
+        else:
+            request_logger.info(payload)
         return response

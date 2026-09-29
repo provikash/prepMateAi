@@ -9,6 +9,7 @@ from typing import Protocol
 import requests
 from django.conf import settings
 
+from core.monitoring import report_operational_failure
 from .exceptions import (
     AIServiceConfigurationError,
     AIServiceProviderError,
@@ -58,10 +59,22 @@ class OpenRouterProvider:
                 timeout=settings.AI_TIMEOUT_SECONDS,
             )
         except requests.Timeout as exc:
+            report_operational_failure(
+                "provider_timeout", provider="openrouter", exception=exc,
+                model=selected_model,
+            )
             raise AIServiceTimeoutError("AI request timed out.") from exc
         except requests.RequestException as exc:
+            report_operational_failure(
+                "provider_request_failed", provider="openrouter", exception=exc,
+                model=selected_model,
+            )
             raise AIServiceProviderError("AI provider is unavailable.") from exc
         if response.status_code >= 400:
+            report_operational_failure(
+                "provider_response_failed", provider="openrouter",
+                status_code=response.status_code, model=selected_model,
+            )
             raise AIServiceProviderError(f"AI provider returned HTTP {response.status_code}.")
         try:
             body = response.json()
@@ -80,6 +93,10 @@ class OpenRouterProvider:
                 estimated_cost=Decimal(str(usage["cost"])) if usage.get("cost") is not None else None,
             )
         except (ValueError, KeyError, IndexError, TypeError) as exc:
+            report_operational_failure(
+                "provider_invalid_response", provider="openrouter", exception=exc,
+                model=selected_model,
+            )
             raise AIServiceResponseError("AI provider returned invalid structured output.") from exc
 
 

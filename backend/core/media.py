@@ -11,6 +11,14 @@ from django.views.decorators.http import require_GET
 def media_url(request, file_field):
     if not file_field:
         return None
+    # Private object-storage backends generate a short-lived signed HTTPS URL.
+    # Local development continues through the path-bound Django media endpoint.
+    try:
+        storage_url = file_field.url
+    except (AttributeError, NotImplementedError, ValueError):
+        storage_url = ""
+    if storage_url.startswith(("https://", "http://")):
+        return storage_url
     name = file_field.name
     token = signing.dumps(name, salt='prepmate.media')
     url = '/media/' + quote(name, safe='/') + '?' + urlencode({'token': token})

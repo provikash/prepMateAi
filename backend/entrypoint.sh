@@ -1,5 +1,8 @@
 #!/bin/sh
 set -eu
+if [ "$#" -gt 0 ]; then
+  exec "$@"
+fi
 python manage.py check --deploy --fail-level WARNING
 python manage.py migrate --noinput
 python manage.py ensure_professional_template

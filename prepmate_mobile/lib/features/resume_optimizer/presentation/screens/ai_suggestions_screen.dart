@@ -39,15 +39,15 @@ class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
   }
 
   Future<void> _regenerate(String id) async {
-    final controller = TextEditingController();
+    var instructionValue = '';
     final instruction = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
           'Improve with AI · ${ref.read(optimizationProvider).regenerationCost} credit(s)',
         ),
-        content: TextField(
-          controller: controller,
+        content: TextFormField(
+          onChanged: (value) => instructionValue = value,
           maxLength: 300,
           decoration: const InputDecoration(hintText: 'Make this more concise'),
         ),
@@ -57,13 +57,12 @@ class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            onPressed: () => Navigator.pop(dialogContext, instructionValue),
             child: const Text('Generate'),
           ),
         ],
       ),
     );
-    controller.dispose();
     if (instruction == null || instruction.trim().isEmpty || !mounted) return;
     final result = await ref
         .read(optimizationProvider.notifier)
@@ -73,6 +72,57 @@ class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
       SnackBar(
         content: Text(
           ref.read(optimizationProvider).error ?? 'Regeneration failed.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmMissingSkill(JobRequirement requirement) async {
+    var skillValue = requirement.name;
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Add skill to optimized resume'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Only confirm this skill if you genuinely have it. It will be added to the optimized version, not your master resume.',
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              initialValue: requirement.name,
+              onChanged: (value) => skillValue = value,
+              autofocus: true,
+              maxLength: 100,
+              decoration: const InputDecoration(labelText: 'Skill name'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, skillValue),
+            child: const Text('Confirm & add'),
+          ),
+        ],
+      ),
+    );
+    if (value == null || value.trim().isEmpty || !mounted) return;
+    final ok = await ref
+        .read(optimizationProvider.notifier)
+        .confirmMissingSkill(requirement, value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Skill added to the optimized version.'
+              : ref.read(optimizationProvider).error ?? 'Could not add skill.',
         ),
       ),
     );
@@ -125,6 +175,9 @@ class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
     final visibleSuggestions = analysis.suggestions
         .where(matchesFilter)
         .toList();
+    final hasEvidenceSuggestions = analysis.suggestions.any(
+      (item) => item.resumePath != 'skills',
+    );
 
     return AppScaffold(
       title: 'Optimization Workspace',
@@ -140,7 +193,7 @@ class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
           children: [
             const OptimizationStepHeader(step: 3),
             const SizedBox(height: AppSpacing.md),
-            if (analysis.suggestions.isEmpty &&
+            if (!hasEvidenceSuggestions &&
                 state.credits != null &&
                 credits < state.generationCost)
               const Padding(
@@ -149,7 +202,7 @@ class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
                   'Not enough AI credits. Resume editing and PDFs remain available.',
                 ),
               ),
-            if (analysis.suggestions.isEmpty)
+            if (!hasEvidenceSuggestions)
               AppPrimaryButton(
                 label:
                     'Generate evidence-backed suggestions · ${state.generationCost} credits',
@@ -429,6 +482,8 @@ class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
                       color: colors.error,
                       items: [...missingList, ...unclearList],
                       icon: Icons.shield_outlined,
+                      onAddSkill: _confirmMissingSkill,
+                      processingId: state.processingSuggestionId,
                     ),
                     const SizedBox(height: AppSpacing.lg),
                   ],
@@ -481,6 +536,8 @@ class _WorkspaceSection extends StatelessWidget {
     required this.color,
     required this.items,
     required this.icon,
+    this.onAddSkill,
+    this.processingId,
   });
 
   final String title;
@@ -488,6 +545,8 @@ class _WorkspaceSection extends StatelessWidget {
   final Color color;
   final List<JobRequirement> items;
   final IconData icon;
+  final Future<void> Function(JobRequirement requirement)? onAddSkill;
+  final String? processingId;
 
   @override
   Widget build(BuildContext context) {
@@ -590,6 +649,26 @@ class _WorkspaceSection extends StatelessWidget {
                           ),
                         ),
                       ),
+                  ],
+                  if (onAddSkill != null) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: OutlinedButton.icon(
+                        onPressed: processingId == null
+                            ? () => onAddSkill!(item)
+                            : null,
+                        icon: processingId == item.id
+                            ? const SizedBox.square(
+                                dimension: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.add),
+                        label: const Text('Add if I have this skill'),
+                      ),
+                    ),
                   ],
                 ],
               ),

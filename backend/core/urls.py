@@ -18,12 +18,13 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
-from .health import health
+from .health import health, live
 from .media import serve_media
 from ai.credit_views import EntitlementsView
 
 urlpatterns = [
     path('health/', health, name='health'),
+    path('health/live/', live, name='health-live'),
     path('media/<path:path>', serve_media, name='media'),
     path('admin/', admin.site.urls),
 

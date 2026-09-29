@@ -1,5 +1,11 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase
+from django.utils import timezone
 
 from job_optimizer.models import JobDescription, OptimizationSession, OptimizationSuggestion
 from resume.models import Resume
@@ -72,3 +78,38 @@ class JobOptimizerModelsTest(TestCase):
         )
         self.assertEqual(suggestion.status, OptimizationSuggestion.Status.PENDING)
         self.assertEqual(suggestion.optimization_session, session)
+
+    def test_monitor_marks_stuck_session_failed_and_alerts_once(self):
+        cache.clear()
+        jd = JobDescription.objects.create(
+            user=self.user,
+            title="Flutter Engineer",
+            description="We need Flutter developers.",
+        )
+        session = OptimizationSession.objects.create(
+            user=self.user,
+            source_resume=self.resume,
+            job_description=jd,
+            status=OptimizationSession.Status.ANALYZING,
+        )
+        OptimizationSession.objects.filter(pk=session.pk).update(
+            updated_at=timezone.now() - timedelta(hours=2)
+        )
+
+        with self.assertRaises(CommandError):
+            call_command(
+                "monitor_optimization_sessions",
+                stale_minutes=30,
+                failure_lookback_minutes=20,
+                apply=True,
+            )
+
+        session.refresh_from_db()
+        self.assertEqual(session.status, OptimizationSession.Status.FAILED)
+        self.assertEqual(session.failure_code, "operation_timed_out")
+        call_command(
+            "monitor_optimization_sessions",
+            stale_minutes=30,
+            failure_lookback_minutes=20,
+            apply=True,
+        )

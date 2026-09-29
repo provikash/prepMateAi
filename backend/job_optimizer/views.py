@@ -1,5 +1,6 @@
 import logging
 from django.db import transaction
+from django.utils import timezone
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -143,10 +144,15 @@ class OptimizationSessionAnalyzeView(APIView):
 
             serializer = OptimizationSessionSerializer(session, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception:
+        except Exception as exc:
             logger.exception("Job description analysis failed for session %s", session.id)
             session.status = OptimizationSession.Status.FAILED
-            session.save(update_fields=["status", "updated_at"])
+            session.failed_at = timezone.now()
+            session.failure_code = type(exc).__name__[:60]
+            session.failure_message = "Job description analysis failed."
+            session.save(update_fields=[
+                "status", "failed_at", "failure_code", "failure_message", "updated_at",
+            ])
             return Response(
                 {"error": "Job description analysis failed."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -185,10 +191,15 @@ class OptimizationSessionMatchView(APIView):
 
             serializer = OptimizationSessionSerializer(session, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception:
+        except Exception as exc:
             logger.exception("Evidence matching failed for session %s", session.id)
             session.status = OptimizationSession.Status.FAILED
-            session.save(update_fields=["status", "updated_at"])
+            session.failed_at = timezone.now()
+            session.failure_code = type(exc).__name__[:60]
+            session.failure_message = "Evidence matching failed."
+            session.save(update_fields=[
+                "status", "failed_at", "failure_code", "failure_message", "updated_at",
+            ])
             return Response(
                 {"error": "Evidence matching failed."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

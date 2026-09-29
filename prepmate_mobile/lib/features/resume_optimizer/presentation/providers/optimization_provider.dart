@@ -286,6 +286,42 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
     }
   }
 
+  Future<bool> confirmMissingSkill(
+    JobRequirement requirement,
+    String value,
+  ) async {
+    final sessionId = state.sessionId;
+    if (sessionId == null || state.analysis == null) return false;
+    state = state.copyWith(
+      processingSuggestionId: requirement.id,
+      clearError: true,
+    );
+    try {
+      final suggestion = await _repository.confirmMissingSkill(
+        sessionId,
+        requirement.id,
+        value.trim(),
+      );
+      final suggestions = [
+        ...state.analysis!.suggestions.where(
+          (item) => item.id != suggestion.id,
+        ),
+        suggestion,
+      ];
+      state = state.copyWith(
+        analysis: state.analysis!.copyWith(suggestions: suggestions),
+        clearProcessingSuggestion: true,
+      );
+      return true;
+    } catch (error) {
+      state = state.copyWith(
+        clearProcessingSuggestion: true,
+        error: error.toString(),
+      );
+      return false;
+    }
+  }
+
   Future<bool> setSuggestionStatus(String id, SuggestionStatus status) async {
     if (_repository is MockOptimizationRepository) {
       _update(id, (item) => item.copyWith(status: status));
@@ -416,8 +452,9 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
         return true;
       }
       final sessionId = state.sessionId;
-      if (sessionId == null)
+      if (sessionId == null) {
         throw StateError('No optimization session is active.');
+      }
       _applyIdempotencyKey ??=
           'apply-$sessionId-${DateTime.now().microsecondsSinceEpoch}';
       final result = await _repository.finalizeOptimization(

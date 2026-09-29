@@ -3,6 +3,7 @@ import requests
 from django.conf import settings
 from django.views.decorators.debug import sensitive_variables
 
+from core.monitoring import report_operational_failure
 from .base import BaseOTPProvider, OTPProviderError, ProviderResult
 from ..phone_service import mask_phone
 
@@ -40,9 +41,17 @@ class Fast2SMSProvider(BaseOTPProvider):
             data = response.json() if response.content else {}
         except (requests.RequestException, ValueError) as exc:
             logger.warning("provider_request_error provider=fast2sms phone=%s", mask_phone(phone_number))
+            report_operational_failure(
+                "provider_request_failed", provider="fast2sms", exception=exc,
+                failure_type=type(exc).__name__,
+            )
             raise OTPProviderError("SMS provider is temporarily unavailable.") from exc
         if response.status_code != 200 or not isinstance(data, dict) or data.get("return") is not True:
             logger.warning("otp_request_failed provider=fast2sms phone=%s status=%s", mask_phone(phone_number), response.status_code)
+            report_operational_failure(
+                "provider_response_failed", provider="fast2sms",
+                status_code=response.status_code,
+            )
             raise OTPProviderError("SMS provider rejected the request.")
         message_id = str(data.get("request_id") or data.get("message_id") or "")[:128]
         return ProviderResult(message_id=message_id, status="accepted")

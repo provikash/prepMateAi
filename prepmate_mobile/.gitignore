@@ -119,6 +119,7 @@ __pypackages__/
 
 # Environments
 .env
+backend/.env.example
 .venv
 env/
 venv/

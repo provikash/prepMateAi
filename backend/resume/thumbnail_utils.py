@@ -23,23 +23,27 @@ def _image_to_content_file(image: Image.Image, image_format: str = "JPEG", quali
     return ContentFile(output.read())
 
 
-def generate_thumbnail_from_pdf(pdf_path: str):
-    """Convert the first page of a PDF to a JPEG thumbnail ContentFile."""
-    if not pdf_path:
-        logger.warning("Resume thumbnail skipped: empty PDF path.")
+def generate_thumbnail_from_pdf(pdf_source):
+    """Convert a local PDF path or PDF bytes to a JPEG thumbnail."""
+    is_bytes = isinstance(pdf_source, (bytes, bytearray, memoryview))
+    if not pdf_source:
+        logger.warning("Resume thumbnail skipped: empty PDF source.")
         return None, None
 
-    if not os.path.exists(pdf_path):
-        logger.warning("Resume thumbnail skipped: PDF does not exist at path=%s", pdf_path)
+    if not is_bytes and not os.path.exists(pdf_source):
+        logger.warning("Resume thumbnail skipped: PDF does not exist at path=%s", pdf_source)
         return None, None
 
-    logger.info("Resume thumbnail generation started for path=%s", pdf_path)
+    source_label = "in-memory PDF" if is_bytes else str(pdf_source)
+    pdf_bytes = bytes(pdf_source) if is_bytes else None
+    logger.info("Resume thumbnail generation started for source=%s", source_label)
 
     try:
-        from pdf2image import convert_from_path
+        from pdf2image import convert_from_bytes, convert_from_path
 
-        pages = convert_from_path(
-            pdf_path,
+        conversion = convert_from_bytes if is_bytes else convert_from_path
+        pages = conversion(
+            pdf_bytes if is_bytes else pdf_source,
             first_page=1,
             last_page=1,
             dpi=160,
@@ -47,7 +51,7 @@ def generate_thumbnail_from_pdf(pdf_path: str):
             thread_count=1,
         )
         if not pages:
-            logger.error("Resume thumbnail failed: no pages rendered for path=%s", pdf_path)
+            logger.error("Resume thumbnail failed: no pages rendered for source=%s", source_label)
             return None, None
 
         content_file = _image_to_content_file(
@@ -55,21 +59,26 @@ def generate_thumbnail_from_pdf(pdf_path: str):
             image_format="JPEG",
             quality=RESUME_THUMBNAIL_QUALITY,
         )
-        logger.info("Resume thumbnail generated successfully for path=%s", pdf_path)
+        logger.info("Resume thumbnail generated successfully for source=%s", source_label)
         return content_file, "thumbnail.jpg"
     except Exception as exc:
         logger.warning(
-            "Resume thumbnail generation with pdf2image failed for path=%s: %s. Falling back to PyMuPDF.",
-            pdf_path,
+            "Resume thumbnail generation with pdf2image failed for source=%s: %s. Falling back to PyMuPDF.",
+            source_label,
             exc,
         )
 
     try:
         import fitz
 
-        with fitz.open(pdf_path) as document:
+        document_source = (
+            fitz.open(stream=pdf_bytes, filetype="pdf")
+            if is_bytes
+            else fitz.open(pdf_source)
+        )
+        with document_source as document:
             if document.page_count == 0:
-                logger.error("Resume thumbnail failed: PDF has zero pages for path=%s", pdf_path)
+                logger.error("Resume thumbnail failed: PDF has zero pages for source=%s", source_label)
                 return None, None
 
             page = document.load_page(0)
@@ -81,10 +90,10 @@ def generate_thumbnail_from_pdf(pdf_path: str):
             image_format="JPEG",
             quality=RESUME_THUMBNAIL_QUALITY,
         )
-        logger.info("Resume thumbnail generated successfully via PyMuPDF for path=%s", pdf_path)
+        logger.info("Resume thumbnail generated successfully via PyMuPDF for source=%s", source_label)
         return content_file, "thumbnail.jpg"
     except Exception as exc:
-        logger.exception("Resume thumbnail generation failed for path=%s: %s", pdf_path, exc)
+        logger.exception("Resume thumbnail generation failed for source=%s: %s", source_label, exc)
         return None, None
 
 

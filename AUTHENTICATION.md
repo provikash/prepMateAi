@@ -11,11 +11,22 @@ All routes are below `/api/v1/`:
 - `POST auth/otp/resend/` with `{"challenge_id":"<uuid>","phone_number":"9876543210"}`
 - `POST auth/token/refresh/` with `{"refresh":"<refresh-token>"}`
 - `POST auth/logout/` with `{"refresh":"<refresh-token>"}` and a Bearer access token
+- `POST auth/logout-all/` with a Bearer access token; immediately revokes all access and refresh tokens
 - `GET/PATCH auth/me/`; `phone_number` is read-only here
+
+Account lifecycle routes require a Bearer access token:
+
+- `POST auth/phone/change/request/` with `{"phone_number":"8765432109"}`
+- `POST auth/phone/change/verify/` with the new `phone_number`, `challenge_id`, and `otp`; all sessions are revoked after success
+- `POST auth/account/verification/request/` with `{"action":"deactivate"}` or `{"action":"delete"}`
+- `POST auth/account/deactivate/` with `challenge_id` and `otp`; a later verified login reactivates a user-deactivated account
+- `DELETE auth/account/` with `challenge_id` and `otp`; permanently removes the user, owned database records, and owned media
+
+Lifecycle challenges are bound to the requesting user, action, purpose, and phone number. They cannot be exchanged between accounts or reused for a more sensitive action. Administratively disabled accounts are not automatically reactivated.
 
 Phone input is normalized to `+91XXXXXXXXXX`. Only ten-digit Indian mobile numbers beginning with 6–9 are accepted. Error responses include a stable `code` such as `invalid_phone_number`, `otp_invalid`, `otp_expired`, `otp_attempts_exceeded`, `challenge_consumed`, `resend_not_available`, `otp_rate_limited`, `provider_unavailable`, or `account_disabled`.
 
-Optional emails are normalized to lowercase and remain case-insensitively unique. They are editable profile/contact data only and are never accepted by an authentication endpoint. Authentication phone numbers are read-only through general profile APIs; the challenge model reserves a separate `change_phone` purpose for a dedicated verified-number-change flow, so numbers are never reassigned through profile PATCH.
+Optional emails are normalized to lowercase and remain case-insensitively unique. They are editable profile/contact data only and are never accepted by an authentication endpoint. Authentication phone numbers are read-only through general profile APIs and can only be changed by verifying an OTP sent to the new number.
 
 ## Fast2SMS and DLT
 
@@ -30,7 +41,7 @@ The optional test login is disabled by default and requires all of: `DJANGO_ENV=
 ## Migration and rollback
 
 1. Back up the database and test the migration on a production snapshot.
-2. Run `python manage.py migrate`. Migration `users.0010_mobile_otp_auth` keeps the existing user table/IDs and adds nullable phone verification fields plus OTP challenges.
+2. Run `python manage.py migrate`. Migration `users.0010_mobile_otp_auth` keeps the existing user table/IDs and adds nullable phone verification fields plus OTP challenges. Migration `users.0011_account_lifecycle` adds action-bound lifecycle challenges and reversible user-deactivation state.
 3. The data migration normalizes unambiguous values from `UserProfile.phone`. It warns and skips invalid or duplicate normalized values rather than assigning them silently.
 4. Review warnings and remediate affected accounts before requiring a phone for legacy users. The database enforces uniqueness only for non-null phone numbers.
 5. Deploy the backend before the mobile release. Old auth URLs return 404, so coordinate the client rollout if an older app is deployed.

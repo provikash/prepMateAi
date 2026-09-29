@@ -176,7 +176,6 @@ class OptimizationAnalysis {
     this.beforeAtsScore,
     this.afterAtsScore,
     this.sourceResumeVersion = 1,
-    this.suggestions = const [],
   });
 
   final int beforeScore;
@@ -193,7 +192,6 @@ class OptimizationAnalysis {
   final int? beforeAtsScore;
   final int? afterAtsScore;
   final int sourceResumeVersion;
-  final List<OptimizationSuggestion> suggestions;
 
   OptimizationAnalysis copyWith({
     int? afterScore,
@@ -262,6 +260,7 @@ class OptimizationSessionModel {
     this.analysisJson,
     this.matchResultsJson,
     this.sourceResumeVersion = 1,
+    this.suggestions = const [],
   });
 
   final String id;
@@ -272,6 +271,7 @@ class OptimizationSessionModel {
   final Map<String, dynamic>? analysisJson;
   final Map<String, dynamic>? matchResultsJson;
   final int sourceResumeVersion;
+  final List<OptimizationSuggestion> suggestions;
 
   factory OptimizationSessionModel.fromJson(Map<String, dynamic> json) {
     return OptimizationSessionModel(

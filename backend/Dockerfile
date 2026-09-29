@@ -3,7 +3,7 @@ FROM python:3.11-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 DJANGO_SETTINGS_MODULE=core.production PORT=8000
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 \
-    fonts-dejavu-core fonts-liberation poppler-utils \
+    fonts-dejavu-core fonts-liberation poppler-utils postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

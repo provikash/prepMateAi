@@ -1,11 +1,12 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.template import Context, Template
 from pathlib import Path
 from io import BytesIO
 import pdfplumber
 from django.core.files.base import ContentFile
 from unittest.mock import patch
+from PIL import Image
 
 from resume.models import ResumeTemplate
 from resume.rendering import ResumeRenderService
@@ -14,6 +15,19 @@ from resume.services import ResumeValidationService
 from rest_framework.test import APIClient
 from resume.json_resume import canonical_form_schema, empty_resume
 from resume.models import Resume
+from resume.thumbnail_utils import generate_thumbnail_from_pdf
+
+
+class ResumeThumbnailStorageTests(SimpleTestCase):
+    @patch("pdf2image.convert_from_bytes")
+    def test_thumbnail_can_be_generated_from_remote_storage_bytes(self, convert):
+        convert.return_value = [Image.new("RGB", (1000, 1400), "white")]
+
+        content, name = generate_thumbnail_from_pdf(b"%PDF-test")
+
+        self.assertEqual(name, "thumbnail.jpg")
+        self.assertTrue(content.read().startswith(b"\xff\xd8"))
+        convert.assert_called_once()
 
 
 class ResumeSerializerValidationTests(TestCase):
