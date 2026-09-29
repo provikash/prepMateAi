@@ -53,6 +53,29 @@ final class SubscriptionPlanModel {
       );
 }
 
+final class BillingProductModel {
+  static BillingProduct fromJson(Map<String, dynamic> json) => BillingProduct(
+    code: '${json['code'] ?? ''}',
+    name: '${json['name'] ?? ''}',
+    amount: _int(json['amount']),
+    currency: '${json['currency'] ?? 'INR'}',
+    credits: _int(json['credits']),
+    premiumDays: _int(json['premium_days']),
+  );
+}
+
+final class CheckoutOrderModel {
+  static CheckoutOrder fromJson(Map<String, dynamic> json) => CheckoutOrder(
+    keyId: '${json['key_id'] ?? ''}',
+    orderId: '${json['order_id'] ?? ''}',
+    amount: _int(json['amount']),
+    currency: '${json['currency'] ?? 'INR'}',
+    name: '${json['name'] ?? 'PrepMate AI'}',
+    description: '${json['description'] ?? ''}',
+    prefill: _map(json['prefill']),
+  );
+}
+
 final class UserSubscriptionModel {
   static UserSubscription fromJson(Map<String, dynamic> json) {
     final plan = _map(json['plan']);

@@ -1,6 +1,7 @@
 """Single backend source of truth for AI feature access and balances."""
 
 from ai.services.credits import CreditService
+from billing.models import PremiumSubscription
 
 
 class EntitlementService:
@@ -10,12 +11,14 @@ class EntitlementService:
     def get_user_entitlements(cls, user):
         account = CreditService.account(user)
         available = max(0, account.available)
+        subscription = PremiumSubscription.objects.filter(user=user).first()
+        premium = bool(subscription and subscription.is_active)
         return {
             "plan": {
-                "code": "credit_account",
-                "name": "AI Credits",
+                "code": "premium" if premium else "free",
+                "name": "Premium" if premium else "Free",
                 "is_active": True,
-                "expires_at": None,
+                "expires_at": subscription.expires_at if premium else None,
             },
             "ai_credits": {
                 "limit": max(account.lifetime_earned, account.balance + account.lifetime_used),
@@ -26,7 +29,7 @@ class EntitlementService:
             },
             "features": {
                 "resume_optimizer": available >= CreditService.cost("resume_optimization"),
-                "premium_templates": False,
+                "premium_templates": premium,
                 "pdf_export": True,
             },
         }

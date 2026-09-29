@@ -32,7 +32,7 @@ class AICreditTransactionsView(APIView):
             "id": str(item.pk), "type": item.transaction_type,
             "amount": item.amount, "balance_before": item.balance_before,
             "balance_after": item.balance_after, "operation": item.operation,
-            "created_at": item.created_at,
+            "description": item.description, "created_at": item.created_at,
         } for item in transactions])
 
 

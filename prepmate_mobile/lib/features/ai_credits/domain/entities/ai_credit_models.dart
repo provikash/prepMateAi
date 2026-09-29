@@ -33,6 +33,43 @@ enum CreditTransactionStatus {
 
 enum BillingPeriod { monthly, annual, oneTime }
 
+class BillingProduct {
+  const BillingProduct({
+    required this.code,
+    required this.name,
+    required this.amount,
+    required this.currency,
+    required this.credits,
+    required this.premiumDays,
+  });
+  final String code;
+  final String name;
+  final int amount;
+  final String currency;
+  final int credits;
+  final int premiumDays;
+  bool get isCreditPack => premiumDays == 0;
+}
+
+class CheckoutOrder {
+  const CheckoutOrder({
+    required this.keyId,
+    required this.orderId,
+    required this.amount,
+    required this.currency,
+    required this.name,
+    required this.description,
+    required this.prefill,
+  });
+  final String keyId;
+  final String orderId;
+  final int amount;
+  final String currency;
+  final String name;
+  final String description;
+  final Map<String, dynamic> prefill;
+}
+
 class AiCreditAccount {
   const AiCreditAccount({
     required this.balance,

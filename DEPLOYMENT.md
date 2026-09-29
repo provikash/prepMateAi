@@ -16,6 +16,7 @@ restarts, scales, or uses multiple workers.
    - `FAST2SMS_API_KEY`
    - `FAST2SMS_OTP_ID`
    - `OPENROUTER_API_KEY`
+   - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET`
    - `SENTRY_DSN`
    - `R2_MEDIA_BUCKET`, `R2_ENDPOINT_URL`, `R2_ACCESS_KEY_ID`, and
      `R2_SECRET_ACCESS_KEY` from a bucket-scoped Cloudflare token
@@ -87,6 +88,9 @@ python manage.py test --settings=core.test_settings
 
 After deployment, verify `/health/`, request and verify a real OTP, upload a
 resume, run resume optimization, and download the generated PDF.
+
+Complete the Razorpay Test Mode and webhook setup in [PAYMENTS.md](PAYMENTS.md)
+before enabling Live Mode payments.
 
 ## Security
 

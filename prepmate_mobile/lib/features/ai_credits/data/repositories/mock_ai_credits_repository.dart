@@ -62,12 +62,6 @@ class MockAiCreditsRepository implements AiCreditsRepository {
         description: 'Draft a targeted cover letter',
         creditCost: 5,
       ),
-      AiOperation(
-        operation: 'interview',
-        displayName: 'Interview Questions',
-        description: 'Create role-specific practice questions',
-        creditCost: 5,
-      ),
     ];
   }
 
@@ -103,7 +97,6 @@ class MockAiCreditsRepository implements AiCreditsRepository {
           '500 AI credits each month',
           'Deep job description optimization',
           'Full ATS scoring and keyword diagnostics',
-          'Cover letters and interview questions',
         ],
         isRecommended: true,
       ),
@@ -162,4 +155,16 @@ class MockAiCreditsRepository implements AiCreditsRepository {
 
   @override
   Future<void> refresh() => _wait();
+
+  @override
+  Future<List<BillingProduct>> getProducts() async => const [];
+  @override
+  Future<CheckoutOrder> createOrder(String productCode) =>
+      throw UnimplementedError();
+  @override
+  Future<void> verifyPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) => throw UnimplementedError();
 }

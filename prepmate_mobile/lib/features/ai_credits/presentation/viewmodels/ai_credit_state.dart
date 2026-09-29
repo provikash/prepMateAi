@@ -9,6 +9,7 @@ class AiCreditState {
     this.currentSubscription,
     this.plans = const [],
     this.operations = const [],
+    this.products = const [],
     this.transactions = const [],
     this.error,
     this.transactionsError,
@@ -19,6 +20,7 @@ class AiCreditState {
   final UserSubscription? currentSubscription;
   final List<SubscriptionPlan> plans;
   final List<AiOperation> operations;
+  final List<BillingProduct> products;
   final List<AiCreditTransaction> transactions;
   final String? error;
   final String? transactionsError;
@@ -57,6 +59,7 @@ class AiCreditState {
     UserSubscription? currentSubscription,
     List<SubscriptionPlan>? plans,
     List<AiOperation>? operations,
+    List<BillingProduct>? products,
     List<AiCreditTransaction>? transactions,
     String? error,
     String? transactionsError,
@@ -68,6 +71,7 @@ class AiCreditState {
     currentSubscription: currentSubscription ?? this.currentSubscription,
     plans: plans ?? this.plans,
     operations: operations ?? this.operations,
+    products: products ?? this.products,
     transactions: transactions ?? this.transactions,
     error: clearError ? null : error ?? this.error,
     transactionsError: clearTransactionsError

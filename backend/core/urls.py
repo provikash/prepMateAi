@@ -38,4 +38,5 @@ urlpatterns = [
     path('api/v1/job-optimizer/', include('job_optimizer.urls')),
     path('api/v1/resume-optimizations/', include('job_optimizer.contract_urls')),
     path('api/v1/billing/entitlements/', EntitlementsView.as_view(), name='billing-entitlements'),
+    path('api/v1/billing/', include('billing.urls')),
 ]

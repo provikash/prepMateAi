@@ -578,7 +578,6 @@ IconData _operationIcon(String operation) => switch (operation) {
   'ats' => Icons.fact_check_outlined,
   'jd_optimization' || 'resume_optimization' => Icons.tune_rounded,
   'cover_letter' => Icons.mail_outline_rounded,
-  'interview' => Icons.record_voice_over_outlined,
   _ => Icons.auto_awesome_rounded,
 };
 

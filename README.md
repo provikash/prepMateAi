@@ -7,12 +7,12 @@
 > To deploy the Django API with PostgreSQL, Redis, private Cloudflare R2 media, and Docker, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 <p align="center">
-AI Powered Resume Builder & Career Assistant
+AI-Powered Resume Builder & Optimizer
 </p>
 
 <p align="center">
 
-<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=24&pause=1000&color=36BCF7&center=true&vCenter=true&width=600&lines=AI+Resume+Builder;ATS+Score+Analyzer;Career+Roadmap+Generator;Flutter+%2B+Django+Full+Stack+Project" />
+<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=24&pause=1000&color=36BCF7&center=true&vCenter=true&width=600&lines=AI+Resume+Builder;ATS+Score+Analyzer;Job+Description+Optimizer;Flutter+%2B+Django+Full+Stack+Project" />
 
 </p>
 
@@ -22,10 +22,10 @@ AI Powered Resume Builder & Career Assistant
 
 SmartResume AI is a **full-stack final year project** that helps users:
 
-✔ Build professional resumes  
-✔ Analyze **ATS score**  
-✔ Generate **career roadmaps**  
-✔ Get **job suggestions**
+- Build professional resumes
+- Analyze **ATS score**
+- Tailor resumes to job descriptions
+- Export polished resumes as PDF
 
 Built with **Flutter + Django REST Framework + AI Logic**
 
@@ -63,12 +63,13 @@ Built with **Flutter + Django REST Framework + AI Logic**
 
 # ⚡ Features
 
-✨ AI Resume Builder  
-✨ ATS Score Analysis  
-✨ Career Roadmap Generator  
-✨ Job Recommendation System  
-✨ Secure Authentication  
-✨ Modern Flutter UI  
+- AI Resume Builder
+- ATS Score Analysis
+- Job Description Resume Optimization
+- AI Writing Assistance
+- PDF Export
+- Secure Authentication
+- Modern Flutter UI
 
 ---
 

@@ -13,8 +13,31 @@ class AiCreditsRemoteDataSource {
   Future<List<Map<String, dynamic>>> getPlans() async =>
       _asList((await _dio.get('subscriptions/plans/')).data);
   Future<Map<String, dynamic>?> getCurrentSubscription() async {
-    final data = (await _dio.get('subscriptions/current/')).data;
+    final data = (await _dio.get('billing/subscription/')).data;
     return data == null ? null : _asMap(data);
+  }
+
+  Future<Map<String, dynamic>> getCatalog() async =>
+      _asMap((await _dio.get('billing/catalog/')).data);
+  Future<Map<String, dynamic>> createOrder(String productCode) async => _asMap(
+    (await _dio.post(
+      'billing/orders/',
+      data: {'product_code': productCode},
+    )).data,
+  );
+  Future<void> verifyPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async {
+    await _dio.post(
+      'billing/orders/verify/',
+      data: {
+        'razorpay_order_id': orderId,
+        'razorpay_payment_id': paymentId,
+        'razorpay_signature': signature,
+      },
+    );
   }
 
   Map<String, dynamic> _asMap(Object? value) {

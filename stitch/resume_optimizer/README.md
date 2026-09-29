@@ -141,7 +141,6 @@ This directory contains the visual mockups and production HTML code for the **Pr
   - High-fidelity PDF/Document canvas rendering with subtle page shadows.
   - Page switcher (`Page 1 of 1`).
   - Export action sheet: `Download PDF`, `Download Word (.docx)`, `Copy Text`.
-  - Next step accelerators: `Generate Matching Cover Letter`, `Prep Interview Questions for this Job`.
 
 ---
 

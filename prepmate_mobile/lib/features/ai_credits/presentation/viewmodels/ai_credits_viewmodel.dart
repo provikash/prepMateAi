@@ -17,6 +17,7 @@ class AiCreditsViewModel extends StateNotifier<AiCreditState> {
         _repository.getPlans(),
         _repository.getOperations(),
         _repository.getCurrentSubscription(),
+        _repository.getProducts(),
       ]);
       state = state.copyWith(
         status: AiCreditStatus.loaded,
@@ -24,6 +25,7 @@ class AiCreditsViewModel extends StateNotifier<AiCreditState> {
         plans: results[1] as List<SubscriptionPlan>,
         operations: results[2] as List<AiOperation>,
         currentSubscription: results[3] as UserSubscription?,
+        products: results[4] as List<BillingProduct>,
         clearError: true,
       );
       await loadTransactions();

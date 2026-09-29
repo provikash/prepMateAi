@@ -6,6 +6,7 @@ import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/app_state.dart';
 import '../../domain/entities/ai_credit_models.dart';
+import '../../data/services/razorpay_checkout_service.dart';
 import '../providers/ai_credits_provider.dart';
 import '../viewmodels/ai_credit_state.dart';
 import '../widgets/credit_widgets.dart';
@@ -19,15 +20,24 @@ class AiPlansScreen extends ConsumerStatefulWidget {
 class _AiPlansScreenState extends ConsumerState<AiPlansScreen> {
   BillingPeriod period = BillingPeriod.monthly;
   String? selectedPlan;
+  String? purchasingCode;
+  late final RazorpayCheckoutService _checkout;
 
   @override
   void initState() {
     super.initState();
+    _checkout = RazorpayCheckoutService();
     Future.microtask(() {
       if (ref.read(aiCreditsProvider).status == AiCreditStatus.initial) {
         ref.read(aiCreditsProvider.notifier).load();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _checkout.dispose();
+    super.dispose();
   }
 
   @override
@@ -84,16 +94,19 @@ class _AiPlansScreenState extends ConsumerState<AiPlansScreen> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Upgrade or cancel any time when billing is available.',
+            'Premium is prepaid and does not renew automatically.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: AppColors.of(context).textSecondary,
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          if (state.plans.isEmpty) const AppCard(
-            child: Text('Subscription purchases are not available yet. Existing credits can still be used for AI optimization.'),
-          ),
+          if (state.plans.isEmpty)
+            const AppCard(
+              child: Text(
+                'Plans could not be loaded. Please check your connection and try again.',
+              ),
+            ),
           LayoutBuilder(
             builder: (context, constraints) {
               final cards = state.plans
@@ -105,7 +118,12 @@ class _AiPlansScreenState extends ConsumerState<AiPlansScreen> {
                           state.currentSubscription?.planId == plan.id ||
                           state.currentSubscription?.planId == plan.slug,
                       selected: selectedPlan == plan.id,
-                      onSelected: () => _selectPlan(context, plan),
+                      loading: purchasingCode != null,
+                      onSelected: () => _buy(
+                        period == BillingPeriod.annual
+                            ? 'premium_annual'
+                            : 'premium_monthly',
+                      ),
                     ),
                   )
                   .toList();
@@ -131,6 +149,53 @@ class _AiPlansScreenState extends ConsumerState<AiPlansScreen> {
                 ],
               );
             },
+          ),
+          const SizedBox(height: AppSpacing.section),
+          Text('Buy AI credits', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Column(
+            children: [
+              for (final pack in state.products.where(
+                (item) => item.isCreditPack,
+              ))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: AppCard(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                pack.name,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              Text(
+                                '₹${(pack.amount / 100).toStringAsFixed(0)}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        FilledButton(
+                          onPressed: purchasingCode == null
+                                  ? () => _buy(pack.code)
+                              : null,
+                          child: purchasingCode == pack.code
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Buy'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: AppSpacing.section),
           AppCard(
@@ -168,49 +233,34 @@ class _AiPlansScreenState extends ConsumerState<AiPlansScreen> {
     ),
   );
 
-  void _selectPlan(BuildContext context, SubscriptionPlan plan) {
-    setState(() => selectedPlan = plan.id);
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screen,
-            AppSpacing.sm,
-            AppSpacing.screen,
-            AppSpacing.xl,
+  Future<void> _buy(String productCode) async {
+    if (purchasingCode != null) return;
+    setState(() => purchasingCode = productCode);
+    try {
+      final repository = ref.read(aiCreditsRepositoryProvider);
+      final order = await repository.createOrder(productCode);
+      final result = await _checkout.open(order);
+      await repository.verifyPayment(
+        orderId: result.orderId,
+        paymentId: result.paymentId,
+        signature: result.signature,
+      );
+      await ref.read(aiCreditsProvider.notifier).load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment verified successfully.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.payment_outlined,
-                size: 40,
-                color: AppColors.of(sheetContext).primary,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Checkout coming soon',
-                style: Theme.of(sheetContext).textTheme.titleLarge,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'The ${plan.name} selection is ready, but payment has not been connected yet. No subscription or charge was created.',
-                textAlign: TextAlign.center,
-                style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.of(sheetContext).textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton(
-                onPressed: () => Navigator.pop(sheetContext),
-                child: const Text('Got it'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+        );
+      }
+    } finally {
+      if (mounted) setState(() => purchasingCode = null);
+    }
   }
 }

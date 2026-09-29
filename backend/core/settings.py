@@ -95,6 +95,7 @@ INSTALLED_APPS = [
     'exports',
     'ai',
     'job_optimizer',
+    'billing',
 ]
 
 MIDDLEWARE = [
@@ -254,6 +255,20 @@ AI_OPERATION_COSTS = {
 }
 AI_ADMIN_MAX_ADJUSTMENT = int(os.getenv("AI_ADMIN_MAX_ADJUSTMENT", "1000000"))
 AI_CREDIT_MAX_BALANCE = int(os.getenv("AI_CREDIT_MAX_BALANCE", "100000000"))
+
+# Razorpay Checkout. All prices are backend-owned and expressed in paise.
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "").strip()
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "").strip()
+RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "").strip()
+RAZORPAY_API_BASE_URL = os.getenv("RAZORPAY_API_BASE_URL", "https://api.razorpay.com/v1").rstrip("/")
+RAZORPAY_CURRENCY = "INR"
+RAZORPAY_PRODUCTS = {
+    "premium_monthly": {"name": "Premium Monthly", "amount": int(os.getenv("PREMIUM_MONTHLY_PRICE_PAISE", "9900")), "credits": int(os.getenv("PREMIUM_MONTHLY_CREDITS", "500")), "premium_days": 30},
+    "premium_annual": {"name": "Premium Annual", "amount": int(os.getenv("PREMIUM_ANNUAL_PRICE_PAISE", "95000")), "credits": int(os.getenv("PREMIUM_ANNUAL_CREDITS", "6000")), "premium_days": 365},
+    "credits_100": {"name": "100 AI Credits", "amount": int(os.getenv("CREDITS_100_PRICE_PAISE", "4900")), "credits": 100, "premium_days": 0},
+    "credits_500": {"name": "500 AI Credits", "amount": int(os.getenv("CREDITS_500_PRICE_PAISE", "19900")), "credits": 500, "premium_days": 0},
+    "credits_1500": {"name": "1,500 AI Credits", "amount": int(os.getenv("CREDITS_1500_PRICE_PAISE", "49900")), "credits": 1500, "premium_days": 0},
+}
 AI_RESERVATION_STALE_MINUTES = int(os.getenv("AI_RESERVATION_STALE_MINUTES", "30"))
 OPTIMIZATION_STALE_MINUTES = int(os.getenv("OPTIMIZATION_STALE_MINUTES", "30"))
 

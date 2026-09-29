@@ -256,6 +256,20 @@ class _FakeRepository implements AiCreditsRepository {
 
   @override
   Future<void> refresh() async => refreshCalls++;
+
+  @override
+  Future<List<BillingProduct>> getProducts() async => const [];
+
+  @override
+  Future<CheckoutOrder> createOrder(String productCode) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> verifyPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) => throw UnimplementedError();
 }
 
 class _SuccessRemote extends AiCreditsRemoteDataSource {
