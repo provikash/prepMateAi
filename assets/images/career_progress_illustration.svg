@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 180" width="100%" height="100%" fill="none">
+  <!-- Subtle ambient decorative glow circles -->
+  <circle cx="170" cy="90" r="82" fill="#E9EFFF" opacity="0.75" />
+  <circle cx="270" cy="50" r="36" fill="#E0F2FE" opacity="0.6" />
+  <circle cx="65" cy="130" r="28" fill="#F0FDF4" opacity="0.7" />
+
+  <!-- Upward Career Stepping Path (Curved dashed guide line) -->
+  <path d="M50 145 C 100 130, 140 110, 185 85 C 225 62, 255 45, 290 32" stroke="#2457D6" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- Left: Target Job Card (Floating) -->
+  <g transform="translate(30, 80) rotate(-4)">
+    <rect width="105" height="64" rx="12" fill="#FFFFFF" stroke="#DDE2EA" stroke-width="1.5" filter="drop-shadow(0px 8px 16px rgba(23,32,51,0.06))"/>
+    <!-- Icon circle -->
+    <rect x="10" y="12" width="24" height="24" rx="6" fill="#E9EFFF"/>
+    <!-- Target icon in primary blue -->
+    <circle cx="22" cy="24" r="6.5" stroke="#2457D6" stroke-width="2" fill="none"/>
+    <circle cx="22" cy="24" r="2" fill="#087E78"/>
+    <!-- Mock text lines -->
+    <rect x="42" y="14" width="48" height="6" rx="3" fill="#172033" opacity="0.8"/>
+    <rect x="42" y="24" width="34" height="5" rx="2.5" fill="#667085" opacity="0.5"/>
+    <rect x="10" y="44" width="60" height="8" rx="4" fill="#E9EFFF"/>
+    <rect x="14" y="46.5" width="36" height="3" rx="1.5" fill="#2457D6"/>
+    <!-- Tiny green match badge -->
+    <circle cx="92" cy="18" r="5" fill="#168653"/>
+    <path d="M89.5 18L91.2 19.8L94.5 16.5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Center-Right: Polished Resume Document Card (Hero centerpiece) -->
+  <g transform="translate(132, 22)">
+    <!-- Drop shadow card container -->
+    <rect width="118" height="136" rx="14" fill="#FFFFFF" stroke="#DDE2EA" stroke-width="1.5" filter="drop-shadow(0px 12px 24px rgba(36,87,214,0.12))"/>
+    
+    <!-- Top accent bar on resume -->
+    <path d="M0 14C0 6.26801 6.26801 0 14 0H104C111.732 0 118 6.26801 118 14V18H0V14Z" fill="#2457D6"/>
+    
+    <!-- Mini Avatar + Name -->
+    <circle cx="26" cy="38" r="10" fill="#E9EFFF"/>
+    <path d="M26 33C27.6569 33 29 34.3431 29 36C29 37.6569 27.6569 39 26 39C24.3431 39 23 37.6569 23 36C23 34.3431 24.3431 33 26 33Z" fill="#2457D6"/>
+    <path d="M19.5 44C19.5 41.8 21.5 40 26 40C30.5 40 32.5 41.8 32.5 44H19.5Z" fill="#2457D6"/>
+    <rect x="42" y="32" width="46" height="6" rx="3" fill="#172033"/>
+    <rect x="42" y="41" width="30" height="4" rx="2" fill="#087E78" opacity="0.85"/>
+
+    <!-- Section 1: Experience / Structure -->
+    <line x1="14" y1="56" x2="104" y2="56" stroke="#DDE2EA" stroke-width="1"/>
+    <rect x="14" y="64" width="38" height="5" rx="2.5" fill="#2457D6"/>
+    <rect x="14" y="73" width="90" height="4" rx="2" fill="#667085" opacity="0.4"/>
+    <rect x="14" y="80" width="82" height="4" rx="2" fill="#667085" opacity="0.3"/>
+    <rect x="14" y="87" width="56" height="4" rx="2" fill="#667085" opacity="0.3"/>
+
+    <!-- Section 2: Skills Badges -->
+    <rect x="14" y="99" width="30" height="5" rx="2.5" fill="#2457D6"/>
+    <rect x="14" y="108" width="24" height="12" rx="4" fill="#E9EFFF"/>
+    <rect x="17" y="112" width="18" height="4" rx="2" fill="#2457D6"/>
+    <rect x="42" y="108" width="28" height="12" rx="4" fill="#E0F2FE"/>
+    <rect x="45" y="112" width="22" height="4" rx="2" fill="#087E78"/>
+    <rect x="74" y="108" width="26" height="12" rx="4" fill="#F1F3FF"/>
+
+    <!-- Tailored Checkmark floating pill at bottom-right of resume -->
+    <g transform="translate(86, 114)">
+      <rect width="24" height="24" rx="12" fill="#168653" filter="drop-shadow(0px 3px 6px rgba(22,134,83,0.3))"/>
+      <path d="M7 12L10.5 15.5L17 8.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- Top Right: Upward Career Milestone / AI Recommendation Star -->
+  <g transform="translate(258, 26)">
+    <rect width="64" height="48" rx="10" fill="#FFFFFF" stroke="#DDE2EA" stroke-width="1.2" filter="drop-shadow(0px 6px 14px rgba(23,32,51,0.06))"/>
+    <circle cx="20" cy="24" r="10" fill="#E0F2FE"/>
+    <!-- Sparkle / Star mark -->
+    <path d="M20 18L21.3 22.2L25.5 23.5L21.3 24.8L20 29L18.7 24.8L14.5 23.5L18.7 22.2L20 18Z" fill="#087E78"/>
+    <rect x="34" y="19" width="22" height="4.5" rx="2.25" fill="#172033" opacity="0.9"/>
+    <rect x="34" y="27" width="16" height="3.5" rx="1.75" fill="#168653"/>
+  </g>
+</svg>
