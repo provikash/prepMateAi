@@ -169,6 +169,8 @@ class AiCreditTransaction {
     this.balanceBefore,
     this.balanceAfter,
     this.reference,
+    this.creditSource,
+    this.receiptAvailable = false,
   });
 
   final String id;
@@ -181,4 +183,67 @@ class AiCreditTransaction {
   final int? balanceBefore;
   final int? balanceAfter;
   final String? reference;
+  final String? creditSource;
+  final bool receiptAvailable;
 }
+
+class OrderStatusResult {
+  const OrderStatusResult({
+    required this.orderId,
+    required this.status,
+    required this.credits,
+    required this.premiumDays,
+    required this.productCode,
+    required this.productName,
+    required this.amount,
+    required this.currency,
+    required this.reference,
+    this.paidAt,
+    this.receipt,
+  });
+
+  final String orderId;
+  final String status;
+  final int credits;
+  final int premiumDays;
+  final String productCode;
+  final String productName;
+  final int amount;
+  final String currency;
+  final String reference;
+  final DateTime? paidAt;
+  final String? receipt;
+}
+
+class OrderReceipt {
+  const OrderReceipt({
+    required this.receiptNumber,
+    required this.reference,
+    required this.productName,
+    required this.amount,
+    required this.currency,
+    required this.credits,
+    required this.premiumDays,
+    required this.status,
+    required this.createdAt,
+    required this.customerName,
+    required this.customerPhone,
+    required this.billingProvider,
+    this.paidAt,
+  });
+
+  final String receiptNumber;
+  final String reference;
+  final String productName;
+  final double amount;
+  final String currency;
+  final int credits;
+  final int premiumDays;
+  final String status;
+  final DateTime createdAt;
+  final DateTime? paidAt;
+  final String customerName;
+  final String customerPhone;
+  final String billingProvider;
+}
+

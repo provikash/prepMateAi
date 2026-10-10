@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../config/theme.dart';
 import '../../../../core/widgets/app_filter_chip.dart';
-import '../../../../core/widgets/main_bottom_nav.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../../home/data/models/resume_model.dart';
 import '../../../home/providers/home_providers.dart';
+import '../providers/resume_providers.dart';
 
 class MyResumesScreen extends ConsumerStatefulWidget {
   const MyResumesScreen({super.key});
@@ -71,16 +72,20 @@ class _MyResumesScreenState extends ConsumerState<MyResumesScreen> {
 
     if (newTitle != null && newTitle.isNotEmpty && newTitle != resume.title) {
       try {
-        final remote = ref.read(homeRemoteDataSourceProvider);
-        await remote.updateResume(
-          resumeId: resume.id,
-          title: newTitle,
-          data: resume.data,
-        );
         final userId = ref.read(authViewModelProvider).user?.id;
-        if (userId != null) {
-          await ref.read(homeRepositoryProvider).refreshResumes(userId);
+        if (userId == null) {
+          await ref
+              .read(resumeRepositoryProvider)
+              .renameResume(resume.id, newTitle);
+        } else {
+          final remote = ref.read(homeRemoteDataSourceProvider);
+          await remote.updateResume(
+            resumeId: resume.id,
+            title: newTitle,
+            data: resume.data,
+          );
         }
+        ref.invalidate(resumeListProvider);
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -93,9 +98,15 @@ class _MyResumesScreenState extends ConsumerState<MyResumesScreen> {
 
   Future<void> _handleDuplicate(ResumeModel resume) async {
     final userId = ref.read(authViewModelProvider).user?.id;
-    if (userId == null) return;
     try {
-      await ref.read(homeRepositoryProvider).duplicateResume(userId, resume.id);
+      if (userId == null) {
+        await ref.read(resumeRepositoryProvider).duplicateResume(resume.id);
+      } else {
+        await ref
+            .read(homeRepositoryProvider)
+            .duplicateResume(userId, resume.id);
+      }
+      ref.invalidate(resumeListProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Resume duplicated successfully')),
@@ -133,10 +144,9 @@ class _MyResumesScreenState extends ConsumerState<MyResumesScreen> {
     );
 
     if (confirmed == true) {
-      final userId = ref.read(authViewModelProvider).user?.id;
-      if (userId == null) return;
       try {
-        await ref.read(homeRepositoryProvider).deleteResume(userId, resume.id);
+        await ref.read(resumeRepositoryProvider).deleteResume(resume.id);
+        ref.invalidate(resumeListProvider);
         if (mounted) {
           ScaffoldMessenger.of(
             context,
@@ -370,9 +380,6 @@ class _MyResumesScreenState extends ConsumerState<MyResumesScreen> {
         icon: const Icon(Icons.add),
         label: const Text('New Resume'),
       ),
-      bottomNavigationBar: const MainBottomNavigation(
-        currentTab: MainNavTab.resumes,
-      ),
     );
   }
 
@@ -389,7 +396,7 @@ class _MyResumesScreenState extends ConsumerState<MyResumesScreen> {
 
   Widget _buildResumeCard(ResumeModel resume, AppColors colors) {
     return GestureDetector(
-      onTap: () => context.push('/resume/form', extra: resume.templateId),
+      onTap: () => context.push('/resume/pdf/${resume.id}'),
       child: Container(
         decoration: BoxDecoration(
           color: colors.surface,
@@ -413,60 +420,20 @@ class _MyResumesScreenState extends ConsumerState<MyResumesScreen> {
                 padding: const EdgeInsets.all(8),
                 child: Stack(
                   children: [
-                    // Simulated mini document
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: colors.surface,
+                    Positioned.fill(
+                      child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 30,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: double.infinity,
-                            height: 3,
-                            color: colors.surfaceContainer,
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            width: 60,
-                            height: 3,
-                            color: colors.surfaceContainer,
-                          ),
-                          const Spacer(),
-                          Row(
-                            children: [
-                              Container(
-                                width: 14,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: colors.primarySoft,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
+                        child: resume.thumbnailUrl.isEmpty
+                            ? _thumbnailFallback(colors)
+                            : CachedNetworkImage(
+                                imageUrl: resume.thumbnailUrl,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.topCenter,
+                                placeholder: (_, _) =>
+                                    _thumbnailFallback(colors),
+                                errorWidget: (_, _, _) =>
+                                    _thumbnailFallback(colors),
                               ),
-                              const SizedBox(width: 4),
-                              Container(
-                                width: 18,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: colors.secondarySoft,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ),
                     ),
 
@@ -629,9 +596,24 @@ class _MyResumesScreenState extends ConsumerState<MyResumesScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'Updated recently',
-                    style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Tap to preview',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.visibility_outlined,
+                        size: 15,
+                        color: colors.primary,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -641,4 +623,14 @@ class _MyResumesScreenState extends ConsumerState<MyResumesScreen> {
       ),
     );
   }
+
+  Widget _thumbnailFallback(AppColors colors) => Container(
+    color: colors.surface,
+    alignment: Alignment.center,
+    child: Icon(
+      Icons.description_outlined,
+      size: 44,
+      color: colors.textSecondary,
+    ),
+  );
 }

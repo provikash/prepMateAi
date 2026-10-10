@@ -114,7 +114,13 @@ class MockAiCreditsRepository implements AiCreditsRepository {
   }
 
   @override
-  Future<List<AiCreditTransaction>> getTransactions() async {
+  Future<List<AiCreditTransaction>> getTransactions({
+    String? filter,
+    String? query,
+    String? ordering,
+    int? limit,
+    int? offset,
+  }) async {
     await _wait();
     final now = DateTime.now();
     return [
@@ -128,6 +134,8 @@ class MockAiCreditsRepository implements AiCreditsRepository {
         status: CreditTransactionStatus.completed,
         balanceBefore: 52,
         balanceAfter: 42,
+        reference: 'REF-TXN001',
+        creditSource: 'Optimization Task Hold',
       ),
       AiCreditTransaction(
         id: 'tx-2',
@@ -139,6 +147,8 @@ class MockAiCreditsRepository implements AiCreditsRepository {
         status: CreditTransactionStatus.completed,
         balanceBefore: 57,
         balanceAfter: 52,
+        reference: 'REF-TXN002',
+        creditSource: 'AI Tool',
       ),
       AiCreditTransaction(
         id: 'tx-3',
@@ -149,8 +159,46 @@ class MockAiCreditsRepository implements AiCreditsRepository {
         status: CreditTransactionStatus.completed,
         balanceBefore: 0,
         balanceAfter: 100,
+        reference: 'REF-TXN003',
+        creditSource: 'Monthly Plan Allocation',
       ),
     ];
+  }
+
+  @override
+  Future<OrderStatusResult> getOrderStatus(String orderId) async {
+    await _wait();
+    return OrderStatusResult(
+      orderId: orderId,
+      status: 'PAID',
+      credits: 100,
+      premiumDays: 0,
+      productCode: 'credits_100',
+      productName: '100 AI Credits',
+      amount: 4900,
+      currency: 'INR',
+      reference: 'REF-MOCK100',
+      paidAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<OrderReceipt> getOrderReceipt(String orderId) async {
+    await _wait();
+    return OrderReceipt(
+      receiptNumber: 'RCP-MOCK100',
+      reference: 'REF-MOCK100',
+      productName: '100 AI Credits',
+      amount: 49.00,
+      currency: 'INR',
+      credits: 100,
+      premiumDays: 0,
+      status: 'PAID',
+      createdAt: DateTime.now(),
+      customerName: 'PrepMate User',
+      customerPhone: '+91 ••••• 99999',
+      billingProvider: 'Verified Store Checkout',
+    );
   }
 
   @override
@@ -167,4 +215,25 @@ class MockAiCreditsRepository implements AiCreditsRepository {
     required String paymentId,
     required String signature,
   }) => throw UnimplementedError();
+
+
+  @override
+  Future<Map<String, dynamic>> submitSupportTicket({
+    required String category,
+    required String subject,
+    required String message,
+    String? transactionReference,
+    String? idempotencyKey,
+    Map<String, dynamic>? metadata,
+  }) async {
+    await _wait();
+    return {
+      'id': 'ticket-mock-1234',
+      'category': category,
+      'subject': subject,
+      'status': 'OPEN',
+      'created_at': DateTime.now().toIso8601String(),
+      'message': 'Support ticket created successfully.',
+    };
+  }
 }

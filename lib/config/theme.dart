@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'page_transitions.dart';
 
@@ -322,9 +321,11 @@ class AppTheme {
       onSurface: colors.textPrimary,
     );
 
-    final baseTextTheme = GoogleFonts.plusJakartaSansTextTheme(
-      ThemeData(brightness: brightness, useMaterial3: true).textTheme,
-    );
+    final baseTextTheme = ThemeData(
+      brightness: brightness,
+      useMaterial3: true,
+      fontFamily: 'Poppins',
+    ).textTheme;
     final textTheme = baseTextTheme
         .copyWith(
           displaySmall: const TextStyle(
@@ -393,7 +394,7 @@ class AppTheme {
       brightness: brightness,
       colorScheme: scheme,
       extensions: <ThemeExtension<dynamic>>[colors],
-      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      fontFamily: 'Poppins',
       scaffoldBackgroundColor: colors.screenBackground,
       canvasColor: colors.screenBackground,
       dividerColor: colors.border,
@@ -441,14 +442,20 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colors.cardBackground,
+        fillColor: colors.elevatedSurface,
         isDense: false,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.md,
         ),
-        hintStyle: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-        labelStyle: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+        hintStyle: textTheme.bodyMedium?.copyWith(
+          color: colors.textSecondary,
+          fontWeight: FontWeight.w500,
+        ),
+        labelStyle: textTheme.bodyMedium?.copyWith(
+          color: colors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
         floatingLabelStyle: textTheme.bodySmall?.copyWith(
           color: colors.primary,
         ),
@@ -457,8 +464,8 @@ class AppTheme {
         prefixIconColor: colors.textSecondary,
         suffixIconColor: colors.textSecondary,
         border: inputBorder(colors.border),
-        enabledBorder: inputBorder(colors.border),
-        focusedBorder: inputBorder(colors.primary, 1.5),
+        enabledBorder: inputBorder(colors.textSecondary, 1.2),
+        focusedBorder: inputBorder(colors.primary, 2),
         errorBorder: inputBorder(colors.error),
         focusedErrorBorder: inputBorder(colors.error, 1.5),
         disabledBorder: inputBorder(colors.border.withValues(alpha: 0.65)),

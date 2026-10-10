@@ -17,12 +17,12 @@ import 'package:prepmate_mobile/features/onboarding/presentation/screens/onboard
 
 void main() {
   group('Splash and Session Check Routing (Screen 07)', () {
-    test('Unauthenticated user is routed to /login', () {
+    test('Unauthenticated user is routed to the guest dashboard', () {
       final route = authRedirect(
         AuthState(status: AuthStatus.unauthenticated, hasCheckedSession: true),
         Uri.parse('/splash'),
       );
-      expect(route, '/login');
+      expect(route, '/dashboard');
     });
 
     test('Authenticated user with complete onboarding is routed to /home', () {
@@ -40,7 +40,7 @@ void main() {
         ),
         Uri.parse('/splash'),
       );
-      expect(route, '/home');
+      expect(route, '/dashboard');
     });
 
     test(

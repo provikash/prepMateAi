@@ -168,9 +168,13 @@ class AINotifier extends StateNotifier<AIState> {
         taskId: null,
       );
     } on DioException catch (e) {
-      final detail = e.response?.data is Map
-          ? (e.response!.data as Map).toString()
-          : e.message;
+      final responseData = e.response?.data;
+      final detail = responseData is Map
+          ? (responseData['message'] ??
+                    responseData['detail'] ??
+                    'AI service is unavailable. Please try again.')
+                .toString()
+          : (e.message ?? 'AI service is unavailable. Please try again.');
       state = state.copyWith(status: AIStatus.error, errorMessage: detail);
     } catch (e) {
       state = state.copyWith(
@@ -305,21 +309,8 @@ class AINotifier extends StateNotifier<AIState> {
     if (action != 'generate_summary' && action != 'improve_section') {
       return [primaryResult];
     }
-    // Generate 3 distinct curated variations matching Screen 32:
-    // 1. Concise, 2. Balanced (Recommended), 3. Detailed
     if (primaryResult.isEmpty) return [];
-
-    final concise =
-        'Performance-focused Software Engineer with deep expertise in scalable mobile architecture and native platform integration. Proven track record reducing app latency by 35% and delivering offline-first experiences across distributed mobile ecosystems.';
-
-    final balanced = primaryResult.length > 50
-        ? primaryResult
-        : 'Versatile Senior Mobile Engineer specializing in Flutter, Dart, and high-throughput mobile architecture. Experienced in state management (BLoC/Riverpod), CI/CD pipelines, and local caching. Led cross-functional sprint deliveries resulting in 40% faster checkout flows and seamless offline data synchronization.';
-
-    final detailed =
-        'Technical Lead & Mobile Application Engineer with deep expertise in clean architecture, Flutter framework internals, and reactive microservices. Adept at translating complex product requirements into resilient mobile experiences, optimizing render cycles, and mentoring junior engineers. Passionate about developer ergonomics, zero-regression test coverage, and modern mobile DevOps.';
-
-    return [concise, balanced, detailed];
+    return [primaryResult];
   }
 
   List<String> _extractBullets(String? action, dynamic result) {
@@ -329,12 +320,7 @@ class AINotifier extends StateNotifier<AIState> {
         (result['bullets'] as List).map((b) => b.toString()),
       );
     }
-    return [
-      'Architected offline-first SQLite and Hive caching layer, reducing API load spikes by 35% across 10,000+ daily sessions.',
-      'Refactored payment onboarding flow into modular feature packages, reducing checkout latency from 3.2s to 1.1s.',
-      'Engineered automated CI/CD Fastlane test workflows on GitHub Actions, cutting manual deployment verification cycles in half.',
-      'Mentored 4 junior engineers on clean architecture patterns, code reviews, and test coverage standards.',
-    ];
+    return [];
   }
 
   List<String> _extractSkills(String? action, dynamic result) {
@@ -344,15 +330,6 @@ class AINotifier extends StateNotifier<AIState> {
         (result['skills'] as List).map((s) => s.toString()),
       );
     }
-    return [
-      'Riverpod State Management',
-      'Clean Architecture',
-      'BLoC Pattern',
-      'GraphQL / Apollo',
-      'Fastlane CI/CD',
-      'Automated Golden Tests',
-      'Performance Profiling',
-      'Cross-Platform UI Animation',
-    ];
+    return [];
   }
 }

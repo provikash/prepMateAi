@@ -113,13 +113,6 @@ class ResumeBuilderNotifier extends StateNotifier<ResumeBuilderState> {
         clearError: true,
       );
 
-  void setQueued(String resumeId) => state = state.copyWith(
-    isSaving: false,
-    savedResumeId: resumeId,
-    saveStatus: 'Saved locally · waiting to sync',
-    clearError: true,
-  );
-
   void setError(String? message) => state = state.copyWith(
     isSaving: false,
     errorMessage: message,
@@ -131,6 +124,13 @@ class ResumeBuilderNotifier extends StateNotifier<ResumeBuilderState> {
     isSaving: false,
     savedResumeId: resumeId,
     saveStatus: 'Saved; newer changes are not saved',
+    clearError: true,
+  );
+
+  void setQueued(String resumeId) => state = state.copyWith(
+    isSaving: false,
+    savedResumeId: resumeId,
+    saveStatus: 'Saved on this device; waiting to sync',
     clearError: true,
   );
 }

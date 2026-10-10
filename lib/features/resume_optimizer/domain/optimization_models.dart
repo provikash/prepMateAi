@@ -308,6 +308,17 @@ class OptimizationSessionModel {
     String? pdf;
     if (rawPdf is Map) {
       pdf = rawPdf['url']?.toString() ?? rawPdf['pdf_url']?.toString();
+    } else if (rawPdf is String) {
+      pdf = rawPdf;
+    }
+
+    DateTime? parseDate(dynamic v) {
+      if (v is String && v.isNotEmpty) {
+        try {
+          return DateTime.parse(v);
+        } catch (_) {}
+      }
+      return null;
     }
 
     return OptimizationSessionModel(
@@ -332,15 +343,9 @@ class OptimizationSessionModel {
             ),
           )
           .toList(),
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString())
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString())
-          : null,
-      completedAt: json['completed_at'] != null
-          ? DateTime.tryParse(json['completed_at'].toString())
-          : null,
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at']),
+      completedAt: parseDate(json['completed_at']),
       decisionCounts: decisions,
       optimizedVersionId: optId,
       pdfUrl: pdf,
@@ -348,45 +353,72 @@ class OptimizationSessionModel {
   }
 }
 
-class OptimizationSectionSummary {
-  const OptimizationSectionSummary({
-    required this.sectionName,
-    required this.sectionKey,
-    this.acceptedCount = 0,
-    this.editedCount = 0,
-    this.skippedCount = 0,
-    this.pendingCount = 0,
-    this.needsConfirmation = false,
-    this.hasConflict = false,
-    this.previewText = '',
-    this.suggestionIds = const [],
+class OptimizedVersionDetail {
+  const OptimizedVersionDetail({
+    required this.id,
+    required this.title,
+    this.targetRole = '',
+    this.targetCompany = '',
+    this.templateName = 'Professional',
+    this.templateVersion = 1,
+    this.pdfStatus = 'ready',
+    this.changes = const [],
+    this.sourceData = const {},
+    this.data = const {},
+    this.pdfUrl,
+    this.pdfGeneratedAt,
+    this.sourceResumeTitle = '',
+    this.sourceResumeVersion = 1,
+    this.createdAt,
+    this.updatedAt,
   });
 
-  final String sectionName;
-  final String sectionKey;
-  final int acceptedCount;
-  final int editedCount;
-  final int skippedCount;
-  final int pendingCount;
-  final bool needsConfirmation;
-  final bool hasConflict;
-  final String previewText;
-  final List<String> suggestionIds;
+  final String id;
+  final String title;
+  final String targetRole;
+  final String targetCompany;
+  final String templateName;
+  final int templateVersion;
+  final String pdfStatus;
+  final List<dynamic> changes;
+  final Map<String, dynamic> sourceData;
+  final Map<String, dynamic> data;
+  final String? pdfUrl;
+  final String? pdfGeneratedAt;
+  final String sourceResumeTitle;
+  final int sourceResumeVersion;
+  final String? createdAt;
+  final String? updatedAt;
 
-  factory OptimizationSectionSummary.fromJson(Map<String, dynamic> json) {
-    return OptimizationSectionSummary(
-      sectionName: json['section_name'] as String? ?? 'Section',
-      sectionKey: json['section_key'] as String? ?? '',
-      acceptedCount: (json['accepted_count'] as num?)?.toInt() ?? 0,
-      editedCount: (json['edited_count'] as num?)?.toInt() ?? 0,
-      skippedCount: (json['skipped_count'] as num?)?.toInt() ?? 0,
-      pendingCount: (json['pending_count'] as num?)?.toInt() ?? 0,
-      needsConfirmation: json['needs_confirmation'] == true,
-      hasConflict: json['has_conflict'] == true,
-      previewText: json['preview_text'] as String? ?? '',
-      suggestionIds: (json['suggestions'] as List<dynamic>? ?? const [])
-          .map((e) => e.toString())
+  factory OptimizedVersionDetail.fromApi(Map<String, dynamic> json) {
+    return OptimizedVersionDetail(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      targetRole: json['target_role']?.toString() ?? '',
+      targetCompany: json['target_company']?.toString() ?? '',
+      templateName: json['template_name']?.toString() ?? 'Professional',
+      templateVersion: (json['template_version'] as num?)?.toInt() ?? 1,
+      pdfStatus: json['pdf_status']?.toString().toLowerCase() ?? 'ready',
+      changes: (json['changes'] as List<dynamic>? ?? const [])
+          .map(
+            (c) => c is Map
+                ? OptimizationSuggestion.fromApi(Map<String, dynamic>.from(c))
+                : c,
+          )
           .toList(),
+      sourceData: json['source_data'] is Map
+          ? Map<String, dynamic>.from(json['source_data'] as Map)
+          : const {},
+      data: json['data'] is Map
+          ? Map<String, dynamic>.from(json['data'] as Map)
+          : const {},
+      pdfUrl: json['pdf_url']?.toString(),
+      pdfGeneratedAt: json['pdf_generated_at']?.toString(),
+      sourceResumeTitle: json['source_resume_title']?.toString() ?? '',
+      sourceResumeVersion:
+          (json['source_resume_version'] as num?)?.toInt() ?? 1,
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
     );
   }
 }
@@ -395,20 +427,18 @@ class OptimizationSummaryData {
   const OptimizationSummaryData({
     required this.sessionId,
     required this.status,
-    required this.targetRole,
-    required this.company,
-    required this.sourceResumeId,
-    required this.sourceResumeTitle,
-    required this.sourceResumeVersion,
-    required this.currentSourceVersion,
-    required this.isSourceStale,
-    required this.readyToCreate,
-    required this.stats,
-    required this.sections,
+    this.targetRole = '',
+    this.company = '',
+    this.sourceResumeId = '',
+    this.sourceResumeTitle = '',
+    this.sourceResumeVersion = 1,
+    this.currentSourceVersion = 1,
+    this.isSourceStale = false,
+    this.readyToCreate = false,
+    this.stats = const {},
+    this.sections = const [],
     this.hasConflicts = false,
-    this.defaultName = '',
-    this.selectedTemplateId,
-    this.selectedTemplateName = 'Professional',
+    this.outputConfig = const {},
     this.alignmentScore = 0,
     this.atsReadiness,
     this.optimizedVersionId,
@@ -425,147 +455,41 @@ class OptimizationSummaryData {
   final int currentSourceVersion;
   final bool isSourceStale;
   final bool readyToCreate;
-  final Map<String, int> stats;
-  final List<OptimizationSectionSummary> sections;
+  final Map<String, dynamic> stats;
+  final List<dynamic> sections;
   final bool hasConflicts;
-  final String defaultName;
-  final String? selectedTemplateId;
-  final String selectedTemplateName;
+  final Map<String, dynamic> outputConfig;
   final int alignmentScore;
-  final Map<String, dynamic>? atsReadiness;
+  final dynamic atsReadiness;
   final String? optimizedVersionId;
   final String? pdfStatus;
 
-  factory OptimizationSummaryData.fromJson(Map<String, dynamic> json) {
-    final rawStats = json['stats'];
-    final Map<String, int> stats = {};
-    if (rawStats is Map) {
-      rawStats.forEach((k, v) {
-        if (v is num) stats[k.toString()] = v.toInt();
-      });
-    }
-
-    final rawSections = json['sections'] as List<dynamic>? ?? const [];
-    final sections = rawSections
-        .map(
-          (s) => OptimizationSectionSummary.fromJson(
-            Map<String, dynamic>.from(s as Map),
-          ),
-        )
-        .toList();
-
-    final outConfig = json['output_config'] as Map<String, dynamic>? ?? {};
-
+  factory OptimizationSummaryData.fromApi(Map<String, dynamic> json) {
     return OptimizationSummaryData(
       sessionId: json['session_id']?.toString() ?? '',
-      status: json['status'] as String? ?? 'DRAFT',
-      targetRole: json['target_role'] as String? ?? '',
-      company: json['company'] as String? ?? '',
+      status: json['status']?.toString() ?? '',
+      targetRole: json['target_role']?.toString() ?? '',
+      company: json['company']?.toString() ?? '',
       sourceResumeId: json['source_resume_id']?.toString() ?? '',
-      sourceResumeTitle: json['source_resume_title'] as String? ?? 'Resume',
+      sourceResumeTitle: json['source_resume_title']?.toString() ?? '',
       sourceResumeVersion:
           (json['source_resume_version'] as num?)?.toInt() ?? 1,
       currentSourceVersion:
           (json['current_source_version'] as num?)?.toInt() ?? 1,
       isSourceStale: json['is_source_stale'] == true,
       readyToCreate: json['ready_to_create'] == true,
-      stats: stats,
-      sections: sections,
+      stats: json['stats'] is Map
+          ? Map<String, dynamic>.from(json['stats'] as Map)
+          : const {},
+      sections: json['sections'] is List ? json['sections'] as List : const [],
       hasConflicts: json['has_conflicts'] == true,
-      defaultName: outConfig['default_name'] as String? ?? 'Optimized Resume',
-      selectedTemplateId: outConfig['selected_template_id']?.toString(),
-      selectedTemplateName:
-          outConfig['selected_template_name'] as String? ?? 'Professional',
+      outputConfig: json['output_config'] is Map
+          ? Map<String, dynamic>.from(json['output_config'] as Map)
+          : const {},
       alignmentScore: (json['alignment_score'] as num?)?.toInt() ?? 0,
-      atsReadiness: json['ats_readiness'] as Map<String, dynamic>?,
+      atsReadiness: json['ats_readiness'],
       optimizedVersionId: json['optimized_version_id']?.toString(),
-      pdfStatus: json['pdf_status'] as String?,
-    );
-  }
-}
-
-class OptimizedVersionDetail {
-  const OptimizedVersionDetail({
-    required this.id,
-    required this.title,
-    required this.data,
-    required this.sourceResumeId,
-    required this.sourceResumeTitle,
-    this.sourceResumeVersion = 1,
-    this.sourceData = const {},
-    this.templateId,
-    this.templateName = 'Professional',
-    this.templateVersion = 1,
-    this.pdfStatus = 'not_requested',
-    this.pdfUrl,
-    this.pdfGeneratedAt,
-    this.targetRole = '',
-    this.targetCompany = '',
-    this.changes = const [],
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  final String id;
-  final String title;
-  final Map<String, dynamic> data;
-  final String sourceResumeId;
-  final String sourceResumeTitle;
-  final int sourceResumeVersion;
-  final Map<String, dynamic> sourceData;
-  final String? templateId;
-  final String templateName;
-  final int templateVersion;
-  final String pdfStatus;
-  final String? pdfUrl;
-  final DateTime? pdfGeneratedAt;
-  final String targetRole;
-  final String targetCompany;
-  final List<OptimizationSuggestion> changes;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-
-  factory OptimizedVersionDetail.fromJson(Map<String, dynamic> json) {
-    final rawChanges = json['changes'] as List<dynamic>? ?? const [];
-    final changes = rawChanges
-        .map(
-          (c) => OptimizationSuggestion.fromApi(
-            Map<String, dynamic>.from(c as Map),
-          ),
-        )
-        .toList();
-
-    return OptimizedVersionDetail(
-      id: json['id']?.toString() ?? '',
-      title: json['title'] as String? ?? 'Optimized Resume',
-      data: json['data'] is Map
-          ? Map<String, dynamic>.from(json['data'] as Map)
-          : {},
-      sourceResumeId: json['source_resume_id']?.toString() ?? '',
-      sourceResumeTitle:
-          json['source_resume_title'] as String? ?? 'Master Resume',
-      sourceResumeVersion:
-          (json['source_resume_version'] as num?)?.toInt() ?? 1,
-      sourceData: json['source_data'] is Map
-          ? Map<String, dynamic>.from(json['source_data'] as Map)
-          : {},
-      templateId: json['template_id']?.toString(),
-      templateName: json['template_name'] as String? ?? 'Professional',
-      templateVersion: (json['template_version'] as num?)?.toInt() ?? 1,
-      pdfStatus: json['pdf_status'] as String? ?? 'not_requested',
-      pdfUrl: json['pdf_url'] as String?,
-      pdfGeneratedAt: json['pdf_generated_at'] != null
-          ? DateTime.tryParse(json['pdf_generated_at'].toString())
-          : null,
-      targetRole: json['target_role'] as String? ?? '',
-      targetCompany: json['target_company'] as String? ?? '',
-      changes: changes,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString())
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString())
-          : null,
+      pdfStatus: json['pdf_status']?.toString(),
     );
   }
 }

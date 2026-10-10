@@ -58,7 +58,11 @@ class RequestTelemetryInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    _log(err.requestOptions, status: err.response?.statusCode);
+    _log(
+      err.requestOptions,
+      status: err.response?.statusCode,
+      errorType: err.type.name,
+    );
     handler.next(err);
   }
 
@@ -77,7 +81,12 @@ class RequestTelemetryInterceptor extends Interceptor {
     return null;
   }
 
-  static void _log(RequestOptions options, {required int? status, int? size}) {
+  static void _log(
+    RequestOptions options, {
+    required int? status,
+    int? size,
+    String? errorType,
+  }) {
     if (!kDebugMode) return;
     final started = options.extra['_request_started_us'] as int?;
     final elapsed = started == null
@@ -89,7 +98,8 @@ class RequestTelemetryInterceptor extends Interceptor {
     debugPrint(
       '[HTTP] id=$requestId method=${options.method} path=$path '
       'status=${status ?? '-'} duration_ms=${elapsed ?? '-'} '
-      'size_bytes=${size ?? '-'} cache=$cache',
+      'size_bytes=${size ?? '-'} cache=$cache '
+      'error_type=${errorType ?? '-'}',
     );
   }
 }

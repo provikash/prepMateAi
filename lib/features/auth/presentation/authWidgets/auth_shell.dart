@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/app_logo.dart';
 
 class AuthShell extends StatelessWidget {
   const AuthShell({
@@ -11,6 +12,7 @@ class AuthShell extends StatelessWidget {
     required this.subtitle,
     required this.child,
     this.icon = Icons.description_outlined,
+    this.useAppLogo = false,
     this.footer,
     this.showBack = true,
   });
@@ -19,6 +21,7 @@ class AuthShell extends StatelessWidget {
   final String subtitle;
   final Widget child;
   final IconData icon;
+  final bool useAppLogo;
   final Widget? footer;
   final bool showBack;
 
@@ -70,15 +73,26 @@ class AuthShell extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Center(
-                        child: Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: colors.primarySoft,
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
-                          ),
-                          child: Icon(icon, size: 34, color: colors.primary),
-                        ),
+                        child: useAppLogo
+                            ? const AppLogo(
+                                size: 72,
+                                semanticLabel: 'PrepMate application logo',
+                              )
+                            : Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color: colors.primarySoft,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.xl,
+                                  ),
+                                ),
+                                child: Icon(
+                                  icon,
+                                  size: 34,
+                                  color: colors.primary,
+                                ),
+                              ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(

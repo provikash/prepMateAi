@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/theme.dart';
-import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/app_state.dart';
 import '../../domain/optimization_models.dart';
 import '../providers/optimization_provider.dart';
-import '../widgets/optimization_widgets.dart';
 
+/// Screen 51: Suggestions Workspace — Populated
 class AiSuggestionsScreen extends ConsumerStatefulWidget {
   const AiSuggestionsScreen({super.key});
 
@@ -18,6 +17,9 @@ class AiSuggestionsScreen extends ConsumerStatefulWidget {
 }
 
 class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
+  String _activeFilter = 'All'; // All, Not reviewed, Accepted, Edited, Skipped
+  bool _groupBySection = true;
+
   @override
   void initState() {
     super.initState();
@@ -77,506 +79,105 @@ class _AiSuggestionsState extends ConsumerState<AiSuggestionsScreen> {
     );
   }
 
-  Future<void> _confirmMissingSkill(JobRequirement requirement) async {
-    var skillValue = requirement.name;
-    final value = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Add skill to optimized resume'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Only confirm this skill if you genuinely have it. It will be added to the optimized version, not your master resume.',
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              initialValue: requirement.name,
-              onChanged: (value) => skillValue = value,
-              autofocus: true,
-              maxLength: 100,
-              decoration: const InputDecoration(labelText: 'Skill name'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, skillValue),
-            child: const Text('Confirm & add'),
-          ),
-        ],
-      ),
-    );
-    if (value == null || value.trim().isEmpty || !mounted) return;
-    final ok = await ref
-        .read(optimizationProvider.notifier)
-        .confirmMissingSkill(requirement, value);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? 'Skill added to the optimized version.'
-              : ref.read(optimizationProvider).error ?? 'Could not add skill.',
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(optimizationProvider);
-    final credits = state.credits ?? 0;
-    final analysis = state.analysis;
+    final optState = ref.watch(optimizationProvider);
+    final analysis = optState.analysis;
+    final colors = AppColors.of(context);
 
     if (analysis == null) {
       return AppScaffold(
-        title: 'Optimization Workspace',
+        title: 'Review Suggestions',
         body: AppErrorState(
-          message:
-              'Analysis results are unavailable. Please analyze a job description first.',
+          message: 'Analyze a job to view suggestions.',
+          actionLabel: 'Go to setup',
           onAction: () => context.go('/resume/optimize'),
         ),
       );
     }
 
-    final matchedList = analysis.requirements
-        .where((r) => r.match == RequirementMatch.matched)
-        .toList();
-    final partialList = analysis.requirements
-        .where((r) => r.match == RequirementMatch.partial)
-        .toList();
-    final missingList = analysis.requirements
-        .where((r) => r.match == RequirementMatch.missing)
-        .toList();
-    final unclearList = analysis.requirements
-        .where((r) => r.match == RequirementMatch.unclear)
-        .toList();
+    final allSuggestions = analysis.suggestions;
+    final total = allSuggestions.length;
+    final accepted = allSuggestions
+        .where((s) => s.status == SuggestionStatus.accepted)
+        .length;
+    final edited = allSuggestions
+        .where((s) => s.status == SuggestionStatus.edited)
+        .length;
+    final skipped = allSuggestions
+        .where((s) => s.status == SuggestionStatus.rejected)
+        .length;
+    final pending = allSuggestions
+        .where((s) => s.status == SuggestionStatus.pending)
+        .length;
+    final reviewed = accepted + edited + skipped;
+    final progress = total > 0 ? (reviewed / total) : 0.0;
 
-    final colors = AppColors.of(context);
-    bool matchesFilter(OptimizationSuggestion item) =>
-        (state.selectedSection.isEmpty ||
-            item.section == state.selectedSection) &&
-        switch (state.selectedFilter) {
-          SuggestionFilter.all => true,
-          SuggestionFilter.pending => item.status == SuggestionStatus.pending,
-          SuggestionFilter.accepted => item.status == SuggestionStatus.accepted,
-          SuggestionFilter.edited => item.status == SuggestionStatus.edited,
-          SuggestionFilter.rejected => item.status == SuggestionStatus.rejected,
-          SuggestionFilter.critical =>
-            item.severity.toUpperCase() == 'CRITICAL' ||
-                item.severity.toUpperCase() == 'HIGH',
-        };
-    final visibleSuggestions = analysis.suggestions
-        .where(matchesFilter)
-        .toList();
-    final hasEvidenceSuggestions = analysis.suggestions.any(
-      (item) => item.resumePath != 'skills',
-    );
+    // Filtered suggestions
+    final filtered = allSuggestions.where((s) {
+      return switch (_activeFilter) {
+        'Not reviewed' => s.status == SuggestionStatus.pending,
+        'Accepted' => s.status == SuggestionStatus.accepted,
+        'Edited' => s.status == SuggestionStatus.edited,
+        'Skipped' => s.status == SuggestionStatus.rejected,
+        _ => true,
+      };
+    }).toList();
+
+    // Grouping by section
+    final Map<String, List<OptimizationSuggestion>> groups = {};
+    for (final s in filtered) {
+      final sec = s.section.isNotEmpty ? s.section : 'General';
+      groups.putIfAbsent(sec, () => []).add(s);
+    }
+
+    final displayRole = optState.jobTitle.isNotEmpty
+        ? optState.jobTitle
+        : 'Senior Flutter Developer';
+    final displayCompany = optState.company.isNotEmpty
+        ? optState.company
+        : 'Acme Technologies';
 
     return AppScaffold(
-      title: 'Optimization Workspace',
+      title: 'Review Suggestions',
       actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: AppSpacing.sm),
-          child: Center(child: CreditBadge(credits: credits)),
+        IconButton(
+          tooltip: 'Toggle Grouping',
+          icon: Icon(_groupBySection ? Icons.view_agenda : Icons.view_list),
+          onPressed: () => setState(() => _groupBySection = !_groupBySection),
+        ),
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          onSelected: (val) {
+            switch (val) {
+              case 'analysis':
+                context.push('/resume/optimize/analysis');
+                break;
+              case 'generate':
+                ref.read(optimizationProvider.notifier).generateSuggestions();
+                break;
+            }
+          },
+          itemBuilder: (ctx) => [
+            const PopupMenuItem(
+              value: 'analysis',
+              child: Text('View Job Analysis'),
+            ),
+            const PopupMenuItem(
+              value: 'generate',
+              child: Text('Re-synthesize Suggestions'),
+            ),
+          ],
         ),
       ],
-      body: ResponsiveContent(
-        maxWidth: 1100,
-        child: Column(
-          children: [
-            const OptimizationStepHeader(step: 3),
-            const SizedBox(height: AppSpacing.md),
-            if (!hasEvidenceSuggestions &&
-                state.credits != null &&
-                credits < state.generationCost)
-              const Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                child: Text(
-                  'Not enough AI credits. Resume editing and PDFs remain available.',
-                ),
-              ),
-            if (!hasEvidenceSuggestions)
-              AppPrimaryButton(
-                label:
-                    'Generate evidence-backed suggestions · ${state.generationCost} credits',
-                icon: Icons.auto_awesome,
-                loading: state.busy,
-                onPressed:
-                    state.credits != null && credits < state.generationCost
-                    ? null
-                    : () async {
-                        final ok = await ref
-                            .read(optimizationProvider.notifier)
-                            .generateSuggestions();
-                        if (!context.mounted || ok) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              ref.read(optimizationProvider).error ??
-                                  'Generation failed.',
-                            ),
-                          ),
-                        );
-                      },
-              ),
-            Expanded(
-              child: ListView(
-                children: [
-                  if (analysis.suggestions.isNotEmpty) ...[
-                    Text(
-                      'AI suggestions',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: SuggestionFilter.values.map((filter) {
-                        final count = analysis.suggestions.where((item) {
-                          if (filter == SuggestionFilter.all) return true;
-                          if (filter == SuggestionFilter.critical) {
-                            return item.severity.toUpperCase() == 'CRITICAL' ||
-                                item.severity.toUpperCase() == 'HIGH';
-                          }
-                          return item.status.name == filter.name;
-                        }).length;
-                        return FilterChip(
-                          label: Text(
-                            '${filter.name[0].toUpperCase()}${filter.name.substring(1)} ($count)',
-                          ),
-                          selected: state.selectedFilter == filter,
-                          onSelected: (_) => ref
-                              .read(optimizationProvider.notifier)
-                              .setFilter(filter),
-                        );
-                      }).toList(),
-                    ),
-                    if (analysis.suggestions
-                            .map((item) => item.section)
-                            .toSet()
-                            .length >
-                        1) ...[
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        children:
-                            <String>{
-                                  '',
-                                  ...analysis.suggestions.map(
-                                    (item) => item.section,
-                                  ),
-                                }
-                                .map(
-                                  (section) => ChoiceChip(
-                                    label: Text(
-                                      section.isEmpty
-                                          ? 'All sections'
-                                          : section,
-                                    ),
-                                    selected: state.selectedSection == section,
-                                    onSelected: (_) => ref
-                                        .read(optimizationProvider.notifier)
-                                        .setSectionFilter(section),
-                                  ),
-                                )
-                                .toList(),
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.sm),
-                    ...visibleSuggestions.map(
-                      (suggestion) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                        child: AppCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                suggestion.resumePath,
-                                style: Theme.of(context).textTheme.labelMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              Text('Current: ${suggestion.current}'),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Suggested: ${suggestion.proposed}',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 8),
-                              Text('Why: ${suggestion.reason}'),
-                              Text(
-                                'Severity: ${suggestion.severity.toLowerCase()}',
-                              ),
-                              if (suggestion.requiresConfirmation)
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 6),
-                                  child: Text(
-                                    'Confirm this factual claim before accepting it.',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              if (suggestion.keywords.isNotEmpty)
-                                Text(
-                                  'Keywords: ${suggestion.keywords.join(', ')}',
-                                ),
-                              Text('Evidence: ${suggestion.evidence}'),
-                              const SizedBox(height: 8),
-                              StatusPill(status: suggestion.status),
-                              if (state.processingSuggestionId == suggestion.id)
-                                const LinearProgressIndicator(),
-                              Wrap(
-                                spacing: 8,
-                                children: [
-                                  if (suggestion.status !=
-                                      SuggestionStatus.accepted)
-                                    TextButton(
-                                      onPressed:
-                                          state.processingSuggestionId == null
-                                          ? () => _review(
-                                              suggestion.id,
-                                              SuggestionStatus.accepted,
-                                            )
-                                          : null,
-                                      child: Text(
-                                        suggestion.status ==
-                                                SuggestionStatus.edited
-                                            ? 'Use AI version'
-                                            : 'Accept',
-                                      ),
-                                    ),
-                                  TextButton(
-                                    onPressed:
-                                        state.processingSuggestionId == null
-                                        ? () => context.push(
-                                            '/resume/optimize/suggestions/${suggestion.id}/edit',
-                                          )
-                                        : null,
-                                    child: Text(
-                                      suggestion.status ==
-                                              SuggestionStatus.edited
-                                          ? 'Edit again'
-                                          : 'Edit',
-                                    ),
-                                  ),
-                                  if (suggestion.status !=
-                                      SuggestionStatus.rejected)
-                                    TextButton(
-                                      onPressed:
-                                          state.processingSuggestionId == null
-                                          ? () => _review(
-                                              suggestion.id,
-                                              SuggestionStatus.rejected,
-                                            )
-                                          : null,
-                                      child: const Text('Reject'),
-                                    ),
-                                  if (suggestion.status ==
-                                      SuggestionStatus.rejected)
-                                    TextButton(
-                                      onPressed:
-                                          state.processingSuggestionId == null
-                                          ? () => _review(
-                                              suggestion.id,
-                                              SuggestionStatus.pending,
-                                            )
-                                          : null,
-                                      child: const Text('Undo'),
-                                    ),
-                                  if (suggestion.status ==
-                                      SuggestionStatus.pending)
-                                    TextButton(
-                                      onPressed:
-                                          state.processingSuggestionId ==
-                                                  null &&
-                                              credits >= state.regenerationCost
-                                          ? () => _regenerate(suggestion.id)
-                                          : null,
-                                      child: Text(
-                                        'Improve with AI · ${state.regenerationCost} credit(s)',
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-                  // Step 4 Milestone Banner
-                  AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.fact_check_outlined,
-                              color: colors.primary,
-                              size: 28,
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Text(
-                                'Requirement & Evidence Workspace',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          'Suggestions are grounded in the matched evidence below. Review every change before creating an optimized version; your master resume stays untouched.',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: colors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Section 1: High-Value Matched Areas
-                  _WorkspaceSection(
-                    title:
-                        '1. Verified Matched Experience (${matchedList.length})',
-                    subtitle:
-                        'Genuine evidence found in your resume. Ready for summary and bullet alignment.',
-                    color: colors.success,
-                    items: matchedList,
-                    icon: Icons.check_circle_outline,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Section 2: Partial Alignment Areas
-                  if (partialList.isNotEmpty) ...[
-                    _WorkspaceSection(
-                      title:
-                          '2. Partial Alignment Areas (${partialList.length})',
-                      subtitle:
-                          'Related skills or responsibilities found, but specific JD scope can be articulated more clearly.',
-                      color: colors.warning,
-                      items: partialList,
-                      icon: Icons.timelapse,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  // Section 3: Missing Requirements (Guardrail)
-                  if (missingList.isNotEmpty || unclearList.isNotEmpty) ...[
-                    _WorkspaceSection(
-                      title:
-                          '3. Missing & Unclear Skills (${missingList.length + unclearList.length})',
-                      subtitle:
-                          'No evidence found in your resume. PrepMateAI will never fabricate experience for these.',
-                      color: colors.error,
-                      items: [...missingList, ...unclearList],
-                      icon: Icons.shield_outlined,
-                      onAddSkill: _confirmMissingSkill,
-                      processingId: state.processingSuggestionId,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  const InformationBanner(
-                    icon: Icons.verified_user_outlined,
-                    title: 'Evidence-backed changes only',
-                    message:
-                        'Your master resume remains 100% untouched. All evidence references link to exact resume JSON paths for complete auditability.',
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                ],
-              ),
+      body: Column(
+        children: [
+          // Sticky / Top Progress Card
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: AppSecondaryButton(
-                    label: 'Back to Match Analysis',
-                    icon: Icons.arrow_back,
-                    onPressed: () => context.pop(),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                if (analysis.suggestions.any(
-                  (s) =>
-                      s.status == SuggestionStatus.accepted ||
-                      s.status == SuggestionStatus.edited,
-                ))
-                  Expanded(
-                    child: AppPrimaryButton(
-                      label: 'Review & create version',
-                      icon: Icons.arrow_forward,
-                      onPressed: () => context.push('/resume/optimize/summary'),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WorkspaceSection extends StatelessWidget {
-  const _WorkspaceSection({
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.items,
-    required this.icon,
-    this.onAddSkill,
-    this.processingId,
-  });
-
-  final String title;
-  final String subtitle;
-  final Color color;
-  final List<JobRequirement> items;
-  final IconData icon;
-  final Future<void> Function(JobRequirement requirement)? onAddSkill;
-  final String? processingId;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          subtitle,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        ...items.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
             child: AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,98 +185,565 @@ class _WorkspaceSection extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        item.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.fact_check,
+                            size: 18,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$reviewed of $total reviewed',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
+                      Text(
+                        '${(progress * 100).toInt()}% completed',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Multi-segment progress bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: SizedBox(
+                      height: 6,
+                      child: Row(
+                        children: [
+                          if (accepted > 0)
+                            Expanded(
+                              flex: accepted,
+                              child: Container(color: const Color(0xFF087E78)),
+                            ),
+                          if (edited > 0)
+                            Expanded(
+                              flex: edited,
+                              child: Container(color: colors.primary),
+                            ),
+                          if (skipped > 0)
+                            Expanded(
+                              flex: skipped,
+                              child: Container(color: colors.border),
+                            ),
+                          if (pending > 0)
+                            Expanded(
+                              flex: pending,
+                              child: Container(color: const Color(0xFFFFDAD6)),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Counts breakdown chips
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      _buildCountBadge(
+                        context,
+                        '$accepted accepted',
+                        const Color(0xFF087E78),
+                        const Color(0xFFE1F4F1),
+                      ),
+                      _buildCountBadge(
+                        context,
+                        '$edited edited',
+                        colors.primary,
+                        colors.primarySoft,
+                      ),
+                      _buildCountBadge(
+                        context,
+                        '$skipped skipped',
+                        colors.textSecondary,
+                        colors.mutedBackground,
+                      ),
+                      _buildCountBadge(
+                        context,
+                        '$pending remaining',
+                        const Color(0xFFBA1A1A),
+                        const Color(0xFFFFDAD6),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Review each suggestion and keep only changes that are accurate to your actual experience.',
+                    style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Horizontal Filter Chips Toolbar
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 4,
+            ),
+            child: Row(
+              children: [
+                _buildFilterChip('All', total),
+                const SizedBox(width: 6),
+                _buildFilterChip('Not reviewed', pending),
+                const SizedBox(width: 6),
+                _buildFilterChip('Accepted', accepted),
+                const SizedBox(width: 6),
+                _buildFilterChip('Edited', edited),
+                const SizedBox(width: 6),
+                _buildFilterChip('Skipped', skipped),
+              ],
+            ),
+          ),
+
+          // Suggestions List
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              children: [
+                if (filtered.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Text(
+                        'No suggestions match "$_activeFilter".',
+                        style: TextStyle(color: colors.textSecondary),
+                      ),
+                    ),
+                  )
+                else if (_groupBySection)
+                  ...groups.entries.map((entry) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.sm,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: colors.primary,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                entry.key.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '(${entry.value.length})',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ...entry.value.map(
+                          (s) => _buildSuggestionCard(context, s),
+                        ),
+                      ],
+                    );
+                  })
+                else
+                  ...filtered.map((s) => _buildSuggestionCard(context, s)),
+                const SizedBox(height: 80),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$reviewed of $total Decisions Made',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      '$accepted accepted · $edited edited',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: () => context.push('/resume/optimize/summary'),
+                icon: const Icon(Icons.arrow_forward, size: 16),
+                label: const Text('Create Tailored Resume'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountBadge(
+    BuildContext context,
+    String text,
+    Color textColor,
+    Color bgColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, int count) {
+    final isSelected = _activeFilter == label;
+    return ChoiceChip(
+      selected: isSelected,
+      onSelected: (_) => setState(() => _activeFilter = label),
+      label: Text('$label ($count)', style: const TextStyle(fontSize: 11)),
+    );
+  }
+
+  Widget _buildSuggestionCard(
+    BuildContext context,
+    OptimizationSuggestion item,
+  ) {
+    final colors = AppColors.of(context);
+    final isAccepted = item.status == SuggestionStatus.accepted;
+    final isEdited = item.status == SuggestionStatus.edited;
+    final isSkipped = item.status == SuggestionStatus.rejected;
+    final isPending = item.status == SuggestionStatus.pending;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: isAccepted
+              ? const Color(0xFF087E78).withOpacity(0.5)
+              : isEdited
+              ? colors.primary.withOpacity(0.5)
+              : isSkipped
+              ? colors.border
+              : colors.border,
+          width: isAccepted || isEdited ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Card Header
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.mutedBackground,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(
+                        item.section.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    if (item.highImpact)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 6,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.12),
+                          color: const Color(0xFFE1F4F1),
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
-                        child: Text(
-                          '${item.importance} · ${item.category}',
+                        child: const Text(
+                          'High Impact',
                           style: TextStyle(
-                            color: color,
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
+                            color: Color(0xFF087E78),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isAccepted
+                        ? const Color(0xFFE1F4F1)
+                        : isEdited
+                        ? colors.primarySoft
+                        : isSkipped
+                        ? colors.mutedBackground
+                        : const Color(0xFFFFDAD6),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Text(
+                    isAccepted
+                        ? 'Accepted'
+                        : isEdited
+                        ? 'Edited'
+                        : isSkipped
+                        ? 'Skipped'
+                        : 'Pending',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isAccepted
+                          ? const Color(0xFF087E78)
+                          : isEdited
+                          ? colors.primary
+                          : isSkipped
+                          ? colors.textSecondary
+                          : const Color(0xFFBA1A1A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+
+          // Content comparison block
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.current.isNotEmpty) ...[
+                  const Text(
+                    'Baseline Text:',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '“${item.current}”',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      decoration: isSkipped ? null : TextDecoration.lineThrough,
+                      color: isSkipped
+                          ? colors.textPrimary
+                          : colors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                const Text(
+                  'Proposed Tailored Statement:',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.proposed,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isSkipped
+                        ? colors.textSecondary
+                        : colors.textPrimary,
+                  ),
+                ),
+                if (item.reason.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline, size: 14, color: colors.primary),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          item.reason,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colors.textSecondary,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.explanation,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  if (item.evidence != null || item.evidencePath != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 14,
-                          color: colors.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            '${item.evidenceContext ?? ''} ${item.evidence != null ? '("${item.evidence}")' : ''}',
-                            style: TextStyle(
-                              color: colors.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (item.evidencePath != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2, left: 18),
-                        child: Text(
-                          'Path: ${item.evidencePath}',
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                  ],
-                  if (onAddSkill != null) ...[
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: OutlinedButton.icon(
-                        onPressed: processingId == null
-                            ? () => onAddSkill!(item)
-                            : null,
-                        icon: processingId == item.id
-                            ? const SizedBox.square(
-                                dimension: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.add),
-                        label: const Text('Add if I have this skill'),
-                      ),
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
           ),
-        ),
-      ],
+
+          // Actions Toolbar
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 6,
+            ),
+            color: colors.mutedBackground,
+            child: Row(
+              children: [
+                if (isPending) ...[
+                  FilledButton.tonalIcon(
+                    onPressed: () =>
+                        _review(item.id, SuggestionStatus.accepted),
+                    icon: const Icon(Icons.check, size: 16),
+                    label: const Text('Accept', style: TextStyle(fontSize: 12)),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      '/resume/optimize/suggestions/${item.id}/edit',
+                    ),
+                    icon: const Icon(Icons.edit, size: 14),
+                    label: const Text('Edit', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () =>
+                        _review(item.id, SuggestionStatus.rejected),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                    ),
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                ] else ...[
+                  OutlinedButton.icon(
+                    onPressed: () => _review(item.id, SuggestionStatus.pending),
+                    icon: const Icon(Icons.undo, size: 14),
+                    label: const Text(
+                      'Undo Decision',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      '/resume/optimize/suggestions/${item.id}/edit',
+                    ),
+                    icon: const Icon(Icons.edit, size: 14),
+                    label: const Text(
+                      'Edit Further',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Refine with AI',
+                  icon: const Icon(Icons.auto_fix_high, size: 18),
+                  onPressed: () => _regenerate(item.id),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

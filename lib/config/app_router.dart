@@ -42,12 +42,13 @@ import 'package:prepmate_mobile/features/resume_optimizer/presentation/screens/o
 import 'package:prepmate_mobile/features/ai_credits/presentation/screens/ai_credits_screen.dart';
 import 'package:prepmate_mobile/features/ai_credits/presentation/screens/ai_plans_screen.dart';
 import 'package:prepmate_mobile/features/ai_credits/presentation/screens/ai_transactions_screen.dart';
+import 'package:prepmate_mobile/core/widgets/adaptive_app_shell.dart';
+import 'package:prepmate_mobile/core/widgets/app_error_page.dart';
 
 String? authRedirect(AuthState authState, Uri uri) {
   final path = uri.path;
   final isAuthenticated = authState.status == AuthStatus.authenticated;
-  const publicPaths = {'/splash', '/login', '/verify-otp'};
-  final isPublic = publicPaths.contains(path);
+  const publicPaths = {'/splash', '/login', '/sign-in', '/verify-otp'};
 
   if (!authState.hasCheckedSession && path != '/splash') return '/splash';
 
@@ -56,13 +57,19 @@ String? authRedirect(AuthState authState, Uri uri) {
       user?.onboardingCompleted == true || user?.profileCompleted == true;
 
   if (path == '/splash' && authState.hasCheckedSession) {
-    if (!isAuthenticated) return '/login';
-    return isCompleted ? '/home' : _incompleteStepRoute(user?.onboardingStep);
+    if (!isAuthenticated) return '/dashboard';
+    return isCompleted
+        ? '/dashboard'
+        : _incompleteStepRoute(user?.onboardingStep);
   }
 
-  if (!isAuthenticated && !isPublic) {
+  if (!isAuthenticated && _requiresAuthentication(path)) {
     final destination = Uri.encodeComponent(uri.toString());
     return '/login?from=$destination';
+  }
+
+  if (!isAuthenticated && path.startsWith('/onboarding/')) {
+    return '/dashboard';
   }
 
   if (isAuthenticated && !isCompleted) {
@@ -79,14 +86,34 @@ String? authRedirect(AuthState authState, Uri uri) {
               destination.startsWith('/') &&
               !destination.startsWith('//')
           ? destination
-          : '/home';
+          : '/dashboard';
     }
     if (path.startsWith('/onboarding/')) {
-      return '/home';
+      return '/dashboard';
     }
   }
 
   return null;
+}
+
+bool _requiresAuthentication(String path) {
+  const exactPaths = {
+    '/profile/edit',
+    '/profile/personal-info',
+    '/ai-credits',
+    '/credits',
+    '/ai-plans',
+    '/plans',
+    '/ai-transactions',
+    '/credits/transactions',
+  };
+  if (exactPaths.contains(path)) return true;
+  return path == '/optimize' ||
+      path == '/ai-assistant' ||
+      path == '/optimizations' ||
+      path.startsWith('/resume/optimize') ||
+      path.startsWith('/resume/ai-') ||
+      path.startsWith('/optimizations/');
 }
 
 String _incompleteStepRoute(int? step) {
@@ -138,36 +165,80 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       return authRedirect(ref.read(authProvider), state.uri);
     },
+    errorBuilder: (context, state) => const AppErrorPage(),
     routes: [
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/', redirect: (_, __) => '/dashboard'),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/sign-in',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/home',
+        builder: (context, state) => _withShell(state, const HomeScreen()),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => _withShell(state, const HomeScreen()),
+      ),
       GoRoute(
         path: '/resumes',
-        builder: (context, state) => const MyResumesScreen(),
+        builder: (context, state) => _withShell(state, const MyResumesScreen()),
       ),
       GoRoute(
         path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
+        builder: (context, state) => _withShell(state, const ProfileScreen()),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => _withShell(state, const ProfileScreen()),
       ),
       GoRoute(
         path: '/profile/edit',
         builder: (_, __) => const PersonalInfoScreen(),
       ),
+      GoRoute(
+        path: '/profile/personal-info',
+        builder: (_, __) => const PersonalInfoScreen(),
+      ),
       GoRoute(path: '/help', builder: (_, __) => const HelpSupportScreen()),
-      GoRoute(path: '/ai-credits', builder: (_, __) => const AiCreditsScreen()),
-      GoRoute(path: '/ai-plans', builder: (_, __) => const AiPlansScreen()),
+      GoRoute(
+        path: '/ai-credits',
+        builder: (_, state) => _withShell(state, const AiCreditsScreen()),
+      ),
+      GoRoute(
+        path: '/credits',
+        builder: (_, state) => _withShell(state, const AiCreditsScreen()),
+      ),
+      GoRoute(
+        path: '/ai-plans',
+        builder: (_, state) => _withShell(state, const AiPlansScreen()),
+      ),
+      GoRoute(
+        path: '/plans',
+        builder: (_, state) => _withShell(state, const AiPlansScreen()),
+      ),
       GoRoute(
         path: '/ai-transactions',
-        builder: (_, __) => const AiTransactionsScreen(),
+        builder: (_, state) => _withShell(state, const AiTransactionsScreen()),
+      ),
+      GoRoute(
+        path: '/credits/transactions',
+        builder: (_, state) => _withShell(state, const AiTransactionsScreen()),
       ),
       GoRoute(
         path: '/template',
-        builder: (context, state) => const TemplateGalleryScreen(),
+        builder: (context, state) =>
+            _withShell(state, const TemplateGalleryScreen()),
+      ),
+      GoRoute(
+        path: '/templates',
+        builder: (context, state) =>
+            _withShell(state, const TemplateGalleryScreen()),
       ),
       GoRoute(
         path: '/template/preview',
@@ -218,83 +289,134 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/resumes/new',
+        builder: (context, state) =>
+            ResumeFormScreen(templateId: state.uri.queryParameters['template']),
+      ),
+      GoRoute(
         path: '/resume/pdf/:resumeId',
         builder: (context, state) {
           final resumeId = state.pathParameters['resumeId'] ?? '';
-          return PdfViewScreen(resumeId: resumeId);
+          return _withShell(state, PdfViewScreen(resumeId: resumeId));
         },
       ),
       GoRoute(
+        path: '/resumes/:resumeId/preview',
+        builder: (context, state) => _withShell(
+          state,
+          PdfViewScreen(resumeId: state.pathParameters['resumeId'] ?? ''),
+        ),
+      ),
+      GoRoute(
         path: '/resume/optimize',
-        builder: (_, __) => const OptimizeResumeScreen(),
+        builder: (_, state) => _withShell(state, const OptimizeResumeScreen()),
+      ),
+      GoRoute(
+        path: '/optimize',
+        builder: (_, state) => _withShell(state, const OptimizeResumeScreen()),
       ),
       GoRoute(
         path: '/resume/optimize/analysis',
-        builder: (_, __) => const JobAnalysisScreen(),
+        builder: (_, state) => _withShell(state, const JobAnalysisScreen()),
       ),
       GoRoute(
         path: '/resume/optimize/suggestions',
-        builder: (_, __) => const AiSuggestionsScreen(),
+        builder: (_, state) => _withShell(state, const AiSuggestionsScreen()),
       ),
       GoRoute(
         path: '/resume/optimize/suggestions/:suggestionId/edit',
-        builder: (_, state) => SuggestionEditorScreen(
-          suggestionId: state.pathParameters['suggestionId'] ?? '',
+        builder: (_, state) => _withShell(
+          state,
+          SuggestionEditorScreen(
+            suggestionId: state.pathParameters['suggestionId'] ?? '',
+          ),
         ),
       ),
       GoRoute(
         path: '/resume/optimize/summary',
-        builder: (_, __) => const OptimizationSummaryScreen(),
+        builder: (_, state) =>
+            _withShell(state, const OptimizationSummaryScreen()),
       ),
       GoRoute(
         path: '/resume/optimize/ats',
-        builder: (_, __) => const AtsAnalysisScreen(),
+        builder: (_, state) => _withShell(state, const AtsAnalysisScreen()),
       ),
       GoRoute(
         path: '/resume/optimize/preview',
-        builder: (_, __) => const OptimizedResumePreviewScreen(),
+        builder: (_, state) =>
+            _withShell(state, const OptimizedResumePreviewScreen()),
       ),
       GoRoute(
         path: '/resume/ai-assistant',
-        builder: (context, state) => const AIAssistantScreen(),
+        builder: (context, state) =>
+            _withShell(state, const AIAssistantScreen()),
+      ),
+      GoRoute(
+        path: '/ai-assistant',
+        builder: (context, state) =>
+            _withShell(state, const AIAssistantScreen()),
       ),
       GoRoute(
         path: '/resume/ai-input/summary',
-        builder: (context, state) => const GenerateSummaryInputScreen(),
+        builder: (context, state) =>
+            _withShell(state, const GenerateSummaryInputScreen()),
       ),
       GoRoute(
         path: '/resume/ai-input/improve',
-        builder: (context, state) => const ImproveSectionInputScreen(),
+        builder: (context, state) =>
+            _withShell(state, const ImproveSectionInputScreen()),
       ),
       GoRoute(
         path: '/resume/ai-input/skills',
-        builder: (context, state) => const SuggestSkillsInputScreen(),
+        builder: (context, state) =>
+            _withShell(state, const SuggestSkillsInputScreen()),
       ),
       GoRoute(
         path: '/resume/ai-input/bullets',
-        builder: (context, state) => const GenerateBulletsInputScreen(),
+        builder: (context, state) =>
+            _withShell(state, const GenerateBulletsInputScreen()),
       ),
       GoRoute(
         path: '/resume/ai-result',
-        builder: (context, state) => const AIResultScreen(),
+        builder: (context, state) => _withShell(state, const AIResultScreen()),
       ),
       GoRoute(
         path: '/resume/ai-tool-adaptations',
         builder: (context, state) {
           final initialTool = state.extra?.toString() ?? 'bullets';
-          return AIToolAdaptationsScreen(initialTool: initialTool);
+          return _withShell(
+            state,
+            AIToolAdaptationsScreen(initialTool: initialTool),
+          );
         },
       ),
       GoRoute(
         path: '/resume/optimize/history',
-        builder: (_, __) => const OptimizationHistoryScreen(),
+        builder: (_, state) =>
+            _withShell(state, const OptimizationHistoryScreen()),
+      ),
+      GoRoute(
+        path: '/optimizations',
+        builder: (_, state) =>
+            _withShell(state, const OptimizationHistoryScreen()),
       ),
       GoRoute(
         path: '/resume/optimize/detail/:id',
-        builder: (_, state) => OptimizationDetailScreen(
-          sessionId: state.pathParameters['id'] ?? '',
+        builder: (_, state) => _withShell(
+          state,
+          OptimizationDetailScreen(sessionId: state.pathParameters['id'] ?? ''),
+        ),
+      ),
+      GoRoute(
+        path: '/optimizations/:id',
+        builder: (_, state) => _withShell(
+          state,
+          OptimizationDetailScreen(sessionId: state.pathParameters['id'] ?? ''),
         ),
       ),
     ],
   );
 });
+
+Widget _withShell(GoRouterState state, Widget child) =>
+    AdaptiveAppShell(location: state.uri.path, child: child);

@@ -4,11 +4,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../auth/data/models/user_model.dart';
+import '../../domain/entities/profile_lifecycle_models.dart';
 
 const supportedProfilePatchFields = <String>{
   'full_name',
+  'preferred_name',
   'phone',
   'location',
+  'city',
+  'state_region',
+  'country',
+  'country_code',
+  'time_zone',
+  'industry',
   'job_title',
   'headline',
   'bio',
@@ -17,6 +25,13 @@ const supportedProfilePatchFields = <String>{
   'github',
   'github_url',
   'portfolio_url',
+  'custom_links',
+  'use_name_for_new_resumes',
+  'use_title_for_new_resumes',
+  'use_location_for_new_resumes',
+  'suggest_links_for_new_resumes',
+  'version',
+  'expected_version',
   'experience_level',
   'career_interests',
   'career_goals',
@@ -140,6 +155,17 @@ class ProfileRemoteDataSource {
       return UserModel.fromJson(merged);
     } catch (error) {
       _logFailure(error, payload.keys);
+      if (error is DioException && error.response?.statusCode == 409) {
+        final body = error.response?.data;
+        if (body is Map && body['conflict'] == true) {
+          throw ProfileConflictException(
+            message: body['detail']?.toString() ??
+                'Conflict detected: profile was modified on another device.',
+            serverVersion: (body['server_version'] as num?)?.toInt() ?? 0,
+            serverData: Map<String, dynamic>.from(body['server_data'] as Map? ?? {}),
+          );
+        }
+      }
       throw _normalizeError(error);
     }
   }
@@ -150,11 +176,80 @@ class ProfileRemoteDataSource {
         'profile_image': await MultipartFile.fromFile(filePath),
       });
 
-      final response = await dio.patch('profile/', data: formData);
+      final response = await dio.post('profile/avatar/', data: formData);
       final summary = await _summary();
 
       final merged = <String, dynamic>{...summary, ..._dataMap(response.data)};
       return UserModel.fromJson(merged);
+    } catch (error) {
+      throw _normalizeError(error);
+    }
+  }
+
+  Future<UserModel> deleteProfileImage() async {
+    try {
+      final response = await dio.delete('profile/avatar/');
+      final summary = await _summary();
+      final merged = <String, dynamic>{...summary, ..._dataMap(response.data)};
+      return UserModel.fromJson(merged);
+    } catch (error) {
+      throw _normalizeError(error);
+    }
+  }
+
+  Future<ProfileMetadata> getProfileMetadata() async {
+    try {
+      final response = await dio.get('profile/metadata/');
+      final data = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      return ProfileMetadata.fromJson(data);
+    } catch (error) {
+      throw _normalizeError(error);
+    }
+  }
+
+  Future<CascadeResumesResult> cascadeResumes({
+    required List<String> resumeIds,
+    List<String> fields = const ['job_title', 'location'],
+  }) async {
+    try {
+      final response = await dio.post('profile/cascade-resumes/', data: {
+        'resume_ids': resumeIds,
+        'fields': fields,
+      });
+      final data = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      return CascadeResumesResult.fromJson(data);
+    } catch (error) {
+      throw _normalizeError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> requestPhoneChange(String newPhoneNumber) async {
+    try {
+      final response = await dio.post('auth/phone/change/request/', data: {
+        'phone_number': newPhoneNumber,
+      });
+      return _dataMap(response.data);
+    } catch (error) {
+      throw _normalizeError(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyPhoneChange({
+    required String newPhoneNumber,
+    required String challengeId,
+    required String otp,
+  }) async {
+    try {
+      final response = await dio.post('auth/phone/change/verify/', data: {
+        'phone_number': newPhoneNumber,
+        'challenge_id': challengeId,
+        'otp': otp,
+      });
+      return _dataMap(response.data);
     } catch (error) {
       throw _normalizeError(error);
     }
@@ -179,6 +274,44 @@ class ProfileRemoteDataSource {
     } catch (error) {
       throw _normalizeError(error);
     }
+  }
+
+  Future<Map<String, dynamic>> getPreferences() async {
+    final response = await dio.get('users/preferences/');
+    return _dataMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> updatePreferences(Map<String, dynamic> data) async {
+    final response = await dio.patch('users/preferences/', data: data);
+    return _dataMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> getDataExportStatus() async {
+    final response = await dio.get('users/account/export/');
+    return _dataMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> requestDataExport() async {
+    final response = await dio.post('users/account/export/');
+    return _dataMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> getDeletionStatus() async {
+    final response = await dio.get('users/account/deletion/status/');
+    return _dataMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> scheduleDeletion({String? reason}) async {
+    final response = await dio.post(
+      'users/account/deletion/schedule/',
+      data: {'reason': reason ?? ''},
+    );
+    return _dataMap(response.data);
+  }
+
+  Future<Map<String, dynamic>> cancelDeletion() async {
+    final response = await dio.post('users/account/deletion/cancel/');
+    return _dataMap(response.data);
   }
 
   void _logResult(Response<dynamic> response, Iterable<String> fields) {

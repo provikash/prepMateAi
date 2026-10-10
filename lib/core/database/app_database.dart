@@ -1,5 +1,8 @@
+import 'dart:math';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'app_database.g.dart';
 
@@ -18,8 +21,21 @@ class CachedResources extends Table {
   Set<Column<Object>> get primaryKey => {cacheKey};
 }
 
+class LocalWorkspaces extends Table {
+  TextColumn get workspaceId => text()();
+  TextColumn get accountId => text().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {workspaceId};
+}
+
 class LocalResumes extends Table {
   TextColumn get localId => text()();
+  TextColumn get workspaceId => text().nullable()();
+  // Retained for schema compatibility. New code stores the workspace id here.
   TextColumn get userId => text()();
   TextColumn get remoteId => text().nullable()();
   TextColumn get payload => text()();
@@ -78,6 +94,7 @@ class SyncEvents extends Table {
 @DriftDatabase(
   tables: [
     CachedResources,
+    LocalWorkspaces,
     LocalResumes,
     MutationOutbox,
     OptimizationSnapshots,
@@ -89,20 +106,138 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'prepmate_offline'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) => migrator.createAll(),
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
+        await migrator.createTable(localWorkspaces);
         await migrator.createTable(localResumes);
         await migrator.createTable(mutationOutbox);
         await migrator.createTable(optimizationSnapshots);
         await migrator.createTable(syncEvents);
+      } else if (from < 3) {
+        await migrator.createTable(localWorkspaces);
+        await migrator.addColumn(localResumes, localResumes.workspaceId);
+        await customStatement('''
+          INSERT OR IGNORE INTO local_workspaces
+            (workspace_id, account_id, is_active, created_at, updated_at)
+          SELECT user_id, user_id, 0, MIN(created_at), MAX(updated_at)
+          FROM local_resumes
+          GROUP BY user_id
+        ''');
+        await customStatement('''
+          UPDATE local_resumes SET workspace_id = user_id
+          WHERE workspace_id IS NULL
+        ''');
       }
     },
   );
+
+  String _newWorkspaceId() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    String part(int start, int end) => bytes
+        .sublist(start, end)
+        .map((value) => value.toRadixString(16).padLeft(2, '0'))
+        .join();
+    return '${part(0, 4)}-${part(4, 6)}-${part(6, 8)}-'
+        '${part(8, 10)}-${part(10, 16)}';
+  }
+
+  Future<LocalWorkspace> activateWorkspace({String? accountId}) =>
+      transaction(() async {
+        final now = DateTime.now();
+        final active = await (select(
+          localWorkspaces,
+        )..where((row) => row.isActive.equals(true))).getSingleOrNull();
+
+        LocalWorkspace? target;
+        if (accountId != null) {
+          target = await (select(
+            localWorkspaces,
+          )..where((row) => row.accountId.equals(accountId))).getSingleOrNull();
+          if (target != null &&
+              active != null &&
+              active.accountId == null &&
+              active.workspaceId != target.workspaceId) {
+            await (update(localResumes)..where(
+                  (row) =>
+                      row.workspaceId.equals(active.workspaceId) |
+                      (row.workspaceId.isNull() &
+                          row.userId.equals(active.workspaceId)),
+                ))
+                .write(
+                  LocalResumesCompanion(
+                    workspaceId: Value(target.workspaceId),
+                    userId: Value(target.workspaceId),
+                  ),
+                );
+            await (delete(
+              localWorkspaces,
+            )..where((row) => row.workspaceId.equals(active.workspaceId))).go();
+          }
+          if (target == null && active?.accountId == null) {
+            await (update(localWorkspaces)
+                  ..where((row) => row.workspaceId.equals(active!.workspaceId)))
+                .write(
+                  LocalWorkspacesCompanion(
+                    accountId: Value(accountId),
+                    updatedAt: Value(now),
+                  ),
+                );
+            target =
+                await (select(localWorkspaces)..where(
+                      (row) => row.workspaceId.equals(active!.workspaceId),
+                    ))
+                    .getSingle();
+          }
+        } else if (active?.accountId == null) {
+          target = active;
+        }
+
+        target ??= accountId == null
+            ? await (select(localWorkspaces)
+                    ..where((row) => row.accountId.isNull())
+                    ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)]))
+                  .getSingleOrNull()
+            : null;
+
+        if (target == null) {
+          final id = _newWorkspaceId();
+          await into(localWorkspaces).insert(
+            LocalWorkspacesCompanion.insert(
+              workspaceId: id,
+              accountId: Value(accountId),
+              isActive: const Value(true),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+          target = await (select(
+            localWorkspaces,
+          )..where((row) => row.workspaceId.equals(id))).getSingle();
+        }
+
+        await update(
+          localWorkspaces,
+        ).write(const LocalWorkspacesCompanion(isActive: Value(false)));
+        await (update(
+          localWorkspaces,
+        )..where((row) => row.workspaceId.equals(target!.workspaceId))).write(
+          LocalWorkspacesCompanion(
+            isActive: const Value(true),
+            updatedAt: Value(now),
+          ),
+        );
+        return (select(localWorkspaces)
+              ..where((row) => row.workspaceId.equals(target!.workspaceId)))
+            .getSingle();
+      });
 
   Future<CachedResource?> readResource(String key) {
     return (select(
@@ -142,11 +277,75 @@ class AppDatabase extends _$AppDatabase {
     localResumes,
   )..where((row) => row.localId.equals(localId))).getSingleOrNull();
 
-  Stream<List<LocalResume>> watchLocalResumes(String accountId) =>
+  Future<LocalResume?> readLocalResumeByAnyId(String id) =>
       (select(localResumes)
-            ..where((row) => row.userId.equals(accountId) & row.tombstone.not())
+            ..where((row) => row.localId.equals(id) | row.remoteId.equals(id)))
+          .getSingleOrNull();
+
+  Stream<List<LocalResume>> watchLocalResumes(String workspaceId) =>
+      (select(localResumes)
+            ..where(
+              (row) =>
+                  (row.workspaceId.equals(workspaceId) |
+                      (row.workspaceId.isNull() &
+                          row.userId.equals(workspaceId))) &
+                  row.tombstone.not(),
+            )
             ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)]))
           .watch();
+
+  Future<void> queueWorkspaceResumesForSync({
+    required String workspaceId,
+    required String accountId,
+  }) async {
+    final rows =
+        await (select(localResumes)..where(
+              (row) =>
+                  (row.workspaceId.equals(workspaceId) |
+                      (row.workspaceId.isNull() &
+                          row.userId.equals(workspaceId))) &
+                  row.tombstone.not() &
+                  row.syncStatus.equals('local_only'),
+            ))
+            .get();
+    if (rows.isEmpty) return;
+    await transaction(() async {
+      for (final resume in rows) {
+        final existing =
+            await (select(mutationOutbox)..where(
+                  (row) =>
+                      row.entityType.equals('resume') &
+                      row.entityLocalId.equals(resume.localId) &
+                      row.operation.equals('save') &
+                      row.permanentFailure.not(),
+                ))
+                .getSingleOrNull();
+        if (existing == null) {
+          await into(mutationOutbox).insert(
+            MutationOutboxCompanion.insert(
+              userId: accountId,
+              entityType: 'resume',
+              entityLocalId: resume.localId,
+              operation: 'save',
+              payload: resume.payload,
+              baseRevision: Value(
+                resume.remoteId == null ? null : resume.revision,
+              ),
+              createdAt: DateTime.now(),
+            ),
+          );
+        }
+        await (update(
+          localResumes,
+        )..where((row) => row.localId.equals(resume.localId))).write(
+          LocalResumesCompanion(
+            workspaceId: Value(workspaceId),
+            syncStatus: const Value('pending'),
+          ),
+        );
+      }
+    });
+  }
 
   Future<List<MutationOutboxData>> readyMutations(DateTime now) =>
       (select(mutationOutbox)
@@ -173,3 +372,9 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 }
+
+final appDatabaseProvider = Provider<AppDatabase>((ref) {
+  final database = AppDatabase();
+  ref.onDispose(database.close);
+  return database;
+});

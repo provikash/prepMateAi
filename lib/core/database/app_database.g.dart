@@ -577,6 +577,381 @@ class CachedResourcesCompanion extends UpdateCompanion<CachedResource> {
   }
 }
 
+class $LocalWorkspacesTable extends LocalWorkspaces
+    with TableInfo<$LocalWorkspacesTable, LocalWorkspace> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalWorkspacesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+    'account_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    workspaceId,
+    accountId,
+    isActive,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_workspaces';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalWorkspace> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {workspaceId};
+  @override
+  LocalWorkspace map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalWorkspace(
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_id'],
+      ),
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalWorkspacesTable createAlias(String alias) {
+    return $LocalWorkspacesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalWorkspace extends DataClass implements Insertable<LocalWorkspace> {
+  final String workspaceId;
+  final String? accountId;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const LocalWorkspace({
+    required this.workspaceId,
+    this.accountId,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['workspace_id'] = Variable<String>(workspaceId);
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<String>(accountId);
+    }
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  LocalWorkspacesCompanion toCompanion(bool nullToAbsent) {
+    return LocalWorkspacesCompanion(
+      workspaceId: Value(workspaceId),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LocalWorkspace.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalWorkspace(
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      accountId: serializer.fromJson<String?>(json['accountId']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'accountId': serializer.toJson<String?>(accountId),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  LocalWorkspace copyWith({
+    String? workspaceId,
+    Value<String?> accountId = const Value.absent(),
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => LocalWorkspace(
+    workspaceId: workspaceId ?? this.workspaceId,
+    accountId: accountId.present ? accountId.value : this.accountId,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  LocalWorkspace copyWithCompanion(LocalWorkspacesCompanion data) {
+    return LocalWorkspace(
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalWorkspace(')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('accountId: $accountId, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(workspaceId, accountId, isActive, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalWorkspace &&
+          other.workspaceId == this.workspaceId &&
+          other.accountId == this.accountId &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LocalWorkspacesCompanion extends UpdateCompanion<LocalWorkspace> {
+  final Value<String> workspaceId;
+  final Value<String?> accountId;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const LocalWorkspacesCompanion({
+    this.workspaceId = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalWorkspacesCompanion.insert({
+    required String workspaceId,
+    this.accountId = const Value.absent(),
+    this.isActive = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : workspaceId = Value(workspaceId),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<LocalWorkspace> custom({
+    Expression<String>? workspaceId,
+    Expression<String>? accountId,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (accountId != null) 'account_id': accountId,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalWorkspacesCompanion copyWith({
+    Value<String>? workspaceId,
+    Value<String?>? accountId,
+    Value<bool>? isActive,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalWorkspacesCompanion(
+      workspaceId: workspaceId ?? this.workspaceId,
+      accountId: accountId ?? this.accountId,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalWorkspacesCompanion(')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('accountId: $accountId, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $LocalResumesTable extends LocalResumes
     with TableInfo<$LocalResumesTable, LocalResume> {
   @override
@@ -593,6 +968,17 @@ class $LocalResumesTable extends LocalResumes
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
@@ -733,6 +1119,7 @@ class $LocalResumesTable extends LocalResumes
   @override
   List<GeneratedColumn> get $columns => [
     localId,
+    workspaceId,
     userId,
     remoteId,
     payload,
@@ -765,6 +1152,15 @@ class $LocalResumesTable extends LocalResumes
       );
     } else if (isInserting) {
       context.missing(_localIdMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
     }
     if (data.containsKey('user_id')) {
       context.handle(
@@ -865,6 +1261,10 @@ class $LocalResumesTable extends LocalResumes
         DriftSqlType.string,
         data['${effectivePrefix}local_id'],
       )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      ),
       userId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}user_id'],
@@ -924,6 +1324,7 @@ class $LocalResumesTable extends LocalResumes
 
 class LocalResume extends DataClass implements Insertable<LocalResume> {
   final String localId;
+  final String? workspaceId;
   final String userId;
   final String? remoteId;
   final String payload;
@@ -938,6 +1339,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
   final DateTime? lastSyncedAt;
   const LocalResume({
     required this.localId,
+    this.workspaceId,
     required this.userId,
     this.remoteId,
     required this.payload,
@@ -955,6 +1357,9 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['local_id'] = Variable<String>(localId);
+    if (!nullToAbsent || workspaceId != null) {
+      map['workspace_id'] = Variable<String>(workspaceId);
+    }
     map['user_id'] = Variable<String>(userId);
     if (!nullToAbsent || remoteId != null) {
       map['remote_id'] = Variable<String>(remoteId);
@@ -983,6 +1388,9 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
   LocalResumesCompanion toCompanion(bool nullToAbsent) {
     return LocalResumesCompanion(
       localId: Value(localId),
+      workspaceId: workspaceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(workspaceId),
       userId: Value(userId),
       remoteId: remoteId == null && nullToAbsent
           ? const Value.absent()
@@ -1015,6 +1423,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LocalResume(
       localId: serializer.fromJson<String>(json['localId']),
+      workspaceId: serializer.fromJson<String?>(json['workspaceId']),
       userId: serializer.fromJson<String>(json['userId']),
       remoteId: serializer.fromJson<String?>(json['remoteId']),
       payload: serializer.fromJson<String>(json['payload']),
@@ -1034,6 +1443,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'localId': serializer.toJson<String>(localId),
+      'workspaceId': serializer.toJson<String?>(workspaceId),
       'userId': serializer.toJson<String>(userId),
       'remoteId': serializer.toJson<String?>(remoteId),
       'payload': serializer.toJson<String>(payload),
@@ -1051,6 +1461,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
 
   LocalResume copyWith({
     String? localId,
+    Value<String?> workspaceId = const Value.absent(),
     String? userId,
     Value<String?> remoteId = const Value.absent(),
     String? payload,
@@ -1065,6 +1476,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
     Value<DateTime?> lastSyncedAt = const Value.absent(),
   }) => LocalResume(
     localId: localId ?? this.localId,
+    workspaceId: workspaceId.present ? workspaceId.value : this.workspaceId,
     userId: userId ?? this.userId,
     remoteId: remoteId.present ? remoteId.value : this.remoteId,
     payload: payload ?? this.payload,
@@ -1081,6 +1493,9 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
   LocalResume copyWithCompanion(LocalResumesCompanion data) {
     return LocalResume(
       localId: data.localId.present ? data.localId.value : this.localId,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
       userId: data.userId.present ? data.userId.value : this.userId,
       remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
       payload: data.payload.present ? data.payload.value : this.payload,
@@ -1108,6 +1523,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
   String toString() {
     return (StringBuffer('LocalResume(')
           ..write('localId: $localId, ')
+          ..write('workspaceId: $workspaceId, ')
           ..write('userId: $userId, ')
           ..write('remoteId: $remoteId, ')
           ..write('payload: $payload, ')
@@ -1127,6 +1543,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
   @override
   int get hashCode => Object.hash(
     localId,
+    workspaceId,
     userId,
     remoteId,
     payload,
@@ -1145,6 +1562,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
       identical(this, other) ||
       (other is LocalResume &&
           other.localId == this.localId &&
+          other.workspaceId == this.workspaceId &&
           other.userId == this.userId &&
           other.remoteId == this.remoteId &&
           other.payload == this.payload &&
@@ -1161,6 +1579,7 @@ class LocalResume extends DataClass implements Insertable<LocalResume> {
 
 class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
   final Value<String> localId;
+  final Value<String?> workspaceId;
   final Value<String> userId;
   final Value<String?> remoteId;
   final Value<String> payload;
@@ -1176,6 +1595,7 @@ class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
   final Value<int> rowid;
   const LocalResumesCompanion({
     this.localId = const Value.absent(),
+    this.workspaceId = const Value.absent(),
     this.userId = const Value.absent(),
     this.remoteId = const Value.absent(),
     this.payload = const Value.absent(),
@@ -1192,6 +1612,7 @@ class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
   });
   LocalResumesCompanion.insert({
     required String localId,
+    this.workspaceId = const Value.absent(),
     required String userId,
     this.remoteId = const Value.absent(),
     required String payload,
@@ -1212,6 +1633,7 @@ class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
        updatedAt = Value(updatedAt);
   static Insertable<LocalResume> custom({
     Expression<String>? localId,
+    Expression<String>? workspaceId,
     Expression<String>? userId,
     Expression<String>? remoteId,
     Expression<String>? payload,
@@ -1228,6 +1650,7 @@ class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
   }) {
     return RawValuesInsertable({
       if (localId != null) 'local_id': localId,
+      if (workspaceId != null) 'workspace_id': workspaceId,
       if (userId != null) 'user_id': userId,
       if (remoteId != null) 'remote_id': remoteId,
       if (payload != null) 'payload': payload,
@@ -1246,6 +1669,7 @@ class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
 
   LocalResumesCompanion copyWith({
     Value<String>? localId,
+    Value<String?>? workspaceId,
     Value<String>? userId,
     Value<String?>? remoteId,
     Value<String>? payload,
@@ -1262,6 +1686,7 @@ class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
   }) {
     return LocalResumesCompanion(
       localId: localId ?? this.localId,
+      workspaceId: workspaceId ?? this.workspaceId,
       userId: userId ?? this.userId,
       remoteId: remoteId ?? this.remoteId,
       payload: payload ?? this.payload,
@@ -1283,6 +1708,9 @@ class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
     final map = <String, Expression>{};
     if (localId.present) {
       map['local_id'] = Variable<String>(localId.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
     }
     if (userId.present) {
       map['user_id'] = Variable<String>(userId.value);
@@ -1330,6 +1758,7 @@ class LocalResumesCompanion extends UpdateCompanion<LocalResume> {
   String toString() {
     return (StringBuffer('LocalResumesCompanion(')
           ..write('localId: $localId, ')
+          ..write('workspaceId: $workspaceId, ')
           ..write('userId: $userId, ')
           ..write('remoteId: $remoteId, ')
           ..write('payload: $payload, ')
@@ -2935,6 +3364,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CachedResourcesTable cachedResources = $CachedResourcesTable(
     this,
   );
+  late final $LocalWorkspacesTable localWorkspaces = $LocalWorkspacesTable(
+    this,
+  );
   late final $LocalResumesTable localResumes = $LocalResumesTable(this);
   late final $MutationOutboxTable mutationOutbox = $MutationOutboxTable(this);
   late final $OptimizationSnapshotsTable optimizationSnapshots =
@@ -2946,6 +3378,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     cachedResources,
+    localWorkspaces,
     localResumes,
     mutationOutbox,
     optimizationSnapshots,
@@ -3239,9 +3672,218 @@ typedef $$CachedResourcesTableProcessedTableManager =
       CachedResource,
       PrefetchHooks Function()
     >;
+typedef $$LocalWorkspacesTableCreateCompanionBuilder =
+    LocalWorkspacesCompanion Function({
+      required String workspaceId,
+      Value<String?> accountId,
+      Value<bool> isActive,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalWorkspacesTableUpdateCompanionBuilder =
+    LocalWorkspacesCompanion Function({
+      Value<String> workspaceId,
+      Value<String?> accountId,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalWorkspacesTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalWorkspacesTable> {
+  $$LocalWorkspacesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalWorkspacesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalWorkspacesTable> {
+  $$LocalWorkspacesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalWorkspacesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalWorkspacesTable> {
+  $$LocalWorkspacesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$LocalWorkspacesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalWorkspacesTable,
+          LocalWorkspace,
+          $$LocalWorkspacesTableFilterComposer,
+          $$LocalWorkspacesTableOrderingComposer,
+          $$LocalWorkspacesTableAnnotationComposer,
+          $$LocalWorkspacesTableCreateCompanionBuilder,
+          $$LocalWorkspacesTableUpdateCompanionBuilder,
+          (
+            LocalWorkspace,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalWorkspacesTable,
+              LocalWorkspace
+            >,
+          ),
+          LocalWorkspace,
+          PrefetchHooks Function()
+        > {
+  $$LocalWorkspacesTableTableManager(
+    _$AppDatabase db,
+    $LocalWorkspacesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalWorkspacesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalWorkspacesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalWorkspacesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> workspaceId = const Value.absent(),
+                Value<String?> accountId = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalWorkspacesCompanion(
+                workspaceId: workspaceId,
+                accountId: accountId,
+                isActive: isActive,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String workspaceId,
+                Value<String?> accountId = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LocalWorkspacesCompanion.insert(
+                workspaceId: workspaceId,
+                accountId: accountId,
+                isActive: isActive,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalWorkspacesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalWorkspacesTable,
+      LocalWorkspace,
+      $$LocalWorkspacesTableFilterComposer,
+      $$LocalWorkspacesTableOrderingComposer,
+      $$LocalWorkspacesTableAnnotationComposer,
+      $$LocalWorkspacesTableCreateCompanionBuilder,
+      $$LocalWorkspacesTableUpdateCompanionBuilder,
+      (
+        LocalWorkspace,
+        BaseReferences<_$AppDatabase, $LocalWorkspacesTable, LocalWorkspace>,
+      ),
+      LocalWorkspace,
+      PrefetchHooks Function()
+    >;
 typedef $$LocalResumesTableCreateCompanionBuilder =
     LocalResumesCompanion Function({
       required String localId,
+      Value<String?> workspaceId,
       required String userId,
       Value<String?> remoteId,
       required String payload,
@@ -3259,6 +3901,7 @@ typedef $$LocalResumesTableCreateCompanionBuilder =
 typedef $$LocalResumesTableUpdateCompanionBuilder =
     LocalResumesCompanion Function({
       Value<String> localId,
+      Value<String?> workspaceId,
       Value<String> userId,
       Value<String?> remoteId,
       Value<String> payload,
@@ -3285,6 +3928,11 @@ class $$LocalResumesTableFilterComposer
   });
   ColumnFilters<String> get localId => $composableBuilder(
     column: $table.localId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3363,6 +4011,11 @@ class $$LocalResumesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get userId => $composableBuilder(
     column: $table.userId,
     builder: (column) => ColumnOrderings(column),
@@ -3435,6 +4088,11 @@ class $$LocalResumesTableAnnotationComposer
   });
   GeneratedColumn<String> get localId =>
       $composableBuilder(column: $table.localId, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get userId =>
       $composableBuilder(column: $table.userId, builder: (column) => column);
@@ -3513,6 +4171,7 @@ class $$LocalResumesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> localId = const Value.absent(),
+                Value<String?> workspaceId = const Value.absent(),
                 Value<String> userId = const Value.absent(),
                 Value<String?> remoteId = const Value.absent(),
                 Value<String> payload = const Value.absent(),
@@ -3528,6 +4187,7 @@ class $$LocalResumesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalResumesCompanion(
                 localId: localId,
+                workspaceId: workspaceId,
                 userId: userId,
                 remoteId: remoteId,
                 payload: payload,
@@ -3545,6 +4205,7 @@ class $$LocalResumesTableTableManager
           createCompanionCallback:
               ({
                 required String localId,
+                Value<String?> workspaceId = const Value.absent(),
                 required String userId,
                 Value<String?> remoteId = const Value.absent(),
                 required String payload,
@@ -3560,6 +4221,7 @@ class $$LocalResumesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalResumesCompanion.insert(
                 localId: localId,
+                workspaceId: workspaceId,
                 userId: userId,
                 remoteId: remoteId,
                 payload: payload,
@@ -4419,6 +5081,8 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$CachedResourcesTableTableManager get cachedResources =>
       $$CachedResourcesTableTableManager(_db, _db.cachedResources);
+  $$LocalWorkspacesTableTableManager get localWorkspaces =>
+      $$LocalWorkspacesTableTableManager(_db, _db.localWorkspaces);
   $$LocalResumesTableTableManager get localResumes =>
       $$LocalResumesTableTableManager(_db, _db.localResumes);
   $$MutationOutboxTableTableManager get mutationOutbox =>

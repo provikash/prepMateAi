@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../../../../core/cache/cache_store.dart';
 import '../../../../core/cache/pdf_cache_store.dart';
+import '../../../../core/database/app_database.dart';
+import '../../../../core/offline/local_workspace.dart';
 import '../../../../core/sync/sync_engine.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../../home/providers/home_providers.dart' as home;
@@ -26,6 +28,7 @@ final resumeRepositoryProvider = Provider<ResumeRepository>((ref) {
     cache: ref.watch(cacheCoordinatorProvider),
     pdfCache: ref.watch(pdfCacheStoreProvider),
     userId: () => ref.read(authViewModelProvider).user?.id,
+    workspace: () => ref.read(localWorkspaceProvider.future),
     database: ref.watch(appDatabaseProvider),
     syncEngine: ref.watch(syncEngineProvider),
   );
@@ -53,12 +56,37 @@ class SyncController extends StateNotifier<SyncUiState> {
   Future<SyncRunResult> sync({
     SyncRunSource source = SyncRunSource.manual,
   }) async {
+    final accountId = ref.read(authViewModelProvider).user?.id;
+    if (accountId == null) {
+      return const SyncRunResult(
+        processed: 0,
+        failed: 0,
+        retryScheduled: false,
+      );
+    }
     if (state.running) {
       return ref.read(syncEngineProvider).run(source: source);
     }
     state = SyncUiState(running: true, lastSyncedAt: state.lastSyncedAt);
     try {
+      final workspace = await ref.read(localWorkspaceProvider.future);
+      await ref
+          .read(appDatabaseProvider)
+          .queueWorkspaceResumesForSync(
+            workspaceId: workspace.workspaceId,
+            accountId: accountId,
+          );
       final result = await ref.read(syncEngineProvider).run(source: source);
+      await ref
+          .read(home.homeRepositoryProvider)
+          .invalidateResumeData(accountId);
+      await ref
+          .read(cacheStoreProvider)
+          .remove(
+            CacheKeyFactory.user(accountId, 'builder_resumes', const {
+              'page': 1,
+            }),
+          );
       state = SyncUiState(
         lastSyncedAt: DateTime.now(),
         error: result.failed == 0

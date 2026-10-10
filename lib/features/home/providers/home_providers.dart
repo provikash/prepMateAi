@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +8,11 @@ import '../data/models/template_model.dart';
 import '../data/repositories/home_repository.dart';
 import '../../../config/dio_client.dart';
 import '../../../core/cache/cache_store.dart';
-import '../../../core/offline/offline_status.dart';
+import '../../../core/database/app_database.dart';
+import '../../../core/offline/local_workspace.dart';
 import '../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../auth/presentation/state/auth_state.dart';
+import '../../resume/data/built_in_templates.dart';
 
 final homeRemoteDataSourceProvider = Provider<HomeRemoteDataSource>((ref) {
   final dio = ref.watch(dioProvider);
@@ -33,10 +34,12 @@ final dashboardProvider =
 class DashboardNotifier extends AsyncNotifier<DashboardModel> {
   @override
   Future<DashboardModel> build() async {
-    // Ensure authenticated
     final authState = ref.watch(authViewModelProvider);
     if (authState.status != AuthStatus.authenticated) {
-      throw Exception('User not authenticated');
+      return DashboardModel.fromJson(const {
+        'full_name': 'Guest',
+        'message': 'Your resumes are saved on this device.',
+      });
     }
     final userId = authState.user!.id;
     return ref
@@ -50,13 +53,20 @@ class DashboardNotifier extends AsyncNotifier<DashboardModel> {
   Future<bool> refresh() async {
     final previous = state.asData?.value;
     if (previous == null) state = const AsyncValue.loading();
+    final user = ref.read(authViewModelProvider).user;
+    if (user == null) {
+      state = AsyncData(
+        DashboardModel.fromJson(const {
+          'full_name': 'Guest',
+          'message': 'Your resumes are saved on this device.',
+        }),
+      );
+      return true;
+    }
     try {
       final value = await ref
           .read(homeRepositoryProvider)
-          .getDashboard(
-            userId: ref.read(authViewModelProvider).user!.id,
-            forceRefresh: true,
-          );
+          .getDashboard(userId: user.id, forceRefresh: true);
       state = AsyncData(value);
       return true;
     } catch (error, stackTrace) {
@@ -68,127 +78,170 @@ class DashboardNotifier extends AsyncNotifier<DashboardModel> {
   }
 }
 
-final resumeListStatusProvider = StateProvider<OfflineStatus>(
-  (ref) => const OfflineStatus(),
-);
-
 final resumeListProvider =
-    StreamNotifierProvider<ResumeListNotifier, List<ResumeModel>>(
-      ResumeListNotifier.new,
+    AsyncNotifierProvider<ResumeListNotifier, List<ResumeModel>>(() {
+      return ResumeListNotifier();
+    });
+
+final _localResumeListProvider =
+    StreamProvider.family<List<ResumeModel>, String>(
+      (ref, userId) => ref
+          .watch(appDatabaseProvider)
+          .watchLocalResumes(userId)
+          .map((rows) => rows.map(_localResumeModel).toList(growable: false)),
     );
 
-class ResumeListNotifier extends StreamNotifier<List<ResumeModel>> {
+ResumeModel _localResumeModel(LocalResume row) {
+  Map<String, dynamic> payload = const {};
+  try {
+    final decoded = jsonDecode(row.payload);
+    if (decoded is Map) payload = Map<String, dynamic>.from(decoded);
+  } catch (_) {
+    // Keep a damaged local record visible so the user can retry or remove it.
+  }
+  final remoteId = row.remoteId?.trim();
+  return ResumeModel(
+    id: remoteId == null || remoteId.isEmpty ? row.localId : remoteId,
+    title: payload['title']?.toString().trim().isNotEmpty == true
+        ? payload['title'].toString()
+        : 'Untitled Resume',
+    thumbnailUrl: '',
+    pdfUrl: '',
+    syncStatus: row.syncStatus,
+    templateId: payload['template_id']?.toString(),
+    data: payload['data'] is Map
+        ? Map<String, dynamic>.from(payload['data'] as Map)
+        : const {},
+    updatedAt: row.updatedAt,
+    isCompleted: payload['draft'] != true && row.syncStatus == 'synced',
+  );
+}
+
+List<ResumeModel> _mergeResumes(
+  List<ResumeModel> remote,
+  List<ResumeModel> local,
+) {
+  final merged = <String, ResumeModel>{
+    for (final resume in remote) resume.id: resume,
+  };
+  for (final resume in local) {
+    final serverCopy = merged[resume.id];
+    if (serverCopy == null) {
+      merged[resume.id] = resume;
+    } else if (resume.syncStatus != 'synced') {
+      merged[resume.id] = ResumeModel(
+        id: resume.id,
+        title: resume.title,
+        thumbnailUrl: serverCopy.thumbnailUrl,
+        pdfUrl: serverCopy.pdfUrl,
+        syncStatus: resume.syncStatus,
+        templateId: resume.templateId ?? serverCopy.templateId,
+        data: resume.data,
+        updatedAt: resume.updatedAt,
+        isCompleted: serverCopy.isCompleted,
+      );
+    }
+  }
+  final values = merged.values.toList();
+  values.sort((a, b) {
+    final aDate = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bDate = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return bDate.compareTo(aDate);
+  });
+  return values;
+}
+
+class ResumeListNotifier extends AsyncNotifier<List<ResumeModel>> {
   @override
-  Stream<List<ResumeModel>> build() {
+  Future<List<ResumeModel>> build() async {
     final authState = ref.watch(authViewModelProvider);
-    if (authState.status != AuthStatus.authenticated) {
-      throw Exception('User not authenticated');
+    final workspace = await ref.watch(localWorkspaceProvider.future);
+    final local = await ref.watch(
+      _localResumeListProvider(workspace.workspaceId).future,
+    );
+    if (authState.status != AuthStatus.authenticated ||
+        authState.user == null) {
+      return local;
     }
     final userId = authState.user!.id;
-    final database = ref.watch(appDatabaseProvider);
-    final controller = StreamController<List<ResumeModel>>();
-    var remote = <ResumeModel>[];
-    var local = <ResumeModel>[];
-
-    void emit() {
-      final localRemoteIds = local.map((item) => item.id).toSet();
-      controller.add([
-        ...local,
-        ...remote.where((item) => !localRemoteIds.contains(item.id)),
-      ]);
+    try {
+      return await ref
+          .watch(homeRepositoryProvider)
+          .getResumes(
+            userId: userId,
+            onRevalidated: (value) =>
+                state = AsyncData(_mergeResumes(value, local)),
+          )
+          .then((value) => _mergeResumes(value, local));
+    } catch (_) {
+      if (local.isNotEmpty) return local;
+      rethrow;
     }
-
-    final remoteSubscription = ref
-        .watch(homeRepositoryProvider)
-        .watchResumes(userId)
-        .listen((cached) {
-          ref.read(resumeListStatusProvider.notifier).state = OfflineStatus(
-            isOffline: cached.isOffline,
-            isStale: cached.isStale,
-            updatedAt: cached.updatedAt,
-          );
-          remote = cached.value;
-          emit();
-        }, onError: controller.addError);
-    final localSubscription = database.watchLocalResumes(userId).listen((rows) {
-      local = rows.map((row) {
-        final payload = Map<String, dynamic>.from(
-          jsonDecode(row.payload) as Map,
-        );
-        return ResumeModel(
-          id: row.remoteId ?? row.localId,
-          title: payload['title']?.toString() ?? 'Untitled Resume',
-          thumbnailUrl: '',
-          pdfUrl: '',
-          syncStatus: row.syncStatus,
-        );
-      }).toList();
-      emit();
-    }, onError: controller.addError);
-    ref.onDispose(() async {
-      await remoteSubscription.cancel();
-      await localSubscription.cancel();
-      await controller.close();
-    });
-    return controller.stream;
   }
 
   Future<void> refresh() async {
-    final status = ref.read(resumeListStatusProvider);
-    ref.read(resumeListStatusProvider.notifier).state = status.copyWith(
-      isRefreshing: true,
+    final previous = state.asData?.value;
+    if (previous == null) state = const AsyncValue.loading();
+    final workspace = await ref.read(localWorkspaceProvider.future);
+    final local = await ref.read(
+      _localResumeListProvider(workspace.workspaceId).future,
     );
+    final user = ref.read(authViewModelProvider).user;
+    if (user == null) {
+      state = AsyncData(local);
+      return;
+    }
+    final userId = user.id;
     try {
-      await ref
+      final remote = await ref
           .read(homeRepositoryProvider)
-          .refreshResumes(ref.read(authViewModelProvider).user!.id);
+          .getResumes(userId: userId, forceRefresh: true);
+      state = AsyncData(_mergeResumes(remote, local));
     } catch (error, stackTrace) {
-      ref.read(resumeListStatusProvider.notifier).state = status.copyWith(
-        isOffline: true,
-        isStale: true,
-        isRefreshing: false,
-      );
-      if (!state.hasValue) state = AsyncError(error, stackTrace);
+      if (local.isNotEmpty) {
+        state = AsyncData(_mergeResumes(previous ?? const [], local));
+      } else {
+        state = AsyncError(error, stackTrace);
+      }
     }
   }
 }
 
-final templateListStatusProvider = StateProvider<OfflineStatus>(
-  (ref) => const OfflineStatus(),
-);
-
 final templateListProvider =
-    StreamNotifierProvider<TemplateListNotifier, List<TemplateModel>>(
-      TemplateListNotifier.new,
-    );
-
-class TemplateListNotifier extends StreamNotifier<List<TemplateModel>> {
-  @override
-  Stream<List<TemplateModel>> build() {
-    return ref.watch(homeRepositoryProvider).watchTemplates().map((cached) {
-      ref.read(templateListStatusProvider.notifier).state = OfflineStatus(
-        isOffline: cached.isOffline,
-        isStale: cached.isStale,
-        updatedAt: cached.updatedAt,
-      );
-      return cached.value;
+    AsyncNotifierProvider<TemplateListNotifier, List<TemplateModel>>(() {
+      return TemplateListNotifier();
     });
+
+class TemplateListNotifier extends AsyncNotifier<List<TemplateModel>> {
+  static const int catalogLimit = 8;
+
+  List<TemplateModel> _limit(List<TemplateModel> templates) =>
+      templates.take(catalogLimit).toList(growable: false);
+
+  @override
+  Future<List<TemplateModel>> build() async {
+    try {
+      final templates = await ref
+          .watch(homeRepositoryProvider)
+          .getTemplates(
+            onRevalidated: (value) =>
+                state = AsyncData(_limit(mergeBuiltInTemplates(value))),
+          );
+      return _limit(mergeBuiltInTemplates(templates));
+    } catch (_) {
+      return _limit(builtInTemplates);
+    }
   }
 
   Future<void> refresh() async {
-    final status = ref.read(templateListStatusProvider);
-    ref.read(templateListStatusProvider.notifier).state = status.copyWith(
-      isRefreshing: true,
-    );
+    state = const AsyncValue.loading();
     try {
-      await ref.read(homeRepositoryProvider).refreshTemplates();
-    } catch (error, stackTrace) {
-      ref.read(templateListStatusProvider.notifier).state = status.copyWith(
-        isOffline: true,
-        isStale: true,
-        isRefreshing: false,
-      );
-      if (!state.hasValue) state = AsyncError(error, stackTrace);
+      final templates = await ref
+          .read(homeRepositoryProvider)
+          .getTemplates(forceRefresh: true);
+      state = AsyncData(_limit(mergeBuiltInTemplates(templates)));
+    } catch (_) {
+      state = AsyncData(_limit(builtInTemplates));
     }
   }
 }

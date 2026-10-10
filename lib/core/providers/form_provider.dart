@@ -152,6 +152,14 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     state = state.copyWith(data: nextData, revision: state.revision + 1);
   }
 
+  void ensureSectionInitialized(String sectionKey) {
+    if (!state.data.containsKey(sectionKey)) {
+      final nextData = Map<String, dynamic>.from(state.data);
+      nextData[sectionKey] = <Map<String, dynamic>>[];
+      state = state.copyWith(data: nextData, revision: state.revision + 1);
+    }
+  }
+
   void addSectionItem(String sectionKey, Map<String, dynamic> item) {
     final nextData = Map<String, dynamic>.from(state.data);
     final items = sectionItems(sectionKey);
@@ -188,24 +196,6 @@ class ResumeFormNotifier extends StateNotifier<ResumeFormState> {
     final nextData = Map<String, dynamic>.from(state.data);
     nextData[sectionKey] = <Map<String, dynamic>>[];
     state = state.copyWith(data: nextData, revision: state.revision + 1);
-  }
-
-  void ensureSectionInitialized(String sectionKey) {
-    final current = state.data[sectionKey];
-    if (current == null || (current is List && current.isEmpty)) {
-      final nextData = Map<String, dynamic>.from(state.data);
-      final initialMap = switch (sectionKey) {
-        'languages' => {'language': '', 'fluency': ''},
-        'certificates' => {'name': '', 'issuer': '', 'date': ''},
-        'awards' => {'title': '', 'awarder': '', 'date': ''},
-        'volunteer' => {'organization': '', 'position': '', 'startDate': ''},
-        'publications' => {'name': '', 'publisher': '', 'releaseDate': ''},
-        'references' => {'name': '', 'reference': ''},
-        _ => {'title': '', 'description': ''},
-      };
-      nextData[sectionKey] = [initialMap];
-      state = state.copyWith(data: nextData, revision: state.revision + 1);
-    }
   }
 
   /// Removes placeholder rows before sync so partially opened repeatable cards

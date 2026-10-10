@@ -3,9 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../config/dio_client.dart';
-import '../../../../core/cache/cache_store.dart';
-import '../../../../core/cache/pdf_cache_store.dart';
-import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
 import '../../../home/data/models/resume_model.dart';
 import '../../data/api_optimization_repository.dart';
 import '../../data/mock_optimization_repository.dart';
@@ -31,15 +28,15 @@ class OptimizationState {
     this.finalizedVersionId,
     this.selectedFilter = SuggestionFilter.all,
     this.selectedSection = '',
-    this.summary,
-    this.optimizedVersionDetail,
-    this.selectedTemplate = 'Modern Blue',
-    this.isAccuracyConfirmed = false,
-    this.creationStage = 0,
-    this.summaryEdgeState = 'ready',
-    this.viewerMode = 'optimized',
     this.activeChangeIndex = 0,
+    this.summaryEdgeState = 'ready',
+    this.creationStage = 0,
+    this.isAccuracyConfirmed = false,
+    this.selectedTemplate = 'Professional',
+    this.optimizedVersionDetail,
+    this.viewerMode = 'optimized',
     this.pdfStatus = 'ready',
+    this.summaryData,
   });
 
   final ResumeModel? resume;
@@ -59,15 +56,15 @@ class OptimizationState {
   final String? finalizedVersionId;
   final SuggestionFilter selectedFilter;
   final String selectedSection;
-  final OptimizationSummaryData? summary;
-  final OptimizedVersionDetail? optimizedVersionDetail;
-  final String selectedTemplate;
-  final bool isAccuracyConfirmed;
-  final int creationStage;
-  final String summaryEdgeState;
-  final String viewerMode;
   final int activeChangeIndex;
+  final String summaryEdgeState;
+  final int creationStage;
+  final bool isAccuracyConfirmed;
+  final String selectedTemplate;
+  final OptimizedVersionDetail? optimizedVersionDetail;
+  final String viewerMode;
   final String pdfStatus;
+  final OptimizationSummaryData? summaryData;
 
   OptimizationState copyWith({
     ResumeModel? resume,
@@ -92,17 +89,15 @@ class OptimizationState {
     bool clearFinalizedVersion = false,
     SuggestionFilter? selectedFilter,
     String? selectedSection,
-    OptimizationSummaryData? summary,
-    bool clearSummary = false,
-    OptimizedVersionDetail? optimizedVersionDetail,
-    bool clearOptimizedVersionDetail = false,
-    String? selectedTemplate,
-    bool? isAccuracyConfirmed,
-    int? creationStage,
-    String? summaryEdgeState,
-    String? viewerMode,
     int? activeChangeIndex,
+    String? summaryEdgeState,
+    int? creationStage,
+    bool? isAccuracyConfirmed,
+    String? selectedTemplate,
+    OptimizedVersionDetail? optimizedVersionDetail,
+    String? viewerMode,
     String? pdfStatus,
+    OptimizationSummaryData? summaryData,
   }) => OptimizationState(
     resume: resume ?? this.resume,
     jobDescription: jobDescription ?? this.jobDescription,
@@ -125,17 +120,16 @@ class OptimizationState {
         : finalizedVersionId ?? this.finalizedVersionId,
     selectedFilter: selectedFilter ?? this.selectedFilter,
     selectedSection: selectedSection ?? this.selectedSection,
-    summary: clearSummary ? null : summary ?? this.summary,
-    optimizedVersionDetail: clearOptimizedVersionDetail
-        ? null
-        : optimizedVersionDetail ?? this.optimizedVersionDetail,
-    selectedTemplate: selectedTemplate ?? this.selectedTemplate,
-    isAccuracyConfirmed: isAccuracyConfirmed ?? this.isAccuracyConfirmed,
-    creationStage: creationStage ?? this.creationStage,
-    summaryEdgeState: summaryEdgeState ?? this.summaryEdgeState,
-    viewerMode: viewerMode ?? this.viewerMode,
     activeChangeIndex: activeChangeIndex ?? this.activeChangeIndex,
+    summaryEdgeState: summaryEdgeState ?? this.summaryEdgeState,
+    creationStage: creationStage ?? this.creationStage,
+    isAccuracyConfirmed: isAccuracyConfirmed ?? this.isAccuracyConfirmed,
+    selectedTemplate: selectedTemplate ?? this.selectedTemplate,
+    optimizedVersionDetail:
+        optimizedVersionDetail ?? this.optimizedVersionDetail,
+    viewerMode: viewerMode ?? this.viewerMode,
     pdfStatus: pdfStatus ?? this.pdfStatus,
+    summaryData: summaryData ?? this.summaryData,
   );
 }
 
@@ -147,12 +141,7 @@ final optimizationRepositoryProvider = Provider<OptimizationRepository>((ref) {
     return MockOptimizationRepository();
   }
   final dio = ref.watch(dioProvider);
-  return ApiOptimizationRepository(
-    dio,
-    database: ref.watch(appDatabaseProvider),
-    pdfCache: ref.watch(pdfCacheStoreProvider),
-    userId: () => ref.read(authViewModelProvider).user?.id,
-  );
+  return ApiOptimizationRepository(dio);
 });
 
 final optimizationProvider =
@@ -373,9 +362,14 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
   Future<bool> setSuggestionStatus(String id, SuggestionStatus status) async {
     if (_repository is MockOptimizationRepository) {
       _update(id, (item) => item.copyWith(status: status));
+      state = state.copyWith(isAccuracyConfirmed: false);
       return true;
     }
-    state = state.copyWith(processingSuggestionId: id, clearError: true);
+    state = state.copyWith(
+      processingSuggestionId: id,
+      clearError: true,
+      isAccuracyConfirmed: false,
+    );
     try {
       final current = state.analysis!.suggestions.firstWhere(
         (item) => item.id == id,
@@ -386,7 +380,10 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
         decisionVersion: current.decisionVersion,
       );
       _update(id, (_) => result);
-      state = state.copyWith(clearProcessingSuggestion: true);
+      state = state.copyWith(
+        clearProcessingSuggestion: true,
+        isAccuracyConfirmed: false,
+      );
       return true;
     } catch (error) {
       state = state.copyWith(
@@ -404,9 +401,14 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
         (item) =>
             item.copyWith(proposed: text, status: SuggestionStatus.edited),
       );
+      state = state.copyWith(isAccuracyConfirmed: false);
       return true;
     }
-    state = state.copyWith(processingSuggestionId: id, clearError: true);
+    state = state.copyWith(
+      processingSuggestionId: id,
+      clearError: true,
+      isAccuracyConfirmed: false,
+    );
     try {
       final result = await _repository.reviewSuggestion(
         id,
@@ -417,7 +419,10 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
             .decisionVersion,
       );
       _update(id, (_) => result);
-      state = state.copyWith(clearProcessingSuggestion: true);
+      state = state.copyWith(
+        clearProcessingSuggestion: true,
+        isAccuracyConfirmed: false,
+      );
       return true;
     } catch (error) {
       state = state.copyWith(
@@ -433,6 +438,7 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
     final a = state.analysis;
     if (a == null) return;
     state = state.copyWith(
+      isAccuracyConfirmed: false,
       analysis: a.copyWith(
         suggestions: a.suggestions
             .map(
@@ -481,68 +487,6 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
     }
   }
 
-  void toggleAccuracyConfirmation(bool value) =>
-      state = state.copyWith(isAccuracyConfirmed: value);
-
-  void setSummaryEdgeState(String edgeState) =>
-      state = state.copyWith(summaryEdgeState: edgeState);
-
-  void setViewerMode(String mode) =>
-      state = state.copyWith(viewerMode: mode);
-
-  void setActiveChangeIndex(int index) =>
-      state = state.copyWith(activeChangeIndex: index);
-
-  Future<void> setTemplate(String template) async {
-    state = state.copyWith(selectedTemplate: template);
-    final versionId = state.finalizedVersionId;
-    if (versionId != null) {
-      try {
-        await _repository.updateOptimizedVersion(versionId, templateId: template);
-        state = state.copyWith(pdfStatus: 'outdated');
-      } catch (_) {}
-    }
-  }
-
-  Future<void> loadSummary() async {
-    final sessionId = state.sessionId;
-    if (sessionId == null) return;
-    try {
-      final summary = await _repository.getOptimizationSummary(sessionId);
-      state = state.copyWith(summary: summary);
-    } catch (_) {}
-  }
-
-  Future<void> loadOptimizedVersion(String versionId) async {
-    try {
-      final detail = await _repository.getOptimizedVersion(versionId);
-      state = state.copyWith(
-        optimizedVersionDetail: detail,
-        versionName: detail.title.isNotEmpty ? detail.title : state.versionName,
-        selectedTemplate: detail.templateName.isNotEmpty ? detail.templateName : state.selectedTemplate,
-        pdfStatus: detail.pdfStatus.isNotEmpty ? detail.pdfStatus : 'ready',
-      );
-    } catch (_) {}
-  }
-
-  Future<bool> revertChange(String suggestionId) async {
-    final versionId = state.finalizedVersionId;
-    if (versionId == null) return false;
-    state = state.copyWith(busy: true, clearError: true);
-    try {
-      await _repository.revertOptimizedChange(versionId, suggestionId);
-      await loadOptimizedVersion(versionId);
-      state = state.copyWith(busy: false, pdfStatus: 'outdated');
-      return true;
-    } catch (error) {
-      state = state.copyWith(
-        busy: false,
-        error: error.toString().replaceFirst('Exception: ', ''),
-      );
-      return false;
-    }
-  }
-
   Future<bool> createVersion() async {
     if (state.busy) return false;
     final approved = state.analysis?.suggestions.where(
@@ -554,15 +498,17 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
       state = state.copyWith(error: 'Accept or edit at least one suggestion.');
       return false;
     }
-    state = state.copyWith(busy: true, creationStage: 1, clearError: true);
+    state = state.copyWith(busy: true, clearError: true, creationStage: 1);
     try {
       if (_repository is MockOptimizationRepository) {
-        state = state.copyWith(creationStage: 2);
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-        state = state.copyWith(creationStage: 3);
         await _repository.createVersion(state.versionName);
-        state = state.copyWith(creationStage: 4);
-        state = state.copyWith(busy: false, creationStage: 0);
+        const mockVerId = 'mock-version-1';
+        state = state.copyWith(
+          busy: false,
+          finalizedVersionId: mockVerId,
+          creationStage: 0,
+        );
+        await loadOptimizedVersion(mockVerId);
         return true;
       }
       final sessionId = state.sessionId;
@@ -583,11 +529,10 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
       final afterScore = (result['after_alignment_score'] as num?)?.toInt();
       final beforeAts = (result['before_ats_score'] as num?)?.toInt();
       final afterAts = (result['after_ats_score'] as num?)?.toInt();
-      final versionId = result['resume_version_id']?.toString();
+      final verId = result['resume_version_id']?.toString();
       state = state.copyWith(
         busy: false,
-        creationStage: 0,
-        finalizedVersionId: versionId,
+        finalizedVersionId: verId,
         analysis: afterScore == null
             ? state.analysis
             : state.analysis?.copyWith(
@@ -595,9 +540,10 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
                 beforeAtsScore: beforeAts,
                 afterAtsScore: afterAts,
               ),
+        creationStage: 0,
       );
-      if (versionId != null) {
-        await loadOptimizedVersion(versionId);
+      if (verId != null) {
+        await loadOptimizedVersion(verId);
       }
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_activeSessionKey);
@@ -610,5 +556,142 @@ class OptimizationNotifier extends StateNotifier<OptimizationState> {
       );
       return false;
     }
+  }
+
+  void setActiveChangeIndex(int index) =>
+      state = state.copyWith(activeChangeIndex: index);
+
+  void setSummaryEdgeState(String stateKey) =>
+      state = state.copyWith(summaryEdgeState: stateKey);
+
+  void toggleAccuracyConfirmation(bool value) =>
+      state = state.copyWith(isAccuracyConfirmed: value);
+
+  void setTemplate(String template) =>
+      state = state.copyWith(selectedTemplate: template);
+
+  void setViewerMode(String mode) => state = state.copyWith(viewerMode: mode);
+
+  void setPdfStatus(String status) => state = state.copyWith(pdfStatus: status);
+
+  Future<void> loadSummary() async {
+    final sessionId = state.sessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+    try {
+      final summary = await _repository.getOptimizationSummary(sessionId);
+      String edge = state.summaryEdgeState;
+      if (summary.isSourceStale) {
+        edge = 'conflict';
+      } else if (summary.hasConflicts) {
+        edge = 'conflict';
+      } else if (summary.stats['pending_count'] != null &&
+          (summary.stats['pending_count'] as num) > 0) {
+        edge = 'unresolved';
+      }
+      state = state.copyWith(
+        summaryData: summary,
+        summaryEdgeState: edge,
+        finalizedVersionId:
+            summary.optimizedVersionId ?? state.finalizedVersionId,
+        pdfStatus: summary.pdfStatus ?? state.pdfStatus,
+      );
+    } catch (_) {
+      // Offline fallback: keep cached summary state
+    }
+  }
+
+  Future<void> loadOptimizedVersion(String versionId) async {
+    try {
+      final detail = await _repository.getOptimizedVersion(versionId);
+      state = state.copyWith(
+        finalizedVersionId: versionId,
+        optimizedVersionDetail: detail,
+        selectedTemplate: detail.templateName,
+        pdfStatus: detail.pdfStatus,
+      );
+    } catch (_) {
+      state = state.copyWith(
+        finalizedVersionId: versionId,
+        optimizedVersionDetail: OptimizedVersionDetail(
+          id: versionId,
+          title: state.versionName,
+          targetRole: state.jobTitle,
+          targetCompany: state.company,
+          templateName: state.selectedTemplate,
+          changes:
+              state.analysis?.suggestions
+                  .where(
+                    (s) =>
+                        s.status == SuggestionStatus.accepted ||
+                        s.status == SuggestionStatus.edited,
+                  )
+                  .toList() ??
+              [],
+        ),
+      );
+    }
+  }
+
+  Future<bool> revertChange(String changeId) async {
+    final versionId = state.finalizedVersionId;
+    if (versionId == null || versionId.isEmpty) {
+      await setSuggestionStatus(changeId, SuggestionStatus.rejected);
+      state = state.copyWith(isAccuracyConfirmed: false);
+      return true;
+    }
+    state = state.copyWith(busy: true, clearError: true);
+    try {
+      await _repository.revertOptimizedChange(versionId, changeId);
+      await loadOptimizedVersion(versionId);
+      state = state.copyWith(
+        busy: false,
+        isAccuracyConfirmed: false,
+        pdfStatus: 'not_requested',
+      );
+      return true;
+    } catch (error) {
+      state = state.copyWith(
+        busy: false,
+        error: error.toString().replaceFirst('Exception: ', ''),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> updateTemplate(String templateId, String templateName) async {
+    final versionId = state.finalizedVersionId;
+    state = state.copyWith(
+      selectedTemplate: templateName,
+      pdfStatus: 'outdated',
+    );
+    if (versionId == null || versionId.isEmpty) {
+      return true;
+    }
+    try {
+      final detail = await _repository.updateOptimizedVersion(
+        versionId,
+        templateId: templateId,
+      );
+      state = state.copyWith(
+        optimizedVersionDetail: detail,
+        selectedTemplate: detail.templateName,
+        pdfStatus: detail.pdfStatus,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> refreshPdfStatus() async {
+    final sessionId = state.sessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+    try {
+      final res = await _repository.getOptimizationPdfStatus(sessionId);
+      final status = res['status']?.toString();
+      if (status != null && status.isNotEmpty) {
+        state = state.copyWith(pdfStatus: status);
+      }
+    } catch (_) {}
   }
 }

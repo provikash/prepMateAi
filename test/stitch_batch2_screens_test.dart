@@ -404,7 +404,7 @@ void main() {
 
 class _StaticResumeListNotifier extends home.ResumeListNotifier {
   @override
-  Stream<List<ResumeModel>> build() => Stream.value([]);
+  Future<List<ResumeModel>> build() async => [];
 }
 
 class _StaticAiCreditsViewModel extends AiCreditsViewModel {
@@ -416,7 +416,11 @@ class _StaticAiCreditsViewModel extends AiCreditsViewModel {
   Future<void> load() async {}
 
   @override
-  Future<void> loadTransactions() async {}
+  Future<void> loadTransactions({
+    String? filter,
+    String? query,
+    String? ordering,
+  }) async {}
 
   @override
   Future<void> refresh() async {}

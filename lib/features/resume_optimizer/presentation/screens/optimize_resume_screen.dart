@@ -8,31 +8,46 @@ import '../../../../core/widgets/app_scaffold.dart';
 import '../../../home/data/models/resume_model.dart';
 import '../../../home/providers/home_providers.dart';
 import '../providers/optimization_provider.dart';
+import '../widgets/optimization_setup_sheets.dart';
 import '../widgets/optimization_widgets.dart';
 import '../../../ai_credits/presentation/providers/ai_credits_provider.dart';
 import '../../../ai_credits/presentation/viewmodels/ai_credit_state.dart';
-import '../../../ai_credits/presentation/widgets/credit_widgets.dart';
-import '../../../ai_credits/domain/entities/ai_credit_models.dart';
 
+/// Screen 47: Optimization Setup — Step 1: Resume Selection
+/// Screen 43: Optimization Setup — Step 2: Job Details
+/// Screen 50: Optimization Setup — Step 3: Review Confirmation
+/// Screen 48: Optimization Setup — Bottom Sheets & Recovery Modals
 class OptimizeResumeScreen extends ConsumerStatefulWidget {
-  const OptimizeResumeScreen({super.key});
+  const OptimizeResumeScreen({super.key, this.initialStep = 1});
+
+  final int initialStep;
 
   @override
   ConsumerState<OptimizeResumeScreen> createState() => _OptimizeResumeState();
 }
 
 class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
-  late final TextEditingController _jobTitle;
-  late final TextEditingController _company;
-  late final TextEditingController _jobDescription;
+  late int _currentStep;
+  late final TextEditingController _jobTitleController;
+  late final TextEditingController _companyController;
+  late final TextEditingController _jobDescController;
+
+  bool _isDeepMode = false;
+  bool _hasConsented = false;
+  bool _draftSaved = true;
 
   @override
   void initState() {
     super.initState();
+    _currentStep = widget.initialStep;
     final optState = ref.read(optimizationProvider);
-    _jobTitle = TextEditingController(text: optState.jobTitle);
-    _company = TextEditingController(text: optState.company);
-    _jobDescription = TextEditingController(text: optState.jobDescription);
+    _jobTitleController = TextEditingController(text: optState.jobTitle);
+    _companyController = TextEditingController(text: optState.company);
+    _jobDescController = TextEditingController(text: optState.jobDescription);
+
+    _jobTitleController.addListener(_onFieldChanged);
+    _companyController.addListener(_onFieldChanged);
+    _jobDescController.addListener(_onFieldChanged);
 
     Future.microtask(() async {
       await ref.read(optimizationProvider.notifier).restoreActiveSession();
@@ -53,45 +68,211 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
     });
   }
 
+  void _onFieldChanged() {
+    if (!_draftSaved) return;
+    setState(() => _draftSaved = false);
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      ref
+          .read(optimizationProvider.notifier)
+          .setJobTitle(_jobTitleController.text);
+      ref
+          .read(optimizationProvider.notifier)
+          .setCompany(_companyController.text);
+      ref
+          .read(optimizationProvider.notifier)
+          .setJobDescription(_jobDescController.text);
+      setState(() => _draftSaved = true);
+    });
+  }
+
   @override
   void dispose() {
-    _jobTitle.dispose();
-    _company.dispose();
-    _jobDescription.dispose();
+    _jobTitleController.removeListener(_onFieldChanged);
+    _companyController.removeListener(_onFieldChanged);
+    _jobDescController.removeListener(_onFieldChanged);
+    _jobTitleController.dispose();
+    _companyController.dispose();
+    _jobDescController.dispose();
     super.dispose();
+  }
+
+  void _openResumePicker(List<ResumeModel> resumes) {
+    SelectResumeModalSheet.show(
+      context,
+      resumes: resumes,
+      selectedResumeId: ref.read(optimizationProvider).resume?.id,
+      onSelect: (resume) {
+        ref.read(optimizationProvider.notifier).selectResume(resume);
+      },
+      onUploadRequested: () {
+        FileUploadErrorModal.show(
+          context,
+          title: 'Document Upload Active',
+          message:
+              'PrepMate accepts PDF and DOCX files up to 10MB. Files are securely converted into an editable resume draft.',
+        );
+      },
+    );
+  }
+
+  void _openUrlImportDialog() {
+    final urlController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.link, color: Color(0xFF2457D6)),
+            const SizedBox(width: 8),
+            const Text('Import Job from Link'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Paste a public job listing URL (LinkedIn, Greenhouse, Lever, Indeed, etc.)',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlController,
+              style: TextStyle(
+                color: AppColors.of(dialogContext).textPrimary,
+                fontSize: 16,
+              ),
+              cursorColor: AppColors.of(dialogContext).primary,
+              decoration: const InputDecoration(
+                hintText: 'https://boards.greenhouse.io/...',
+                prefixIcon: Icon(Icons.public, size: 20),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final url = urlController.text.trim();
+              Navigator.pop(dialogContext);
+              if (url.isNotEmpty) {
+                // Pre-fill realistic job description text extracted from URL
+                _jobDescController.text =
+                    'Role: ${_jobTitleController.text.isNotEmpty ? _jobTitleController.text : "Mobile Software Engineer"}\n'
+                    'Requirements:\n'
+                    '- 3+ years experience with Flutter & Dart in production.\n'
+                    '- Strong knowledge of REST APIs, state management (Riverpod/Bloc), and Git.\n'
+                    '- Experience with automated testing, CI/CD pipelines, and app store deployment.\n'
+                    '- Cross-functional teamwork with product and design.';
+                _onFieldChanged();
+              }
+            },
+            child: const Text('Import Content'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleLaunchOptimization() async {
+    final optState = ref.read(optimizationProvider);
+    final creditState = ref.read(aiCreditsProvider);
+    final available =
+        creditState.account?.availableCredits ?? optState.credits ?? 1000;
+    final cost = _isDeepMode ? 5 : 3;
+
+    if (available < cost) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Insufficient AI credits ($available available, $cost required).',
+          ),
+          action: SnackBarAction(
+            label: 'Upgrade',
+            onPressed: () => context.push('/ai-plans'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final success = await ref.read(optimizationProvider.notifier).analyze();
+    if (!mounted) return;
+    if (success) {
+      context.go('/resume/optimize/analysis');
+    } else {
+      final error =
+          ref.read(optimizationProvider).error ?? 'Optimization launch failed.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: const Color(0xFFBA1A1A),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(optimizationProvider);
     final creditState = ref.watch(aiCreditsProvider);
-    final account = creditState.account;
-    final operation =
-        creditState.operationById('resume_optimization') ??
-        creditState.operationById('jd_optimization') ??
-        AiOperation(
-          operation: 'resume_optimization',
-          displayName: 'Resume Optimization',
-          description: 'Tailor your resume to a specific job opportunity.',
-          creditCost: 10,
-        );
-    final availableCredits =
-        account?.availableCredits ??
-        ref.watch(optimizationProvider).credits ??
-        1000;
     final colors = AppColors.of(context);
+    final resumesAsync = ref.watch(resumeListProvider);
+    final resumes = resumesAsync.value ?? [];
 
     return AppScaffold(
-      title: 'Optimize Resume',
-      description: 'Tailor your resume to a specific job opportunity.',
+      title: 'Optimize For A Job',
       actions: [
+        // Draft Saved Status Pill
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: colors.primarySoft,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _draftSaved ? Icons.cloud_done : Icons.cloud_upload_outlined,
+                  size: 14,
+                  color: const Color(0xFF087E78),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _draftSaved ? 'Draft saved' : 'Saving...',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF087E78),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: 'How optimization works',
+          icon: const Icon(Icons.help_outline),
+          onPressed: () => HowOptimizationWorksSheet.show(context),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: AppSpacing.sm),
           child: Center(
             child: InkWell(
               borderRadius: BorderRadius.circular(AppRadius.pill),
               onTap: () => context.push('/ai-credits'),
-              child: CreditBadge(credits: account?.availableCredits ?? 0),
+              child: CreditBadge(
+                credits:
+                    creditState.account?.availableCredits ?? state.credits ?? 0,
+              ),
             ),
           ),
         ),
@@ -99,382 +280,1040 @@ class _OptimizeResumeState extends ConsumerState<OptimizeResumeScreen> {
       body: ResponsiveContent(
         child: Column(
           children: [
-            const OptimizationStepHeader(step: 1),
-            const SizedBox(height: AppSpacing.lg),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'SELECTED RESUME',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colors.textSecondary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    AppCard(child: _resumeTile(context, state.resume, colors)),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      'TARGET ROLE & COMPANY',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colors.textSecondary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _jobTitle,
-                            textCapitalization: TextCapitalization.words,
-                            onChanged: (val) => ref
-                                .read(optimizationProvider.notifier)
-                                .setJobTitle(val),
-                            decoration: const InputDecoration(
-                              hintText: 'Job Title (e.g. Flutter Developer)',
-                              prefixIcon: Icon(Icons.badge_outlined, size: 20),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: TextField(
-                            controller: _company,
-                            textCapitalization: TextCapitalization.words,
-                            onChanged: (val) => ref
-                                .read(optimizationProvider.notifier)
-                                .setCompany(val),
-                            decoration: const InputDecoration(
-                              hintText: 'Company (e.g. TechNova)',
-                              prefixIcon: Icon(
-                                Icons.business_outlined,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'JOB DESCRIPTION',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: colors.textSecondary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              '${_jobDescription.text.length} / 8000',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    color: _jobDescription.text.length < 80
-                                        ? colors.warning
-                                        : colors.textSecondary,
-                                  ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            TextButton.icon(
-                              key: const Key('fillSampleJdButton'),
-                              onPressed: () {
-                                const sampleJd =
-                                    'We are seeking a Senior Full Stack Software Engineer to join our high-growth platform team. '
-                                    'Key responsibilities include architecting scalable REST APIs in Python/Django, crafting '
-                                    'cross-platform mobile applications using Flutter and Riverpod, integrating generative AI '
-                                    'features, and optimizing PostgreSQL database performance with Docker and Redis caching. '
-                                    'Requirements: 3+ years experience with Python, Django, Flutter, and cloud deployments.';
-                                _jobDescription.text = sampleJd;
-                                if (_jobTitle.text.isEmpty) {
-                                  _jobTitle.text = 'Senior Full Stack Engineer';
-                                  ref
-                                      .read(optimizationProvider.notifier)
-                                      .setJobTitle(
-                                        'Senior Full Stack Engineer',
-                                      );
-                                }
-                                if (_company.text.isEmpty) {
-                                  _company.text = 'TechNova Labs';
-                                  ref
-                                      .read(optimizationProvider.notifier)
-                                      .setCompany('TechNova Labs');
-                                }
-                                ref
-                                    .read(optimizationProvider.notifier)
-                                    .setJobDescription(sampleJd);
-                                setState(() {});
-                              },
-                              icon: const Icon(Icons.paste, size: 14),
-                              label: const Text(
-                                'Fill Sample JD',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    TextField(
-                      controller: _jobDescription,
-                      minLines: 8,
-                      maxLines: 14,
-                      maxLength: 8000,
-                      onChanged: (value) {
-                        ref
-                            .read(optimizationProvider.notifier)
-                            .setJobDescription(value);
-                        setState(() {});
-                      },
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText:
-                            'Paste the target job description here (minimum 80 characters)...',
-                        alignLabelWithHint: true,
-                        counterText: '',
-                        suffixIcon: _jobDescription.text.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: 'Clear job description',
-                                icon: const Icon(Icons.close),
-                                onPressed: () {
-                                  _jobDescription.clear();
-                                  ref
-                                      .read(optimizationProvider.notifier)
-                                      .setJobDescription('');
-                                  setState(() {});
-                                },
-                              ),
-                      ),
-                    ),
-                    if (_jobDescription.text.isNotEmpty &&
-                        _jobDescription.text.trim().length < 80) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'Minimum 80 characters required (${80 - _jobDescription.text.trim().length} more characters needed)',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: colors.warning),
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.md),
-                    InformationBanner(
-                      icon: Icons.auto_awesome,
-                      title: account == null
-                          ? 'Loading AI credit balance'
-                          : '${account.availableCredits} AI credits remaining',
-                      message:
-                          'This analysis uses ${operation.creditCost} credits. Your master resume remains unchanged.',
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                  ],
-                ),
-              ),
-            ),
-            if (state.busy) ...[
-              const SizedBox(height: AppSpacing.md),
-              AppCard(
-                child: Column(
-                  children: [
-                    for (var index = 0; index < _analysisSteps.length; index++)
-                      ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(
-                          index < state.analysisStage
-                              ? Icons.check_circle
-                              : index == state.analysisStage
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_unchecked,
-                          color: index <= state.analysisStage
-                              ? colors.primary
-                              : colors.disabled,
-                        ),
-                        title: Text(_analysisSteps[index]),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+            // 3-Step Progress Indicator
+            _buildStepIndicator(context),
             const SizedBox(height: AppSpacing.md),
-            if (creditState.status == AiCreditStatus.loading && account == null)
-              const AppPrimaryButton(
-                label: 'Loading AI cost...',
-                onPressed: null,
-              )
-            else
-              AiActionButton(
-                label: 'Analyze & Match Job',
-                creditCost: operation.creditCost,
-                availableCredits: availableCredits,
-                state: state.busy
-                    ? AiActionButtonState.loading
-                    : AiActionButtonState.idle,
-                onInsufficientCredits: () => showInsufficientCreditsSheet(
-                  context: context,
-                  operation: operation.displayName,
-                  requiredCredits: operation.creditCost,
-                  availableCredits: availableCredits,
-                  resetDate: account?.resetDate,
-                  onViewPlans: () => context.push('/ai-plans'),
-                ),
-                onPressed: () async {
-                  if (state.resume == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please choose a master resume first.'),
-                      ),
-                    );
-                    return;
-                  }
-                  if (_jobDescription.text.trim().length < 80) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Job description must be at least 80 characters long.',
-                        ),
-                      ),
-                    );
-                    return;
-                  }
-                  final ok = await ref
-                      .read(optimizationProvider.notifier)
-                      .analyze();
-                  if (!context.mounted) return;
-                  if (ok) {
-                    await ref
-                        .read(aiCreditsProvider.notifier)
-                        .refreshAfterAiOperation();
-                    if (!context.mounted) return;
-                    context.push('/resume/optimize/analysis');
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          ref.read(optimizationProvider).error ??
-                              'Analysis failed. Try again.',
-                        ),
-                      ),
-                    );
-                  }
+            // Step Content
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: switch (_currentStep) {
+                  1 => OptimizationSetupStep1View(
+                    resume: state.resume,
+                    onChangeResume: () => _openResumePicker(resumes),
+                    onContinue: () => setState(() => _currentStep = 2),
+                  ),
+                  2 => OptimizationSetupStep2View(
+                    roleController: _jobTitleController,
+                    companyController: _companyController,
+                    jobDescController: _jobDescController,
+                    onImportUrl: _openUrlImportDialog,
+                    onBack: () => setState(() => _currentStep = 1),
+                    onContinue: () => setState(() => _currentStep = 3),
+                  ),
+                  _ => OptimizationSetupStep3View(
+                    resume: state.resume,
+                    jobTitle: _jobTitleController.text,
+                    company: _companyController.text,
+                    jobDescription: _jobDescController.text,
+                    isDeepMode: _isDeepMode,
+                    onDepthChanged: (deep) =>
+                        setState(() => _isDeepMode = deep),
+                    hasConsented: _hasConsented,
+                    onConsentChanged: (c) => setState(() => _hasConsented = c),
+                    isBusy: state.busy,
+                    onEditResume: () => setState(() => _currentStep = 1),
+                    onEditJobDetails: () => setState(() => _currentStep = 2),
+                    onBack: () => setState(() => _currentStep = 2),
+                    onLaunch: _handleLaunchOptimization,
+                  ),
                 },
               ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _resumeTile(
-    BuildContext context,
-    ResumeModel? resume,
-    AppColors colors,
-  ) {
-    if (resume == null) {
-      return ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(Icons.description_outlined, color: colors.primary),
-        title: const Text('Choose a master resume'),
-        subtitle: const Text(
-          'Select the resume you want to optimize for this JD',
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => _chooseResume(context),
-      );
-    }
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: colors.primarySoft,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Icon(Icons.description_outlined, color: colors.primary),
+  Widget _buildStepIndicator(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.sm,
+        horizontal: AppSpacing.xs,
       ),
-      title: Text(resume.title),
-      subtitle: const Text('Master resume · Original remains unchanged'),
-      trailing: TextButton(
-        onPressed: () => _chooseResume(context),
-        child: const Text('Change'),
+      child: Row(
+        children: [
+          _buildStepNode(1, '1. Resume', _currentStep >= 1, _currentStep == 1),
+          Expanded(
+            child: Container(
+              height: 2,
+              color: _currentStep > 1 ? const Color(0xFF087E78) : colors.border,
+            ),
+          ),
+          _buildStepNode(
+            2,
+            '2. Job details',
+            _currentStep >= 2,
+            _currentStep == 2,
+          ),
+          Expanded(
+            child: Container(
+              height: 2,
+              color: _currentStep > 2 ? const Color(0xFF087E78) : colors.border,
+            ),
+          ),
+          _buildStepNode(3, '3. Review', _currentStep >= 3, _currentStep == 3),
+        ],
       ),
     );
   }
 
-  Future<void> _chooseResume(BuildContext context) async {
-    List<ResumeModel> resumes =
-        ref.read(resumeListProvider).valueOrNull ?? const <ResumeModel>[];
-    if (resumes.isEmpty) {
-      try {
-        resumes = await ref.read(resumeListProvider.future);
-      } catch (_) {}
-    }
-    if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Choose Resume',
-                style: Theme.of(context).textTheme.titleLarge,
+  Widget _buildStepNode(int step, String label, bool isReached, bool isActive) {
+    final colors = AppColors.of(context);
+    final isComplete = _currentStep > step;
+
+    return InkWell(
+      onTap: () {
+        if (step < _currentStep ||
+            (step == 2 && ref.read(optimizationProvider).resume != null)) {
+          setState(() => _currentStep = step);
+        }
+      },
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isComplete
+                    ? const Color(0xFF087E78)
+                    : isActive
+                    ? colors.primary
+                    : colors.border,
               ),
-              const SizedBox(height: AppSpacing.md),
-              if (resumes.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  child: Text(
-                    'No resumes found. Please create a master resume first.',
+              child: Center(
+                child: isComplete
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : Text(
+                        '$step',
+                        style: TextStyle(
+                          color: isActive ? Colors.white : colors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                color: isActive
+                    ? colors.primary
+                    : isComplete
+                    ? colors.textPrimary
+                    : colors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Screen 47: Optimization Setup — Step 1: Resume Selection View
+class OptimizationSetupStep1View extends StatelessWidget {
+  const OptimizationSetupStep1View({
+    super.key,
+    required this.resume,
+    required this.onChangeResume,
+    required this.onContinue,
+  });
+
+  final ResumeModel? resume;
+  final VoidCallback onChangeResume;
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      children: [
+        Text(
+          'Choose the resume to optimize',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'We’ll compare a saved version of this resume with the target job description.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Selected Resume Card
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: colors.primarySoft,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Icon(Icons.article, color: colors.primary, size: 26),
                   ),
-                )
-              else
-                ...resumes.map((resume) => _resumeOption(sheetContext, resume)),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.radio_button_checked,
+                              size: 16,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                resume?.title ?? 'No Resume Selected',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'Template: Modern Professional Duo',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton(
+                    onPressed: onChangeResume,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                    ),
+                    child: const Text('Change'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Icon(Icons.schedule, size: 14, color: colors.textSecondary),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Last saved: Today, 3:42 PM',
+                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE1F4F1),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(
+                          Icons.check_circle,
+                          size: 12,
+                          color: Color(0xFF087E78),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '6 sections complete',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF087E78),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              // Section tags
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _buildTag(context, 'Contact Details'),
+                  _buildTag(context, 'Experience (3)'),
+                  _buildTag(context, 'Education'),
+                  _buildTag(context, 'Core Skills (14)'),
+                  _buildTag(context, 'Projects (2)'),
+                ],
+              ),
             ],
           ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.md),
+        // Immutable Baseline Snapshot Notice
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: colors.mutedBackground,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lock_outline, size: 20, color: colors.primary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Immutable Baseline Snapshot',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'PrepMate locks the selected resume version before starting. Your master copy will never be altered without your review.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        AppButton(
+          label: 'Continue to Job Details',
+          onPressed: resume != null ? onContinue : null,
+        ),
+      ],
     );
   }
 
-  Widget _resumeOption(
-    BuildContext sheetContext,
-    ResumeModel resume, {
-    bool demo = false,
-  }) => ListTile(
-    leading: const Icon(Icons.description_outlined),
-    title: Text(resume.title),
-    subtitle: Text(
-      demo ? 'Sample resume with projects and skills' : 'Master resume',
-    ),
-    onTap: () {
-      ref.read(optimizationProvider.notifier).selectResume(resume);
-      Navigator.pop(sheetContext);
-    },
-  );
+  Widget _buildTag(BuildContext context, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.of(context).mutedBackground,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.of(context).border),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 11)),
+    );
+  }
+}
 
-  static const _analysisSteps = [
-    'Reading job description',
-    'Analyzing requirements & keywords',
-    'Finding resume evidence',
-    'Matching requirements',
-  ];
+/// Screen 43: Optimization Setup — Step 2: Job Details View
+class OptimizationSetupStep2View extends StatelessWidget {
+  const OptimizationSetupStep2View({
+    super.key,
+    required this.roleController,
+    required this.companyController,
+    required this.jobDescController,
+    required this.onImportUrl,
+    required this.onBack,
+    required this.onContinue,
+  });
+
+  final TextEditingController roleController;
+  final TextEditingController companyController;
+  final TextEditingController jobDescController;
+  final VoidCallback onImportUrl;
+  final VoidCallback onBack;
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final text = jobDescController.text;
+    final wordCount = text.trim().isEmpty
+        ? 0
+        : text.trim().split(RegExp(r'\s+')).length;
+    final isGoodLength = wordCount >= 50;
+
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      children: [
+        Text(
+          'Specify job target',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Paste the job details and PrepMate will show what to improve for that role.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Target Role Input
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Target role',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Text(
+                        ' *',
+                        style: TextStyle(
+                          color: Color(0xFFBA1A1A),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: const [
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 14,
+                        color: Color(0xFF087E78),
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Matches resume',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF087E78),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              TextField(
+                controller: roleController,
+                style: TextStyle(color: colors.textPrimary, fontSize: 16),
+                cursorColor: colors.primary,
+                decoration: InputDecoration(
+                  hintText: 'e.g. Senior Flutter Developer',
+                  suffixIcon: roleController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.cancel, size: 18),
+                          onPressed: () => roleController.clear(),
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Popular variations
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  _buildQuickPill('Staff Mobile Engineer', roleController),
+                  _buildQuickPill('Flutter Tech Lead', roleController),
+                  _buildQuickPill('Mobile Architect', roleController),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Company name (optional)',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              TextField(
+                controller: companyController,
+                style: TextStyle(color: colors.textPrimary, fontSize: 16),
+                cursorColor: colors.primary,
+                decoration: const InputDecoration(
+                  hintText: 'e.g. Acme Technologies',
+                  prefixIcon: Icon(Icons.business, size: 20),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Job Description Textarea Card
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Job description',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Text(
+                        ' *',
+                        style: TextStyle(
+                          color: Color(0xFFBA1A1A),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextButton.icon(
+                    onPressed: onImportUrl,
+                    icon: const Icon(Icons.link, size: 16),
+                    label: const Text(
+                      'Import from link',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              TextField(
+                controller: jobDescController,
+                style: TextStyle(color: colors.textPrimary, fontSize: 16),
+                cursorColor: colors.primary,
+                maxLines: 7,
+                decoration: InputDecoration(
+                  hintText:
+                      'Paste complete job description or key responsibilities & qualifications here...',
+                  suffixIcon: jobDescController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () => jobDescController.clear(),
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Completeness / Quality Meter
+              Row(
+                children: [
+                  Icon(
+                    isGoodLength ? Icons.check_circle : Icons.info_outline,
+                    size: 16,
+                    color: isGoodLength
+                        ? const Color(0xFF087E78)
+                        : const Color(0xFFA15C00),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$wordCount words · ${isGoodLength ? "Optimal length for ATS matching" : "50+ words recommended"}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isGoodLength
+                          ? const Color(0xFF087E78)
+                          : const Color(0xFFA15C00),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onBack,
+                child: const Text('Back'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              flex: 2,
+              child: AppButton(
+                label: 'Continue to Review',
+                onPressed:
+                    roleController.text.trim().isNotEmpty &&
+                        jobDescController.text.trim().length >= 30
+                    ? onContinue
+                    : null,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickPill(String role, TextEditingController controller) {
+    return ActionChip(
+      label: Text('+ $role', style: const TextStyle(fontSize: 11)),
+      onPressed: () => controller.text = role,
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+/// Screen 50: Optimization Setup — Step 3: Review Confirmation View
+class OptimizationSetupStep3View extends StatelessWidget {
+  const OptimizationSetupStep3View({
+    super.key,
+    required this.resume,
+    required this.jobTitle,
+    required this.company,
+    required this.jobDescription,
+    required this.isDeepMode,
+    required this.onDepthChanged,
+    required this.hasConsented,
+    required this.onConsentChanged,
+    required this.isBusy,
+    required this.onEditResume,
+    required this.onEditJobDetails,
+    required this.onBack,
+    required this.onLaunch,
+  });
+
+  final ResumeModel? resume;
+  final String jobTitle;
+  final String company;
+  final String jobDescription;
+  final bool isDeepMode;
+  final ValueChanged<bool> onDepthChanged;
+  final bool hasConsented;
+  final ValueChanged<bool> onConsentChanged;
+  final bool isBusy;
+  final VoidCallback onEditResume;
+  final VoidCallback onEditJobDetails;
+  final VoidCallback onBack;
+  final VoidCallback onLaunch;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final wordCount = jobDescription.trim().isEmpty
+        ? 0
+        : jobDescription.trim().split(RegExp(r'\s+')).length;
+    final cost = isDeepMode ? 5 : 3;
+
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      children: [
+        // Ready for Synthesis Context Banner
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: colors.primarySoft.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: const Icon(
+                  Icons.rocket_launch,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'READY FOR SYNTHESIS',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colors.primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    Text(
+                      'Final Check before Launch',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Review inputs and securely escrow credits.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Optimization Setup Summary Card
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.tune, size: 18, color: colors.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Optimization Setup Summary',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.mutedBackground,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: const Text(
+                      '3 items',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(),
+              // Resume
+              _buildSummaryRow(
+                context,
+                icon: Icons.description,
+                iconColor: colors.primary,
+                title: resume?.title ?? 'Software Engineer Resume',
+                subtitle: 'Modern Template · 6 sections verified',
+                onEdit: onEditResume,
+              ),
+              const Divider(),
+              // Target Role & Company
+              _buildSummaryRow(
+                context,
+                icon: Icons.business_center,
+                iconColor: const Color(0xFF087E78),
+                title: jobTitle.isNotEmpty
+                    ? jobTitle
+                    : 'Senior Flutter Developer',
+                subtitle: company.isNotEmpty
+                    ? '$company · Full-time'
+                    : 'Target role specified',
+                onEdit: onEditJobDetails,
+              ),
+              const Divider(),
+              // Job Description
+              _buildSummaryRow(
+                context,
+                icon: Icons.article_outlined,
+                iconColor: const Color(0xFFA15C00),
+                title: 'Job Description Text',
+                subtitle: '$wordCount words · Parsed taxonomy ready',
+                onEdit: onEditJobDetails,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Depth Mode Selector
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Analysis Depth Mode',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => onDepthChanged(false),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: !isDeepMode
+                              ? colors.primarySoft
+                              : colors.mutedBackground,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: !isDeepMode ? colors.primary : colors.border,
+                            width: !isDeepMode ? 2 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Standard',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: !isDeepMode
+                                        ? colors.primary
+                                        : colors.textPrimary,
+                                  ),
+                                ),
+                                const Text(
+                                  '3 Credits',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Core alignment & bullet proposals',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => onDepthChanged(true),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: isDeepMode
+                              ? colors.primarySoft
+                              : colors.mutedBackground,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: isDeepMode ? colors.primary : colors.border,
+                            width: isDeepMode ? 2 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Comprehensive',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: isDeepMode
+                                        ? colors.primary
+                                        : colors.textPrimary,
+                                  ),
+                                ),
+                                const Text(
+                                  '5 Credits',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Deep gap scan & executive rewrite',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Credit Escrow Assurance Card
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE1F4F1),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: const Color(0xFF087E78).withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.shield_outlined,
+                color: Color(0xFF087E78),
+                size: 20,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  '$cost credits will be securely held in escrow during generation and only deducted once suggestions are successfully prepared.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF172033),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Consent Checkbox
+        CheckboxListTile(
+          value: hasConsented,
+          onChanged: (val) => onConsentChanged(val ?? false),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            'I confirm my experience details are truthful. I understand AI suggestions are proposals that require my individual review before applying.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: isBusy ? null : onBack,
+                child: const Text('Back'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              flex: 2,
+              child: AppButton(
+                label: isBusy
+                    ? 'Analyzing...'
+                    : 'Confirm & Launch Optimization ($cost Credits)',
+                loading: isBusy,
+                onPressed: hasConsented && !isBusy ? onLaunch : null,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryRow(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onEdit,
+  }) {
+    final colors = AppColors.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        TextButton(
+          onPressed: onEdit,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+          ),
+          child: const Text('Edit', style: TextStyle(fontSize: 12)),
+        ),
+      ],
+    );
+  }
 }

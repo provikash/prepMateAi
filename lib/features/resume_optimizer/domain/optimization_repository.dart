@@ -13,7 +13,6 @@ abstract interface class OptimizationRepository {
     required String resumeId,
     required String jobDescriptionId,
   });
-  Future<OptimizationSessionModel> getOptimizationSession(String sessionId);
   Future<List<OptimizationSessionModel>> getOptimizationSessions({
     String? status,
     String? search,
@@ -21,10 +20,11 @@ abstract interface class OptimizationRepository {
     String? ordering,
   });
   Future<void> deleteOptimizationSession(String sessionId);
-  Future<OptimizationSessionModel> updateOptimizationSession(
+  Future<void> updateOptimizationSession(
     String sessionId,
     Map<String, dynamic> data,
   );
+  Future<OptimizationSessionModel> getOptimizationSession(String sessionId);
   Future<OptimizationAnalysis> restoreOptimization(String sessionId);
   Future<OptimizationSessionModel> analyzeJobDescription(String sessionId);
   Future<OptimizationSessionModel> matchRequirements(String sessionId);
@@ -58,26 +58,19 @@ abstract interface class OptimizationRepository {
     required String idempotencyKey,
     required int expectedSourceVersion,
   });
+  Future<int> getAvailableCredits();
+  Future<Map<String, dynamic>> getCreditInfo();
+  Future<List<int>> getOptimizedPdf(String versionId);
   Future<OptimizationSummaryData> getOptimizationSummary(String sessionId);
   Future<OptimizedVersionDetail> getOptimizedVersion(String versionId);
+  Future<Map<String, dynamic>> revertOptimizedChange(
+    String versionId,
+    String suggestionId,
+  );
   Future<OptimizedVersionDetail> updateOptimizedVersion(
     String versionId, {
     String? title,
     String? templateId,
   });
-  Future<Map<String, dynamic>> revertOptimizedChange(
-    String versionId,
-    String suggestionId,
-  );
-  Future<Map<String, dynamic>> submitBillingTicket({
-    required String category,
-    required String subject,
-    required String message,
-    String? transactionReference,
-    Map<String, dynamic>? metadata,
-    String? idempotencyKey,
-  });
-  Future<int> getAvailableCredits();
-  Future<Map<String, dynamic>> getCreditInfo();
-  Future<List<int>> getOptimizedPdf(String versionId);
+  Future<Map<String, dynamic>> getOptimizationPdfStatus(String sessionId);
 }

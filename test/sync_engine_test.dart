@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prepmate_mobile/core/database/app_database.dart';
@@ -15,7 +15,84 @@ void main() {
   setUp(() => database = AppDatabase(executor: NativeDatabase.memory()));
   tearDown(() => database.close());
 
-  Future<void> stage({String status = 'pending'}) async {
+  test('guest workspace is stable and can be claimed by an account', () async {
+    final guest = await database.activateWorkspace();
+    final sameGuest = await database.activateWorkspace();
+
+    expect(sameGuest.workspaceId, guest.workspaceId);
+    expect(guest.accountId, isNull);
+
+    final account = await database.activateWorkspace(accountId: 'user-1');
+    expect(account.workspaceId, guest.workspaceId);
+    expect(account.accountId, 'user-1');
+  });
+
+  test('returning account adopts resumes from the active guest', () async {
+    final firstGuest = await database.activateWorkspace();
+    final account = await database.activateWorkspace(accountId: 'user-1');
+    expect(account.workspaceId, firstGuest.workspaceId);
+
+    final secondGuest = await database.activateWorkspace();
+    final now = DateTime(2026, 1, 1);
+    await database
+        .into(database.localResumes)
+        .insert(
+          LocalResumesCompanion.insert(
+            localId: 'local-returning-user',
+            workspaceId: Value(secondGuest.workspaceId),
+            userId: secondGuest.workspaceId,
+            payload: '{}',
+            syncStatus: const Value('local_only'),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    final reactivated = await database.activateWorkspace(accountId: 'user-1');
+    final resume = await database.readLocalResume('local-returning-user');
+    expect(reactivated.workspaceId, account.workspaceId);
+    expect(resume?.workspaceId, account.workspaceId);
+  });
+
+  test('local-only resumes are queued only after account login', () async {
+    final workspace = await database.activateWorkspace();
+    final now = DateTime(2026, 1, 1);
+    await database
+        .into(database.localResumes)
+        .insert(
+          LocalResumesCompanion.insert(
+            localId: 'local-guest',
+            workspaceId: Value(workspace.workspaceId),
+            userId: workspace.workspaceId,
+            payload: jsonEncode({
+              'template_id': 'template-1',
+              'title': 'Guest resume',
+              'data': <String, dynamic>{},
+              'draft': true,
+            }),
+            syncStatus: const Value('local_only'),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    expect(await database.select(database.mutationOutbox).get(), isEmpty);
+
+    await database.queueWorkspaceResumesForSync(
+      workspaceId: workspace.workspaceId,
+      accountId: 'user-1',
+    );
+
+    final queued = await database.select(database.mutationOutbox).getSingle();
+    expect(queued.userId, 'user-1');
+    expect(queued.entityLocalId, 'local-guest');
+    expect(
+      (await database.readLocalResume('local-guest'))?.syncStatus,
+      'pending',
+    );
+  });
+
+  Future<void> stage({String status = 'pending', String? remoteId}) async {
     final now = DateTime(2026, 1, 1);
     final payload = jsonEncode({
       'template_id': 'template-1',
@@ -29,6 +106,7 @@ void main() {
           LocalResumesCompanion.insert(
             localId: 'local-1',
             userId: 'user-1',
+            remoteId: Value(remoteId),
             payload: payload,
             syncStatus: Value(status),
             createdAt: now,
@@ -99,12 +177,31 @@ void main() {
     expect(outbox.nextAttemptAt, isNotNull);
     expect(outbox.permanentFailure, isFalse);
   });
+
+  test(
+    'a poisoned local remote id is sent as a create, not an update',
+    () async {
+      await stage(remoteId: 'local-1791609387889222');
+      final remote = _FakeResumeRemote();
+      final engine = SyncEngine(
+        database: database,
+        resumes: remote,
+        dio: Dio(),
+      );
+
+      final result = await engine.run(source: SyncRunSource.foreground);
+
+      expect(result.succeeded, isTrue);
+      expect(remote.lastResumeId, isNull);
+    },
+  );
 }
 
 class _FakeResumeRemote extends ResumeRemoteDataSource {
   _FakeResumeRemote({this.failure}) : super(dio: Dio());
 
   final ResumeSaveFailureKind? failure;
+  String? lastResumeId;
 
   @override
   Future<CreatedResumeModel> saveResume({
@@ -115,6 +212,7 @@ class _FakeResumeRemote extends ResumeRemoteDataSource {
     required bool draft,
     int? baseRevision,
   }) async {
+    lastResumeId = resumeId;
     if (failure != null) {
       throw ResumeSaveException(kind: failure!, message: 'fake failure');
     }

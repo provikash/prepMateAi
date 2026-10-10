@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Secure, encrypted key-value store for JWT access + refresh tokens.
@@ -9,6 +11,7 @@ class TokenService {
 
   static const _accessTokenKey = 'access_token';
   static const _refreshTokenKey = 'refresh_token';
+  static const _cachedUserKey = 'cached_authenticated_user';
 
   // ─── Write ──────────────────────────────────────────────────────────────
 
@@ -43,6 +46,21 @@ class TokenService {
     return _storage.read(key: _refreshTokenKey);
   }
 
+  static Future<void> saveCachedUser(Map<String, dynamic> user) async {
+    await _storage.write(key: _cachedUserKey, value: jsonEncode(user));
+  }
+
+  static Future<Map<String, dynamic>?> getCachedUser() async {
+    final encoded = await _storage.read(key: _cachedUserKey);
+    if (encoded == null || encoded.isEmpty) return null;
+    try {
+      return Map<String, dynamic>.from(jsonDecode(encoded) as Map);
+    } catch (_) {
+      await _storage.delete(key: _cachedUserKey);
+      return null;
+    }
+  }
+
   // ─── Aliases kept for backward-compatibility ────────────────────────────
 
   /// Alias for [saveAccessToken].
@@ -57,6 +75,7 @@ class TokenService {
   static Future<void> deleteToken() async {
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
+    await _storage.delete(key: _cachedUserKey);
   }
 
   static Future<void> deleteAccessToken() async {

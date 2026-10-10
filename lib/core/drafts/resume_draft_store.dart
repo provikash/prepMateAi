@@ -220,6 +220,6 @@ final resumeDraftControllerProvider =
     StateNotifierProvider<ResumeDraftController, DraftSyncState>((ref) {
       return ResumeDraftController(
         ref.watch(resumeDraftStoreProvider),
-        () => ref.read(authViewModelProvider).user?.id,
+        () => ref.read(authViewModelProvider).user?.id ?? 'guest',
       );
     });

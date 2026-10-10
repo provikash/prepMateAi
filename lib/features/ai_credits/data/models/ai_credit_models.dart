@@ -109,5 +109,44 @@ final class AiCreditTransactionModel {
             ? null
             : _int(json['balance_after']),
         reference: json['reference']?.toString(),
+        creditSource: json['credit_source']?.toString(),
+        receiptAvailable: json['receipt_available'] == true,
       );
 }
+
+final class OrderStatusResultModel {
+  static OrderStatusResult fromJson(Map<String, dynamic> json) =>
+      OrderStatusResult(
+        orderId: '${json['order_id'] ?? ''}',
+        status: '${json['status'] ?? 'CREATED'}',
+        credits: _int(json['credits']),
+        premiumDays: _int(json['premium_days']),
+        productCode: '${json['product_code'] ?? ''}',
+        productName: '${json['product_name'] ?? ''}',
+        amount: _int(json['amount']),
+        currency: '${json['currency'] ?? 'INR'}',
+        reference: '${json['reference'] ?? ''}',
+        paidAt: _date(json['paid_at']),
+        receipt: json['receipt']?.toString(),
+      );
+}
+
+final class OrderReceiptModel {
+  static OrderReceipt fromJson(Map<String, dynamic> json) => OrderReceipt(
+        receiptNumber: '${json['receipt_number'] ?? ''}',
+        reference: '${json['reference'] ?? ''}',
+        productName: '${json['product_name'] ?? ''}',
+        amount: _double(json['amount']),
+        currency: '${json['currency'] ?? 'INR'}',
+        credits: _int(json['credits']),
+        premiumDays: _int(json['premium_days']),
+        status: '${json['status'] ?? ''}',
+        createdAt: _date(json['created_at']) ?? DateTime.now(),
+        paidAt: _date(json['paid_at']),
+        customerName: '${json['customer_name'] ?? 'PrepMate User'}',
+        customerPhone: '${json['customer_phone'] ?? ''}',
+        billingProvider:
+            '${json['billing_provider'] ?? 'Verified Store Checkout'}',
+      );
+}
+

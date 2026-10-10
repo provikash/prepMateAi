@@ -1,0 +1,42 @@
+"""
+URL configuration for core project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/5.2/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.contrib import admin
+from django.urls import include, path
+from django.conf import settings
+from django.conf.urls.static import static
+from .health import health, live
+from .media import serve_media
+from ai.credit_views import EntitlementsView
+
+urlpatterns = [
+    path('health/', health, name='health'),
+    path('health/live/', live, name='health-live'),
+    path('media/<path:path>', serve_media, name='media'),
+    path('admin/', admin.site.urls),
+
+    path('api/v1/', include('users.urls')),
+
+    path('api/v1/resumes/', include('resume.urls')),
+    path('api/v1/templates/', include('templates.urls')),
+    path('api/v1/resume-templates/', include('templates.urls')),
+    path('api/v1/', include('exports.urls')),
+    path('api/v1/ai/', include('ai.urls')),
+    path('api/v1/job-optimizer/', include('job_optimizer.urls')),
+    path('api/v1/resume-optimizations/', include('job_optimizer.contract_urls')),
+    path('api/v1/billing/entitlements/', EntitlementsView.as_view(), name='billing-entitlements'),
+    path('api/v1/billing/', include('billing.urls')),
+]

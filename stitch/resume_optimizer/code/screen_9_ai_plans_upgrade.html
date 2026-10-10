@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; } body { overscroll-behavior: none; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-container-high": "#e1e8ff", "on-primary-container": "#d5dcff", "outline": "#747686", "inverse-surface": "#273044", "on-primary-fixed": "#00164d", "tertiary-container": "#0d65a6", "on-error-container": "#93000a", "on-tertiary-fixed": "#001d36", "tertiary": "#004c81", "on-background": "#121b2e", "surface-variant": "#d9e2fc", "inverse-on-surface": "#edf0ff", "inverse-primary": "#b5c4ff", "secondary-fixed-dim": "#79d6cf", "background": "#f9f9ff", "primary-container": "#2457d6", "on-tertiary-fixed-variant": "#00497c", "on-tertiary-container": "#c9e0ff", "on-primary-fixed-variant": "#003cad", "surface-tint": "#1f54d3", "surface-container-highest": "#d9e2fc", "secondary": "#006a65", "surface-bright": "#f9f9ff", "surface-container-low": "#f1f3ff", "on-primary": "#ffffff", "on-secondary-container": "#006f69", "on-secondary": "#ffffff", "surface-container-lowest": "#ffffff", "primary": "#003fb3", "on-surface-variant": "#434654", "error": "#ba1a1a", "tertiary-fixed-dim": "#9dcaff", "outline-variant": "#c3c5d7", "on-secondary-fixed-variant": "#00504c", "on-tertiary": "#ffffff", "secondary-fixed": "#96f3eb", "on-surface": "#121b2e", "surface": "#f9f9ff", "surface-dim": "#d1daf4", "primary-fixed-dim": "#b5c4ff", "on-error": "#ffffff", "surface-container": "#e9edff", "tertiary-fixed": "#d1e4ff", "primary-fixed": "#dce1ff", "secondary-container": "#93f0e8", "on-secondary-fixed": "#00201e", "error-container": "#ffdad6" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-md": "1rem", "space-xl": "1.5rem", "space-xxl": "2rem", "space-sm": "0.75rem", "space-xxs": "0.25rem", "space-lg": "1.25rem", "margin": "1rem", "space-xs": "0.5rem", "gutter": "1rem" }, fontFamily: { "label-sm": ["Hanken Grotesk"], "title-md": ["Hanken Grotesk"], "label-md": ["Hanken Grotesk"], "headline-md": ["Hanken Grotesk"], "title-lg": ["Hanken Grotesk"], "label-lg": ["Hanken Grotesk"], "display-lg": ["Hanken Grotesk"], "headline-lg-mobile": ["Hanken Grotesk"], "body-md": ["Hanken Grotesk"], "headline-lg": ["Hanken Grotesk"], "title-sm": ["Hanken Grotesk"], "display-sm": ["Hanken Grotesk"], "body-sm": ["Hanken Grotesk"], "body-lg": ["Hanken Grotesk"], "headline-sm": ["Hanken Grotesk"], "display-md": ["Hanken Grotesk"] }, fontSize: { "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0.15px", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "600" }], "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "0px", "fontWeight": "600" }], "title-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "0px", "fontWeight": "500" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "600" }], "display-lg": ["57px", { "lineHeight": "64px", "letterSpacing": "-0.25px", "fontWeight": "700" }], "headline-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "0px", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.25px", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "0px", "fontWeight": "600" }], "title-sm": ["14px", { "lineHeight": "20px", "letterSpacing": "0.1px", "fontWeight": "600" }], "display-sm": ["36px", { "lineHeight": "44px", "letterSpacing": "0px", "fontWeight": "600" }], "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.4px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.5px", "fontWeight": "400" }], "headline-sm": ["24px", { "lineHeight": "32px", "letterSpacing": "0px", "fontWeight": "600" }], "display-md": ["45px", { "lineHeight": "52px", "letterSpacing": "0px", "fontWeight": "600" }] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-space-xs flex items-center justify-between gap-space-xs"><div class="flex items-center gap-space-xs min-w-0 flex-1"><button class="w-11 h-11 flex items-center justify-center text-on-surface hover:text-primary transition-colors shrink-0" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><h1 class="font-title-md text-title-md text-on-surface truncate">Subscription Plans</h1></div><div class="flex items-center gap-space-xs shrink-0 pr-space-xs"><div class="flex items-center gap-space-xxs bg-surface-container-high text-primary px-space-xs py-space-xxs rounded-full"><span class="material-symbols-outlined text-[16px]">bolt</span><span class="font-label-md text-label-md font-bold">42 AI</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><!-- Segmented Control / Tab Switcher Navigation --><div class="px-space-md pb-2 pt-0.5"><div class="bg-surface-container-high p-1 rounded-full flex items-center justify-between relative shadow-inner"><button class="flex-1 py-1.5 rounded-full font-label-md text-label-md font-semibold text-center transition-all duration-200 bg-surface-container-lowest text-primary shadow-sm" id="tab-nav-plans" onclick="switchMainTab('plans')">Plans</button><button class="flex-1 py-1.5 rounded-full font-label-md text-label-md font-medium text-center transition-all duration-200 text-on-surface-variant hover:text-on-surface" id="tab-nav-packs" onclick="switchMainTab('packs')">Credit Top-Ups</button><button class="flex-1 py-1.5 rounded-full font-label-md text-label-md font-medium text-center transition-all duration-200 text-on-surface-variant hover:text-on-surface" id="tab-nav-compare" onclick="switchMainTab('compare')">Comparison</button></div></div></header><main class="flex-1 flex flex-col relative w-full pt-28 pb-safe bg-surface"><div class="flex flex-col w-full pb-space-lg">
+<!-- TAB 1: SUBSCRIPTION PLANS -->
+<div class="flex flex-col w-full" id="tab-content-plans">
+<!-- Screen Header Narrative -->
+<div class="px-space-md pt-space-xs pb-space-xs flex flex-col gap-space-xxs text-center">
+<div class="inline-flex items-center self-center gap-space-xxs bg-surface-container-high px-space-xs py-0.5 rounded-full mb-0.5">
+<span class="material-symbols-outlined text-primary text-[13px]">token</span>
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wide">PrepMateAI Credits</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Choose your AI plan</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs mx-auto">
+      Get more AI credits for your career tools. Upgrade or cancel anytime.
+    </p>
+</div>
+<!-- Billing Cycle Pill Toggle -->
+<div class="px-space-md py-space-xs">
+<div class="bg-surface-container-high p-1 rounded-full flex items-center justify-between relative shadow-sm">
+<button class="flex-1 py-space-xs rounded-full font-label-lg text-label-lg transition-all duration-200 bg-surface-container-lowest text-primary shadow-sm font-semibold text-center" id="toggle-monthly" onclick="switchBilling('monthly')">
+        Monthly Billing
+      </button>
+<button class="flex-1 py-space-xs rounded-full font-label-lg text-label-lg transition-all duration-200 text-on-surface-variant hover:text-on-surface font-medium flex items-center justify-center gap-1 text-center" id="toggle-annual" onclick="switchBilling('annual')">
+<span>Annual</span>
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold">Save 20%</span>
+</button>
+</div>
+</div>
+<!-- Plan Selection Sub-Toggle / Carousel Indicator -->
+<div class="px-space-md pt-space-xs pb-space-xxs flex items-center justify-between">
+<span class="font-label-sm text-label-sm font-bold text-on-surface-variant uppercase tracking-wider">Select Tier</span>
+<div class="flex items-center gap-1 bg-surface-container-low p-0.5 rounded-lg border border-outline-variant/30">
+<button class="px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold bg-primary text-on-primary transition-all" id="subtab-pro-btn" onclick="selectTierCard('pro')">Pro Plan</button>
+<button class="px-2.5 py-1 rounded-md font-label-sm text-label-sm font-medium text-on-surface-variant hover:text-on-surface transition-all" id="subtab-free-btn" onclick="selectTierCard('free')">Free Tier</button>
+</div>
+</div>
+<!-- Primary Plan Cards Stack / Toggled View -->
+<div class="px-space-md pt-space-xxs flex flex-col gap-space-sm" id="plans-container">
+<!-- PRO PLAN CARD -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md overflow-hidden relative border border-primary/20 transition-all duration-200" id="card-tier-pro" style="box-shadow: 0 0 0 1.5px #2457d6, 0 8px 24px rgba(36, 87, 214, 0.08);">
+<!-- Promotional Gradient Bar -->
+<div class="bg-gradient-to-r from-primary-container via-primary to-primary-container text-on-primary py-1.5 px-space-md flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed">local_fire_department</span>
+<span class="font-label-sm text-label-sm uppercase font-bold tracking-wider text-primary-fixed">Most Popular</span>
+</div>
+<span class="font-label-sm text-label-sm font-semibold bg-surface-container-lowest/20 px-2 py-0.5 rounded-full text-white backdrop-blur-sm">
+          15x More Credits
+        </span>
+</div>
+<div class="p-space-md flex flex-col gap-space-sm">
+<!-- Header & Price -->
+<div class="flex items-start justify-between">
+<div>
+<span class="font-title-lg text-title-lg font-bold text-on-surface block">Pro Plan</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cancel or pause anytime</span>
+</div>
+<div class="text-right">
+<div class="flex items-baseline justify-end gap-0.5">
+<span class="font-headline-md text-headline-md font-bold text-primary" id="pro-price">₹99</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium" id="pro-period">/ month</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-semibold block" id="pro-subtext">Billed monthly</span>
+</div>
+</div>
+<!-- Metric Highlight Pill Box -->
+<div class="bg-surface-container-low rounded-lg p-space-sm flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+</div>
+<div>
+<span class="font-title-sm text-title-sm font-bold text-on-surface block">500 AI Credits</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Replenished automatically</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-primary px-2 py-1 rounded-full font-bold">
+            High Priority
+          </span>
+</div>
+<!-- Features list -->
+<div class="flex flex-col gap-space-xs pt-space-xxs">
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Everything in Free Tier included</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">500 AI credits replenished each month</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Deep Job Description Optimization <span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">(10 cr)</span></span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Full ATS Scoring &amp; Keyword Diagnostic <span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">(5 cr)</span></span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Tailored Cover Letter Generator <span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">(5 cr)</span></span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Unlimited AI suggestions &amp; instant edits</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Dedicated high-speed neural pipeline</span>
+</div>
+</div>
+<!-- Upgrade Action -->
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-space-sm px-space-md rounded-xl font-label-lg text-label-lg font-semibold shadow-md active:scale-[0.99] transition-all flex items-center justify-center gap-2 mt-1" onclick="openModal()">
+<span>Upgrade to Pro</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- FREE PLAN CARD -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm relative border border-outline-variant/40" id="card-tier-free">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-title-lg text-title-lg font-bold text-on-surface block">Free Tier</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Core career building toolkit</span>
+</div>
+<div class="text-right">
+<div class="flex items-baseline justify-end gap-0.5">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">₹0</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">/ month</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Free forever</span>
+</div>
+</div>
+<!-- Feature checklist with subtle green checkmarks -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Unlimited Resume Builder &amp; Editor</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">All Clean &amp; Modern Resume Templates</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Standard PDF Downloads (Unrestricted)</span>
+</div>
+<div class="flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">30 AI credits / month for basic polish</span>
+</div>
+</div>
+<!-- Disabled / Current State CTA Button -->
+<button class="w-full bg-surface-container text-on-surface-variant py-space-sm px-space-md rounded-xl font-label-lg text-label-lg font-medium cursor-default flex items-center justify-center gap-1.5" disabled="">
+<span class="material-symbols-outlined text-[16px]">check</span>
+<span>Current Active Plan</span>
+</button>
+</div>
+</div>
+<!-- Zero Lockout Banner & Quick Link -->
+<div class="px-space-md pt-space-md flex flex-col gap-space-xs">
+<div class="bg-surface-container-low rounded-xl p-space-sm flex gap-space-sm items-start border border-outline-variant/30">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<h4 class="font-title-sm text-title-sm font-bold text-on-surface">Zero-Lockout Guarantee</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          Resumes and PDF exports are never locked when AI credits run out. Only AI generation pauses.
+        </p>
+</div>
+</div>
+</div>
+</div>
+<!-- TAB 2: CREDIT TOP-UPS (PACKS) -->
+<div class="hidden flex-col w-full" id="tab-content-packs">
+<div class="px-space-md pt-space-xs pb-space-sm flex flex-col gap-space-xxs text-center">
+<div class="inline-flex items-center self-center gap-space-xxs bg-secondary-container text-on-secondary-container px-space-xs py-0.5 rounded-full mb-0.5">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+<span class="font-label-sm text-label-sm uppercase font-bold tracking-wide">Instant Top-Ups</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Need quick credits?</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs mx-auto">Non-expiring top-ups ready for immediate use without a recurring subscription.</p>
+</div>
+<div class="px-space-md flex flex-col gap-space-sm">
+<div class="grid grid-cols-2 gap-space-xs">
+<!-- Mini Pack -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between gap-space-sm border border-outline-variant/30">
+<div>
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary mb-2">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+</div>
+<h4 class="font-title-sm text-title-sm font-bold text-on-surface">Mini Pack</h4>
+<p class="font-label-sm text-label-sm text-primary font-bold mt-0.5">50 AI credits</p>
+<div class="flex items-baseline gap-1 mt-2">
+<span class="font-title-lg text-title-lg font-bold text-on-surface">₹29</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">one-time</span>
+</div>
+</div>
+<button class="w-full bg-surface-container-high hover:bg-surface-variant text-primary py-2 rounded-lg font-label-md text-label-md font-semibold transition-colors active:scale-95 text-center" onclick="openModal('Mini Pack - 50 Credits', '₹29')">
+          Buy Pack
+        </button>
+</div>
+<!-- Power Pack -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between gap-space-sm relative border border-secondary/30">
+<span class="absolute top-2 right-2 font-label-sm text-[10px] uppercase font-bold bg-secondary-container text-on-secondary-container px-1.5 py-0.5 rounded-full">Best Value</span>
+<div>
+<div class="w-8 h-8 rounded-lg bg-secondary-fixed flex items-center justify-center text-secondary mb-2">
+<span class="material-symbols-outlined text-[18px]">electric_bolt</span>
+</div>
+<h4 class="font-title-sm text-title-sm font-bold text-on-surface">Power Pack</h4>
+<p class="font-label-sm text-label-sm text-secondary font-bold mt-0.5">200 AI credits</p>
+<div class="flex items-baseline gap-1 mt-2">
+<span class="font-title-lg text-title-lg font-bold text-on-surface">₹69</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">one-time</span>
+</div>
+</div>
+<button class="w-full bg-secondary-container hover:bg-secondary-fixed-dim text-on-secondary-container py-2 rounded-lg font-label-md text-label-md font-semibold transition-colors active:scale-95 text-center" onclick="openModal('Power Pack - 200 Credits', '₹69')">
+          Buy Pack
+        </button>
+</div>
+</div>
+<!-- Mega Pack / High Usage -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex items-center justify-between border border-primary/20">
+<div class="flex items-center gap-space-xs">
+<div class="w-9 h-9 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">stars</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<h4 class="font-title-sm text-title-sm font-bold text-on-surface">Mega Pack</h4>
+<span class="bg-primary/10 text-primary font-label-sm text-[10px] font-bold px-1.5 py-0.2 rounded-full uppercase">Bulk Save</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">500 Credits • ₹149 one-time</p>
+</div>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-3.5 py-1.5 rounded-lg font-label-md text-label-md font-semibold transition-colors active:scale-95" onclick="openModal('Mega Pack - 500 Credits', '₹149')">
+        Buy Pack
+      </button>
+</div>
+<!-- Pack FAQs / Details -->
+<div class="bg-surface-container-low rounded-xl p-space-sm flex flex-col gap-space-xxs border border-outline-variant/30 mt-1">
+<div class="flex items-center gap-1.5 text-primary font-title-sm text-title-sm font-semibold">
+<span class="material-symbols-outlined text-[18px]">help_outline</span>
+<span>How do Top-Up Credits work?</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+        • Top-up credits <strong class="text-on-surface">never expire</strong> and stack on top of your existing tier.<br/>
+        • Use them for JD tailoring (10 cr), ATS score check (5 cr), and cover letter generation (5 cr).<br/>
+        • No recurring charges; billed once via UPI or Card.
+      </p>
+</div>
+</div>
+</div>
+<!-- TAB 3: PLAN COMPARISON -->
+<div class="hidden flex-col w-full" id="tab-content-compare">
+<div class="px-space-md pt-space-xs pb-space-xs flex items-center justify-between">
+<div>
+<h3 class="font-title-md text-title-md font-bold text-on-surface">Compare Plan Features</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Detailed capability matrix: Free vs Pro</p>
+</div>
+<span class="font-label-sm text-label-sm bg-primary/10 text-primary font-bold px-2 py-1 rounded-full">Pro Perks</span>
+</div>
+<div class="px-space-md pt-space-xs flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-outline-variant/40">
+<!-- Table Header -->
+<div class="bg-surface-container-low px-space-md py-space-xs grid grid-cols-12 font-label-sm text-label-sm font-bold text-on-surface-variant">
+<span class="col-span-6">CAPABILITY</span>
+<span class="col-span-3 text-center">FREE</span>
+<span class="col-span-3 text-right text-primary">PRO</span>
+</div>
+<!-- Row 1 -->
+<div class="px-space-md py-space-sm grid grid-cols-12 items-center bg-surface-container-lowest border-b border-surface-container">
+<div class="col-span-6 flex flex-col">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">Resume Builder</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Editor &amp; PDF Export</span>
+</div>
+<div class="col-span-3 text-center">
+<span class="font-label-sm text-label-sm font-medium text-on-surface-variant">Unlimited</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-label-sm text-label-sm font-bold text-primary">Unlimited</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="px-space-md py-space-sm grid grid-cols-12 items-center bg-surface-container-low border-b border-surface-container">
+<div class="col-span-6 flex flex-col">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">Monthly AI Credits</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Automated refresh</span>
+</div>
+<div class="col-span-3 text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">30 cr</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-label-sm text-label-sm font-bold text-primary">500 cr</span>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="px-space-md py-space-sm grid grid-cols-12 items-center bg-surface-container-lowest border-b border-surface-container">
+<div class="col-span-6 flex flex-col">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">JD Tailoring</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Target role matching</span>
+</div>
+<div class="col-span-3 text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Limited</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-label-sm text-label-sm font-bold text-primary">Full Access</span>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="px-space-md py-space-sm grid grid-cols-12 items-center bg-surface-container-low border-b border-surface-container">
+<div class="col-span-6 flex flex-col">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">ATS Keyword Audit</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Parser diagnostics</span>
+</div>
+<div class="col-span-3 text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Basic</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-label-sm text-label-sm font-bold text-primary">Detailed</span>
+</div>
+</div>
+<!-- Row 5 -->
+<div class="px-space-md py-space-sm grid grid-cols-12 items-center bg-surface-container-lowest border-b border-surface-container">
+<div class="col-span-6 flex flex-col">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">Truthfulness Guard</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Fact verification</span>
+</div>
+<div class="col-span-3 text-center">
+<span class="material-symbols-outlined text-secondary text-[18px]">done</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+</div>
+</div>
+<!-- Row 6: Cover Letter -->
+<div class="px-space-md py-space-sm grid grid-cols-12 items-center bg-surface-container-low border-b border-surface-container">
+<div class="col-span-6 flex flex-col">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">Cover Letter Gen</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Role-matched drafts</span>
+</div>
+<div class="col-span-3 text-center">
+<span class="text-outline-variant font-bold">—</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+</div>
+</div>
+<!-- Row 7: Priority Speed -->
+<div class="px-space-md py-space-sm grid grid-cols-12 items-center bg-surface-container-lowest">
+<div class="col-span-6 flex flex-col">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">Pipeline Speed</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Neural model queue</span>
+</div>
+<div class="col-span-3 text-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Standard</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-label-sm text-label-sm font-bold text-primary">High Speed</span>
+</div>
+</div>
+</div>
+<!-- Action Prompt inside Comparison Tab -->
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-space-sm flex items-center justify-between">
+<div>
+<p class="font-title-sm text-title-sm font-bold text-on-surface">Ready for 15x more credits?</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Upgrade to Pro starting at ₹79/mo</p>
+</div>
+<button class="bg-primary text-on-primary px-3.5 py-2 rounded-xl font-label-md text-label-md font-semibold shadow-sm active:scale-95 transition-all shrink-0" onclick="openModal()">
+        Upgrade Now
+      </button>
+</div>
+</div>
+</div>
+<!-- ZERO-LOCKOUT GUARANTEE & TRUST FOOTER (Unified & Compact) -->
+<div class="px-space-md pt-space-lg flex flex-col gap-space-xs">
+<!-- Payment Trust Badges -->
+<div class="flex flex-col items-center gap-space-xxs text-center pt-2">
+<div class="flex items-center gap-space-xs text-on-surface-variant flex-wrap justify-center">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary">lock</span>
+<span class="font-label-sm text-label-sm font-semibold">256-Bit Encrypted</span>
+</div>
+<span class="text-outline-variant">•</span>
+<span class="font-label-sm text-label-sm font-semibold">UPI AutoPay</span>
+<span class="text-outline-variant">•</span>
+<span class="font-label-sm text-label-sm font-semibold">NetBanking / Cards</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px]">
+      PrepMateAI uses RBI-compliant verified payment gateways.
+    </p>
+</div>
+</div>
+<!-- UPGRADE CONFIRMATION BOTTOM SHEET MODAL (Interactive) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/50 backdrop-blur-sm hidden items-end justify-center transition-opacity opacity-0" id="upgrade-modal-backdrop">
+<div class="bg-surface-container-lowest w-full max-w-lg rounded-t-3xl shadow-xl flex flex-col overflow-hidden transform translate-y-full transition-transform duration-300" id="upgrade-modal-sheet">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center pt-3 pb-1">
+<div class="w-12 h-1.5 bg-surface-container-highest rounded-full"></div>
+</div>
+<!-- Sheet Header -->
+<div class="px-space-lg pt-space-xs pb-space-sm flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">rocket_launch</span>
+</div>
+<div>
+<h3 class="font-title-lg text-title-lg font-bold text-on-surface" id="modal-title">Confirm Upgrade to Pro</h3>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Instant AI Credit Activation</span>
+</div>
+</div>
+<button class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface" onclick="closeModal()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Sheet Content Body -->
+<div class="px-space-lg py-space-sm flex flex-col gap-space-md">
+<!-- Benefit callout -->
+<div class="bg-surface-container-high/60 rounded-xl p-space-sm flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[24px]" style="font-variation-settings: 'FILL' 1;">stars</span>
+<div>
+<p class="font-title-sm text-title-sm font-bold text-primary" id="modal-summary">500 AI credits added immediately</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Ready for deep job matching &amp; ATS optimization</p>
+</div>
+</div>
+<!-- Billing summary -->
+<div class="bg-surface-container-low rounded-xl p-space-sm flex flex-col gap-space-xs">
+<div class="flex justify-between items-center font-body-md text-body-md">
+<span class="text-on-surface-variant">Selected Plan</span>
+<span class="font-semibold text-on-surface" id="modal-plan-name">PrepMateAI Pro (Monthly)</span>
+</div>
+<div class="flex justify-between items-center font-body-md text-body-md">
+<span class="text-on-surface-variant">Total Amount Due</span>
+<span class="font-title-md text-title-md font-bold text-primary" id="modal-amount">₹99</span>
+</div>
+<div class="h-0.5 bg-surface-container-highest my-1"></div>
+<p class="font-label-sm text-label-sm text-on-surface-variant" id="modal-terms">
+          Billed monthly at ₹99/month. Recurring charge can be stopped anytime with one click in your Account Settings.
+        </p>
+</div>
+<!-- Guarantee Reminder -->
+<div class="flex items-center gap-space-xs px-1">
+<span class="material-symbols-outlined text-secondary text-[18px]">verified</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Master resumes and standard editing remain 100% free regardless of plan.
+        </p>
+</div>
+</div>
+<!-- Actions -->
+<div class="p-space-lg pt-space-xs pb-safe flex flex-col gap-space-xs">
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-space-sm px-space-md rounded-xl font-label-lg text-label-lg font-semibold shadow-md active:scale-[0.99] transition-all flex items-center justify-center gap-2" onclick="handleConfirmPayment()">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+<span id="modal-action-text">Confirm &amp; Pay ₹99</span>
+</button>
+<button class="w-full py-space-xs text-on-surface-variant hover:text-on-surface font-label-lg text-label-lg font-medium text-center transition-colors" onclick="closeModal()">
+        Maybe Later
+      </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  let currentCycle = 'monthly';
+  let activeTab = 'plans';
+
+  function switchMainTab(tab) {
+    activeTab = tab;
+    const tabs = ['plans', 'packs', 'compare'];
+    tabs.forEach(t => {
+      const btn = document.getElementById(`tab-nav-${t}`);
+      const content = document.getElementById(`tab-content-${t}`);
+      if (t === tab) {
+        btn.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-semibold');
+        btn.classList.remove('text-on-surface-variant', 'font-medium');
+        content.classList.remove('hidden');
+        content.classList.add('flex');
+      } else {
+        btn.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-semibold');
+        btn.classList.add('text-on-surface-variant', 'font-medium');
+        content.classList.remove('flex');
+        content.classList.add('hidden');
+      }
+    });
+  }
+
+  function selectTierCard(tier) {
+    const proBtn = document.getElementById('subtab-pro-btn');
+    const freeBtn = document.getElementById('subtab-free-btn');
+    const proCard = document.getElementById('card-tier-pro');
+    const freeCard = document.getElementById('card-tier-free');
+
+    if (tier === 'pro') {
+      proBtn.className = 'px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold bg-primary text-on-primary transition-all';
+      freeBtn.className = 'px-2.5 py-1 rounded-md font-label-sm text-label-sm font-medium text-on-surface-variant hover:text-on-surface transition-all';
+      proCard.classList.remove('opacity-40');
+      freeCard.classList.add('opacity-80');
+      proCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      freeBtn.className = 'px-2.5 py-1 rounded-md font-label-sm text-label-sm font-bold bg-primary text-on-primary transition-all';
+      proBtn.className = 'px-2.5 py-1 rounded-md font-label-sm text-label-sm font-medium text-on-surface-variant hover:text-on-surface transition-all';
+      freeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function switchBilling(cycle) {
+    currentCycle = cycle;
+    const monthlyBtn = document.getElementById('toggle-monthly');
+    const annualBtn = document.getElementById('toggle-annual');
+    const proPrice = document.getElementById('pro-price');
+    const proPeriod = document.getElementById('pro-period');
+    const proSubtext = document.getElementById('pro-subtext');
+
+    if (cycle === 'annual') {
+      monthlyBtn.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-semibold');
+      monthlyBtn.classList.add('text-on-surface-variant', 'font-medium');
+
+      annualBtn.classList.remove('text-on-surface-variant', 'font-medium');
+      annualBtn.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-semibold');
+
+      proPrice.textContent = '₹79';
+      proPeriod.textContent = '/ month';
+      proSubtext.textContent = '₹948 billed annually (Save 20%)';
+    } else {
+      annualBtn.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-semibold');
+      annualBtn.classList.add('text-on-surface-variant', 'font-medium');
+
+      monthlyBtn.classList.remove('text-on-surface-variant', 'font-medium');
+      monthlyBtn.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm', 'font-semibold');
+
+      proPrice.textContent = '₹99';
+      proPeriod.textContent = '/ month';
+      proSubtext.textContent = 'Billed monthly';
+    }
+  }
+
+  function openModal(customItem, customPrice) {
+    const backdrop = document.getElementById('upgrade-modal-backdrop');
+    const sheet = document.getElementById('upgrade-modal-sheet');
+    const title = document.getElementById('modal-title');
+    const summary = document.getElementById('modal-summary');
+    const planName = document.getElementById('modal-plan-name');
+    const amount = document.getElementById('modal-amount');
+    const terms = document.getElementById('modal-terms');
+    const actionText = document.getElementById('modal-action-text');
+
+    if (customItem && customPrice) {
+      title.textContent = 'Confirm Credit Purchase';
+      summary.textContent = customItem + ' added immediately';
+      planName.textContent = customItem + ' Top-up';
+      amount.textContent = customPrice;
+      terms.textContent = 'One-time payment. Credits never expire and attach to your current free tier.';
+      actionText.textContent = 'Confirm & Pay ' + customPrice;
+    } else {
+      title.textContent = 'Confirm Upgrade to Pro';
+      summary.textContent = '500 AI credits added immediately';
+      if (currentCycle === 'annual') {
+        planName.textContent = 'PrepMateAI Pro (Annual Saver)';
+        amount.textContent = '₹948';
+        terms.textContent = 'Billed annually at ₹948/yr (₹79/mo). Renews automatically unless cancelled in Settings.';
+        actionText.textContent = 'Confirm & Pay ₹948';
+      } else {
+        planName.textContent = 'PrepMateAI Pro (Monthly)';
+        amount.textContent = '₹99';
+        terms.textContent = 'Billed monthly at ₹99/month. Cancel anytime with one tap in your Account Settings.';
+        actionText.textContent = 'Confirm & Pay ₹99';
+      }
+    }
+
+    backdrop.classList.remove('hidden');
+    backdrop.classList.add('flex');
+    setTimeout(() => {
+      backdrop.classList.remove('opacity-0');
+      sheet.classList.remove('translate-y-full');
+    }, 10);
+  }
+
+  function closeModal() {
+    const backdrop = document.getElementById('upgrade-modal-backdrop');
+    const sheet = document.getElementById('upgrade-modal-sheet');
+
+    backdrop.classList.add('opacity-0');
+    sheet.classList.add('translate-y-full');
+
+    setTimeout(() => {
+      backdrop.classList.remove('flex');
+      backdrop.classList.add('hidden');
+    }, 300);
+  }
+
+  function handleConfirmPayment() {
+    const btn = document.getElementById('modal-action-text');
+    btn.textContent = 'Connecting UPI / Gateway...';
+    setTimeout(() => {
+      closeModal();
+      alert('Order initiated! Redirecting to secure UPI gateway.');
+    }, 800);
+  }
+</script></main></body></html>

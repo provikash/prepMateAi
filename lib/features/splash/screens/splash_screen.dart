@@ -26,9 +26,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   String? _errorMessage;
 
   final List<Map<String, dynamic>> _stages = const [
-    {'text': 'Preparing your career workspace…', 'progress': 0.35},
-    {'text': 'Verifying session keys & profile…', 'progress': 0.68},
-    {'text': 'Calibrating AI coach models…', 'progress': 0.95},
+    {'text': 'Opening your career workspace…', 'progress': 0.35},
+    {'text': 'Loading your profile…', 'progress': 0.68},
+    {'text': 'Getting your resume tools ready…', 'progress': 0.95},
   ];
 
   @override
@@ -107,14 +107,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           }
         }
       } else {
-        context.go('/login');
+        context.go('/dashboard');
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _hasError = true;
-          _errorMessage = 'Unable to connect to server. Please try again.';
+          _errorMessage = 'Could not restore your account. Opening offline.';
         });
+        context.go('/dashboard');
       }
     }
   }
@@ -150,138 +151,139 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           SafeArea(
             child: Column(
               children: [
-                const Spacer(flex: 3),
-
-                // Center Identity Block
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 96x96 Brand Mark Container with Sparkle Pill
-                        Stack(
-                          clipBehavior: Clip.none,
+                Expanded(
+                  child: Center(
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 96,
-                              height: 96,
-                              decoration: BoxDecoration(
-                                color: colors.surface,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFF172033,
-                                    ).withValues(alpha: 0.08),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                  BoxShadow(
-                                    color: colors.primary.withValues(
-                                      alpha: 0.12,
-                                    ),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(12),
-                              child: const AppLogo(size: 72),
-                            ),
-                            Positioned(
-                              top: -4,
-                              right: -4,
-                              child: Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: colors.surface,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.08,
+                            // 96x96 Brand Mark Container with Sparkle Pill
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: 96,
+                                  height: 96,
+                                  decoration: BoxDecoration(
+                                    color: colors.surface,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF172033,
+                                        ).withValues(alpha: 0.08),
+                                        blurRadius: 24,
+                                        offset: const Offset(0, 8),
                                       ),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
+                                      BoxShadow(
+                                        color: colors.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  padding: const EdgeInsets.all(12),
+                                  child: const AppLogo(size: 72),
+                                ),
+                                Positioned(
+                                  top: -4,
+                                  right: -4,
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: colors.surface,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.08,
+                                          ),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                    child: Icon(
+                                      Icons.auto_awesome,
+                                      size: 14,
+                                      color: colors.primary,
+                                    ),
+                                  ),
                                 ),
-                                child: Icon(
-                                  Icons.auto_awesome,
-                                  size: 14,
-                                  color: colors.primary,
-                                ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                        // Title with AI badge
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                            // Title with AI badge
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'PrepMate',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.textPrimary,
+                                        letterSpacing: -0.5,
+                                      ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primarySoft,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'AI',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
                             Text(
-                              'PrepMate',
-                              style: Theme.of(context).textTheme.headlineMedium
+                              'Build smarter. Apply stronger.',
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: colors.textPrimary,
-                                    letterSpacing: -0.5,
+                                    color: colors.textSecondary,
+                                    fontWeight: FontWeight.w500,
                                   ),
                             ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.primarySoft,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                'AI',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.primary,
-                                ),
-                              ),
+                            const SizedBox(height: 16),
+
+                            // Skill/domain pills
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildDomainTag('Resume', colors),
+                                _buildDot(colors),
+                                _buildDomainTag('Mock Interview', colors),
+                                _buildDot(colors),
+                                _buildDomainTag('AI Coach', colors),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Build smarter. Apply stronger.',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: colors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Skill/domain pills
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildDomainTag('Resume', colors),
-                            _buildDot(colors),
-                            _buildDomainTag('Mock Interview', colors),
-                            _buildDot(colors),
-                            _buildDomainTag('AI Coach', colors),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-
-                const Spacer(flex: 4),
 
                 // Reassurance & Loader or Error Area
                 Padding(
@@ -365,7 +367,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Securely preparing your account',
+                            'Preparing your private workspace',
                             style: TextStyle(
                               fontSize: 12,
                               color: colors.textSecondary,

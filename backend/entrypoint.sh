@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+if [ "$#" -gt 0 ]; then
+  exec "$@"
+fi
+python manage.py check --deploy --fail-level WARNING
+python manage.py migrate --noinput
+python manage.py ensure_professional_template
+python manage.py ensure_thomas_themes
+python manage.py collectstatic --noinput
+exec gunicorn core.wsgi:application --bind "0.0.0.0:${PORT:-8000}" \
+  --workers "${WEB_CONCURRENCY:-2}" --threads "${WEB_THREADS:-2}" \
+  --timeout 180 --graceful-timeout 30 --max-requests 1000 \
+  --max-requests-jitter 100 --access-logfile - --error-logfile -

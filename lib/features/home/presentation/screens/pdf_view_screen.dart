@@ -26,6 +26,12 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
   int _pageCount = 1;
   int _currentPage = 1;
   double _zoomLevel = 1.0;
+  String? _documentError;
+
+  void _retryPreview() {
+    setState(() => _documentError = null);
+    ref.invalidate(pdfViewerProvider(widget.resumeId));
+  }
 
   void _zoomIn() {
     setState(() {
@@ -100,7 +106,9 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
       body: pdfAsync.when(
         loading: () => _buildGenerationState(context),
         error: (error, _) => _buildErrorState(context, error.toString()),
-        data: (bytes) => _buildViewer(context, bytes),
+        data: (bytes) => _documentError == null
+            ? _buildViewer(context, bytes)
+            : _buildErrorState(context, _documentError!),
       ),
     );
   }
@@ -135,7 +143,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Cloud sync: Ready',
+                        'Your resume is saved',
                         style: TextStyle(
                           fontSize: 12,
                           color: colors.textPrimary,
@@ -144,7 +152,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
                     ],
                   ),
                   Text(
-                    'PDF Engine v3.4',
+                    'Creating preview',
                     style: TextStyle(fontSize: 11, color: colors.textSecondary),
                   ),
                 ],
@@ -187,7 +195,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Preparing high-resolution PDF preview…',
+              'Creating your PDF preview…',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
@@ -197,7 +205,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Compiling fonts, layout geometry, and ATS-friendly text layer.',
+              'We are formatting your information into a ready-to-share resume.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: colors.textSecondary),
             ),
@@ -206,7 +214,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
             _buildStatusStep(
               icon: Icons.check_circle,
               iconColor: colors.secondary,
-              label: 'Layout typography compiled',
+              label: 'Resume details checked',
               status: 'Done',
               statusColor: colors.textSecondary,
             ),
@@ -214,16 +222,16 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
             _buildStatusStep(
               icon: Icons.sync,
               iconColor: colors.primary,
-              label: 'Embedding ATS text tags',
-              status: 'Compiling',
+              label: 'Formatting your resume',
+              status: 'Working',
               statusColor: colors.primary,
             ),
             const SizedBox(height: 8),
             _buildStatusStep(
               icon: Icons.pending_outlined,
               iconColor: colors.textSecondary,
-              label: 'Calibrating page boundaries',
-              status: 'Queued',
+              label: 'Preparing the preview',
+              status: 'Next',
               statusColor: colors.textSecondary,
             ),
             const Spacer(),
@@ -235,7 +243,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Cancel generation'),
+              child: const Text('Go back'),
             ),
           ],
         ),
@@ -310,7 +318,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Preview Generation Failed',
+              'We could not open this preview',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -321,12 +329,11 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
             Text(
               errorMessage.isNotEmpty
                   ? errorMessage.replaceFirst('Exception: ', '')
-                  : 'A temporary rendering timeout occurred while building your PDF layout. Your saved resume data is completely safe.',
+                  : 'Something went wrong while creating the PDF. Your saved resume information is safe.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: colors.textSecondary),
             ),
             const SizedBox(height: 20),
-            // Diagnostic Detail Block
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -340,28 +347,12 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Incident Code',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.errorSoft,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                      Expanded(
                         child: Text(
-                          'ERR_RENDER_504',
+                          'You can retry now or return to edit your resume.',
                           style: TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                            color: colors.error,
+                            fontSize: 12,
+                            color: colors.textSecondary,
                           ),
                         ),
                       ),
@@ -391,8 +382,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
             ),
             const Spacer(),
             FilledButton.icon(
-              onPressed: () =>
-                  ref.invalidate(pdfViewerProvider(widget.resumeId)),
+              onPressed: _retryPreview,
               style: FilledButton.styleFrom(
                 backgroundColor: colors.primary,
                 foregroundColor: Colors.white,
@@ -445,7 +435,7 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
                   Icon(Icons.verified, size: 16, color: colors.secondary),
                   const SizedBox(width: 6),
                   Text(
-                    'ATS Compatibility 98%',
+                    'PDF ready',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -503,7 +493,15 @@ class _PdfViewScreenState extends ConsumerState<PdfViewScreen> {
                   pageLayoutMode: PdfPageLayoutMode.continuous,
                   onDocumentLoaded: (details) {
                     setState(() {
+                      _documentError = null;
                       _pageCount = details.document.pages.count;
+                    });
+                  },
+                  onDocumentLoadFailed: (details) {
+                    setState(() {
+                      _documentError = details.description.isEmpty
+                          ? 'The PDF file could not be opened.'
+                          : details.description;
                     });
                   },
                   onPageChanged: (details) {

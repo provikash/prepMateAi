@@ -3,6 +3,7 @@ import 'package:prepmate_mobile/core/widgets/app_state.dart';
 import 'package:prepmate_mobile/core/widgets/app_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/theme.dart';
@@ -47,6 +48,7 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
   int _experienceTab = 0;
   bool _showHiringTips = true;
   bool _showExpTips = true;
+  bool _offlineToastShown = false;
 
   @override
   void initState() {
@@ -156,7 +158,22 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
 
   Widget _builder(BuildContext context, TemplateDetailModel template) {
     final colors = AppColors.of(context);
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final builder = ref.watch(resumeBuilderProvider);
+    final draftState = ref.watch(resumeDraftControllerProvider);
+    if (draftState == DraftSyncState.localOnly && !_offlineToastShown) {
+      _offlineToastShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Fluttertoast.showToast(
+          msg: 'Offline mode: your changes are saved safely on this device.',
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+        );
+      });
+    } else if (draftState != DraftSyncState.localOnly) {
+      _offlineToastShown = false;
+    }
     final step = builder.currentStepData;
     if (step == null) {
       return Scaffold(
@@ -189,14 +206,9 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
             IconButton(
               tooltip: 'Preview PDF',
               icon: const Icon(Icons.picture_as_pdf_outlined),
-              onPressed: () {
-                final savedId = builder.savedResumeId;
-                if (savedId != null && savedId.isNotEmpty) {
-                  context.push('/resume/pdf/$savedId');
-                } else {
-                  _save(template, draft: true, preview: true);
-                }
-              },
+              onPressed: builder.isSaving
+                  ? null
+                  : () => _save(template, draft: true, preview: true),
             ),
             Center(
               child: Padding(
@@ -213,28 +225,25 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Column(
               children: [
-                ResumeStepIndicator(
-                  currentStep: builder.currentStep,
-                  totalSteps: builder.totalSteps,
-                  sectionTitles: builder.steps
-                      .map((step) => step.title)
-                      .toList(),
-                  onStepTapped: (index) =>
-                      ref.read(resumeBuilderProvider.notifier).goToStep(index),
-                  completedSteps: _completedJourneySteps(builder),
-                  completionPercent: ResumeCompletion.calculate(
-                    ref.watch(resumeFormProvider).data,
-                  ).percent,
-                ),
-                const SizedBox(height: 12),
-                _buildHorizontalSectionChips(context, builder, colors),
-                const SizedBox(height: 12),
-                if (ref.watch(resumeDraftControllerProvider) ==
-                    DraftSyncState.localOnly)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 12),
-                    child: OfflineRecoveryBanner(),
+                if (!keyboardOpen)
+                  ResumeStepIndicator(
+                    currentStep: builder.currentStep,
+                    totalSteps: builder.totalSteps,
+                    sectionTitles: builder.steps
+                        .map((step) => step.title)
+                        .toList(),
+                    onStepTapped: (index) => ref
+                        .read(resumeBuilderProvider.notifier)
+                        .goToStep(index),
+                    completedSteps: _completedJourneySteps(builder),
+                    completionPercent: ResumeCompletion.calculate(
+                      ref.watch(resumeFormProvider).data,
+                    ).percent,
                   ),
+                if (!keyboardOpen) const SizedBox(height: 12),
+                if (!keyboardOpen)
+                  _buildHorizontalSectionChips(context, builder, colors),
+                if (!keyboardOpen) const SizedBox(height: 12),
                 if (builder.errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -243,27 +252,54 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
                       onRetry: () => _continue(template),
                     ),
                   ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    step.title,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    step.description,
-                    style: TextStyle(color: colors.textSecondary),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Expanded(
                   child: Form(
                     key: _formKey,
                     child: ListView(
-                      children: [_stepContent(context, template, step)],
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.only(bottom: 12),
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colors.primarySoft,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.lightbulb_outline,
+                                color: colors.primary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Fill in what you know. Optional fields can be skipped, and you can preview your resume at any time.',
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          step.title,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          step.description,
+                          style: TextStyle(color: colors.textSecondary),
+                        ),
+                        const SizedBox(height: 16),
+                        _stepContent(context, template, step),
+                      ],
                     ),
                   ),
                 ),
@@ -304,7 +340,9 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
                     if (builder.currentStep > 0) const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: builder.isSaving ? null : _saveAndExit,
+                        onPressed: builder.isSaving
+                            ? null
+                            : () => _saveAndExit(template),
                         child: const Text('Save and exit'),
                       ),
                     ),
@@ -1052,9 +1090,9 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
     );
   }
 
-  Future<void> _saveAndExit() async {
-    await ref.read(resumeDraftControllerProvider.notifier).flush();
-    if (mounted) context.pop();
+  Future<void> _saveAndExit(TemplateDetailModel template) async {
+    final saved = await _save(template, draft: true);
+    if (saved && mounted) context.pop();
   }
 
   Set<int> _completedJourneySteps(ResumeBuilderState builder) {
@@ -1115,17 +1153,17 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
       notifier.setError(completion.blockingIssues.first);
       return;
     }
-    await _save(template, draft: false);
+    await _save(template, draft: false, preview: true);
   }
 
-  Future<void> _save(
+  Future<bool> _save(
     TemplateDetailModel template, {
     required bool draft,
     bool preview = false,
   }) async {
     final notifier = ref.read(resumeBuilderProvider.notifier);
     final builder = ref.read(resumeBuilderProvider);
-    if (builder.isSaving) return;
+    if (builder.isSaving) return false;
     ref.read(resumeFormProvider.notifier).sanitizeForSubmission();
     final form = ref.read(resumeFormProvider);
     final submittedRevision = form.revision;
@@ -1148,28 +1186,35 @@ class _ResumeFormScreenState extends ConsumerState<ResumeFormScreen>
       } else {
         notifier.setSavedWithNewerChanges(saved.id);
       }
-      await ref
-          .read(resumeDraftControllerProvider.notifier)
-          .markSynced(templateId: template.id, remoteResumeId: saved.id);
+      if (saved.queued) {
+        await ref.read(resumeDraftControllerProvider.notifier).flush();
+      } else {
+        await ref
+            .read(resumeDraftControllerProvider.notifier)
+            .markSynced(templateId: template.id, remoteResumeId: saved.id);
+      }
       ref.invalidate(storedResumesProvider);
       ref.invalidate(home.resumeListProvider);
+      ref.invalidate(home.dashboardProvider);
       if (preview && mounted) {
         if (saved.queued) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Saved locally. Preview is available after sync.'),
+              content: Text('Saved on this device. Opening preview.'),
             ),
           );
-        } else {
-          context.go('/resume/pdf/${saved.id}');
         }
+        context.go('/resume/pdf/${saved.id}');
       }
+      return true;
     } on ResumeSaveException catch (error) {
       if (mounted) setState(() => _backendErrors = error.fieldErrors);
       notifier.setError(error.message);
       _navigateToBackendError(template, error.fieldErrors.keys.join(' '));
+      return false;
     } catch (_) {
       notifier.setError('Could not save the resume. Please try again.');
+      return false;
     }
   }
 

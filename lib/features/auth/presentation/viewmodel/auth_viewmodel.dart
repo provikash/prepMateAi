@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/storage.dart';
+import '../../data/models/user_model.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
@@ -38,8 +39,22 @@ class AuthViewModel extends Notifier<AuthState> {
       );
       return;
     }
+    final cachedJson = await TokenService.getCachedUser();
+    final cachedUser = cachedJson == null
+        ? null
+        : UserModel.fromJson(cachedJson);
+    if (cachedUser != null) {
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
+        user: cachedUser,
+        hasCheckedSession: true,
+        clearError: true,
+      );
+    }
     final valid = await getProfile(markSessionChecked: true);
-    if (!valid && state.status == AuthStatus.unauthenticated) {
+    if (!valid &&
+        cachedUser == null &&
+        state.status == AuthStatus.unauthenticated) {
       await TokenService.deleteToken();
     }
   }
@@ -108,6 +123,7 @@ class AuthViewModel extends Notifier<AuthState> {
         state.challengeId!,
         otp,
       );
+      if (user is UserModel) await TokenService.saveCachedUser(user.toJson());
       state = state.copyWith(
         status: AuthStatus.authenticated,
         user: user,
@@ -175,6 +191,9 @@ class AuthViewModel extends Notifier<AuthState> {
     try {
       final user = await _repository.getProfile();
       if (user != null) {
+        if (user is UserModel) {
+          await TokenService.saveCachedUser(user.toJson());
+        }
         state = state.copyWith(
           status: AuthStatus.authenticated,
           user: user,
@@ -188,6 +207,17 @@ class AuthViewModel extends Notifier<AuthState> {
     } catch (error) {
       final unauthorized =
           error is DioException && error.response?.statusCode == 401;
+      if (!unauthorized && state.user != null) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          hasCheckedSession: markSessionChecked
+              ? true
+              : state.hasCheckedSession,
+          infoMessage: 'Offline mode: using your saved account.',
+          clearError: true,
+        );
+        return true;
+      }
       state = state.copyWith(
         status: unauthorized ? AuthStatus.unauthenticated : AuthStatus.error,
         hasCheckedSession: markSessionChecked ? true : state.hasCheckedSession,
@@ -207,6 +237,9 @@ class AuthViewModel extends Notifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, clearError: true);
     try {
       final updated = await _repository.updateProfile(user);
+      if (updated is UserModel) {
+        await TokenService.saveCachedUser(updated.toJson());
+      }
       state = state.copyWith(
         status: updated == null ? AuthStatus.error : AuthStatus.authenticated,
         user: updated,

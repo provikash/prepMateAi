@@ -54,38 +54,6 @@ class MockOptimizationRepository implements OptimizationRepository {
   }
 
   @override
-  Future<OptimizationSessionModel> getOptimizationSession(
-    String sessionId,
-  ) async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-    if (sessionId == 'mock-session-3') {
-      return OptimizationSessionModel(
-        id: 'mock-session-3',
-        sourceResumeId: 'alex-master',
-        sourceResumeTitle: 'Software Engineer Resume',
-        status: 'COMPLETED',
-        jobDescription: const JobDescriptionModel(
-          id: 'jd-3',
-          title: 'Senior Mobile Engineer',
-          company: 'Acme Technologies',
-          description:
-              'Senior Mobile Engineer position at Acme Technologies...',
-        ),
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now().subtract(const Duration(hours: 12)),
-        completedAt: DateTime.now().subtract(const Duration(hours: 12)),
-        decisionCounts: const {'accepted': 6, 'edited': 2, 'rejected': 3},
-      );
-    }
-    return OptimizationSessionModel(
-      id: sessionId,
-      sourceResumeId: 'alex-master',
-      sourceResumeTitle: 'Alex Developer — Master Resume',
-      status: 'READY_FOR_REVIEW',
-    );
-  }
-
-  @override
   Future<List<OptimizationSessionModel>> getOptimizationSessions({
     String? status,
     String? search,
@@ -95,69 +63,42 @@ class MockOptimizationRepository implements OptimizationRepository {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     return [
       OptimizationSessionModel(
-        id: 'mock-session-1',
+        id: 'mock-session-501',
         sourceResumeId: 'alex-master',
-        sourceResumeTitle: 'Software Engineer Resume',
-        status: 'READY_FOR_REVIEW',
-        jobDescription: const JobDescriptionModel(
-          id: 'jd-1',
-          title: 'Senior Flutter Developer',
-          company: 'TechSprint Solutions',
-          description: 'Looking for a Senior Flutter Developer...',
-        ),
-        createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-        updatedAt: DateTime.now().subtract(const Duration(minutes: 20)),
-        decisionCounts: const {'accepted': 5, 'pending': 3},
-      ),
-      OptimizationSessionModel(
-        id: 'mock-session-2',
-        sourceResumeId: 'alex-mobile',
-        sourceResumeTitle: 'Mobile Dev Resume',
-        status: 'ANALYZING',
-        jobDescription: const JobDescriptionModel(
-          id: 'jd-2',
-          title: 'Lead Mobile Architect',
-          company: 'Fintech Velocity',
-          description: 'Lead Mobile Architect position...',
-        ),
-        createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-        updatedAt: DateTime.now().subtract(const Duration(hours: 1)),
-      ),
-      OptimizationSessionModel(
-        id: 'mock-session-3',
-        sourceResumeId: 'alex-master',
-        sourceResumeTitle: 'Software Engineer Resume',
+        sourceResumeTitle: 'Alex Developer — Master Resume',
         status: 'COMPLETED',
-        jobDescription: const JobDescriptionModel(
-          id: 'jd-3',
-          title: 'Senior Mobile Engineer',
-          company: 'Acme Technologies',
-          description: 'Senior Mobile Engineer position...',
-        ),
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now().subtract(const Duration(hours: 12)),
-        completedAt: DateTime.now().subtract(const Duration(hours: 12)),
-        decisionCounts: const {'accepted': 6, 'edited': 2, 'rejected': 3},
+        createdAt: DateTime.now().subtract(const Duration(days: 2)),
+        updatedAt: DateTime.now().subtract(const Duration(days: 1)),
+        decisionCounts: const {'accepted': 6, 'edited': 2, 'rejected': 1},
       ),
     ];
   }
 
   @override
   Future<void> deleteOptimizationSession(String sessionId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 150));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
   }
 
   @override
-  Future<OptimizationSessionModel> updateOptimizationSession(
+  Future<void> updateOptimizationSession(
     String sessionId,
     Map<String, dynamic> data,
   ) async {
-    await Future<void>.delayed(const Duration(milliseconds: 150));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+
+  @override
+  Future<OptimizationSessionModel> getOptimizationSession(
+    String sessionId,
+  ) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
     return OptimizationSessionModel(
       id: sessionId,
       sourceResumeId: 'alex-master',
-      sourceResumeTitle: 'Software Engineer Resume',
-      status: data['status']?.toString() ?? 'DRAFT',
+      sourceResumeTitle: 'Alex Developer — Master Resume',
+      status: sessionId == 'mock-session-3' ? 'COMPLETED' : 'READY_FOR_REVIEW',
+      analysisJson: const {'match_score': 92},
+      decisionCounts: const {'accepted': 6, 'edited': 2, 'rejected': 1},
     );
   }
 
@@ -456,126 +397,109 @@ class MockOptimizationRepository implements OptimizationRepository {
   @override
   Future<OptimizationSummaryData> getOptimizationSummary(
     String sessionId,
-  ) async {
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    return const OptimizationSummaryData(
-      sessionId: 'mock-session-501',
-      status: 'READY_FOR_REVIEW',
-      targetRole: 'Senior Flutter Developer',
-      company: 'Acme Technologies',
-      sourceResumeId: 'alex-master',
-      sourceResumeTitle: 'Software Engineer Resume (v2.4)',
-      sourceResumeVersion: 2,
-      currentSourceVersion: 2,
-      isSourceStale: false,
-      readyToCreate: true,
-      stats: {
-        'total_items': 11,
-        'accepted_count': 4,
-        'edited_count': 3,
-        'skipped_count': 4,
-        'pending_count': 0,
-        'confirmed_facts_count': 5,
-        'affected_sections_count': 4,
+  ) async => OptimizationSummaryData(
+    sessionId: sessionId,
+    status: 'READY_FOR_REVIEW',
+    targetRole: 'Senior Flutter Developer',
+    company: 'Acme Technologies',
+    sourceResumeTitle: 'Software Engineer Resume (v2.4)',
+    readyToCreate: true,
+    stats: const {
+      'total_items': 5,
+      'accepted_count': 3,
+      'edited_count': 1,
+      'skipped_count': 1,
+      'pending_count': 0,
+      'confirmed_facts_count': 2,
+      'affected_sections_count': 3,
+    },
+    sections: const [
+      {
+        'section_name': 'Professional Summary',
+        'accepted_count': 1,
+        'edited_count': 0,
+        'skipped_count': 0,
+        'needs_confirmation': true,
       },
-      sections: [
-        OptimizationSectionSummary(
-          sectionName: 'Professional Summary',
-          sectionKey: 'summary',
-          acceptedCount: 0,
-          editedCount: 1,
-          previewText:
-              'Accomplished Mobile Architect with 4+ years spearheading fintech mobile ecosystems.',
-        ),
-        OptimizationSectionSummary(
-          sectionName: 'Work Experience',
-          sectionKey: 'experience',
-          acceptedCount: 2,
-          editedCount: 1,
-          previewText:
-              'Added Riverpod 2.x migration impact & offline SQLite syncing bullet points.',
-        ),
-        OptimizationSectionSummary(
-          sectionName: 'Core Skills',
-          sectionKey: 'skills',
-          acceptedCount: 1,
-          skippedCount: 2,
-          previewText:
-              'Re-indexed Flutter state management category; preserved existing backend skill set.',
-        ),
-        OptimizationSectionSummary(
-          sectionName: 'Projects',
-          sectionKey: 'projects',
-          acceptedCount: 1,
-          previewText:
-              'Added FinPay architecture metrics (40% faster latency, 99.9% uptime).',
-        ),
-      ],
-      defaultName: 'Software Engineer Resume — Acme',
-      selectedTemplateName: 'Modern Blue',
-      alignmentScore: 84,
-      atsReadiness: {
-        'ats_score': 78,
-        'breakdown': {
-          'keyword_match': 84,
-          'section_completeness': 100,
-          'formatting': 90,
-          'content_quality': 75,
-          'contact_info': 100,
-        },
+      {
+        'section_name': 'Work Experience',
+        'accepted_count': 1,
+        'edited_count': 1,
+        'skipped_count': 0,
+        'needs_confirmation': true,
       },
-      optimizedVersionId: 'mock-version-99',
-      pdfStatus: 'ready',
-    );
-  }
+      {
+        'section_name': 'Core Skills',
+        'accepted_count': 1,
+        'edited_count': 0,
+        'skipped_count': 0,
+        'needs_confirmation': false,
+      },
+    ],
+    alignmentScore: 88,
+  );
 
   @override
-  Future<OptimizedVersionDetail> getOptimizedVersion(String versionId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    return OptimizedVersionDetail(
-      id: versionId,
-      title: 'Software Engineer Resume — Acme',
-      data: const {
-        'basics': {
-          'name': 'Vikash Chaurasiya',
-          'label': 'Senior Mobile & Flutter Engineer',
-          'email': 'vikash.dev@email.com',
-          'phone': '+1 (555) 019-2834',
-          'summary':
-              'Performance-focused Senior Mobile Architect with 4+ years spearheading fintech mobile ecosystems for Tier-1 digital banking products.',
-        },
+  Future<OptimizedVersionDetail> getOptimizedVersion(
+    String versionId,
+  ) async => OptimizedVersionDetail(
+    id: versionId,
+    title: 'Software Developer — Optimized',
+    targetRole: 'Senior Flutter Developer',
+    targetCompany: 'Acme Technologies',
+    templateName: 'Modern Professional Duo',
+    templateVersion: 1,
+    pdfStatus: 'ready',
+    changes: [
+      {
+        'id': 'sug-1',
+        'section': 'Professional Summary',
+        'original_value': 'Experienced developer',
+        'accepted_value':
+            'Senior Flutter Developer with 5+ years of fintech architecture',
+        'category': 'Role Alignment',
+        'is_confirmed': true,
       },
-      sourceResumeId: 'alex-master',
-      sourceResumeTitle: 'Software Engineer (v2.4)',
-      templateName: 'Modern Blue',
-      pdfStatus: 'ready',
-      targetRole: 'Senior Flutter Developer',
-      targetCompany: 'Acme Technologies',
-    );
-  }
+      {
+        'id': 'sug-2',
+        'section': 'Work Experience',
+        'original_value': 'Worked on app performance',
+        'accepted_value':
+            'Architected offline-first SQLite synchronization reducing latency by 35%',
+        'category': 'Verified Metric',
+        'is_confirmed': true,
+      },
+    ],
+  );
+
+  @override
+  Future<Map<String, dynamic>> revertOptimizedChange(
+    String versionId,
+    String suggestionId,
+  ) async => {
+    'message': 'Change reverted successfully on optimized resume.',
+    'version_id': versionId,
+    'pdf_status': 'not_requested',
+  };
 
   @override
   Future<OptimizedVersionDetail> updateOptimizedVersion(
     String versionId, {
     String? title,
     String? templateId,
-  }) async {
-    return getOptimizedVersion(versionId);
-  }
+  }) async => OptimizedVersionDetail(
+    id: versionId,
+    title: title ?? 'Software Developer — Optimized',
+    targetRole: 'Senior Flutter Developer',
+    targetCompany: 'Acme Technologies',
+    templateName: templateId ?? 'Modern Professional Duo',
+    templateVersion: 2,
+    pdfStatus: 'outdated',
+    changes: const [],
+  );
 
   @override
-  Future<Map<String, dynamic>> revertOptimizedChange(
-    String versionId,
-    String suggestionId,
-  ) async => {'message': 'Change reverted.'};
-
-  @override
-  Future<Map<String, dynamic>> submitBillingTicket({
-    required String category,
-    required String subject,
-    required String message,
-    String? transactionReference,
-    Map<String, dynamic>? metadata,
-    String? idempotencyKey,
-  }) async => {'id': 'mock-ticket-1', 'status': 'OPEN'};
+  Future<Map<String, dynamic>> getOptimizationPdfStatus(
+    String sessionId,
+  ) async => {'status': 'ready', 'url': null, 'version_id': 'mock-ver-1'};
 }

@@ -1,31 +1,13 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
-import 'package:drift/drift.dart';
 
-import '../../../core/cache/pdf_cache_store.dart';
-import '../../../core/database/app_database.dart';
 import 'package:prepmate_mobile/features/home/data/models/resume_model.dart';
 import '../domain/optimization_models.dart';
 import '../domain/optimization_repository.dart';
 
 class ApiOptimizationRepository implements OptimizationRepository {
-  ApiOptimizationRepository(
-    this._dio, {
-    required AppDatabase database,
-    required PdfCacheStore pdfCache,
-    required String? Function() userId,
-  }) : _database = database,
-       _pdfCache = pdfCache,
-       _userId = userId;
+  ApiOptimizationRepository(this._dio);
 
   final Dio _dio;
-  final AppDatabase _database;
-  final PdfCacheStore _pdfCache;
-  final String? Function() _userId;
-  final Map<String, OptimizationSuggestion> _suggestions = {};
 
   @override
   Future<List<ResumeModel>> getResumes() async {
@@ -81,49 +63,6 @@ class ApiOptimizationRepository implements OptimizationRepository {
   }
 
   @override
-  Future<OptimizationSessionModel> getOptimizationSession(
-    String sessionId,
-  ) async {
-    final accountId = _userId();
-    try {
-      final response = await _dio.get('job-optimizer/sessions/$sessionId/');
-      final json = Map<String, dynamic>.from(response.data as Map);
-      final session = OptimizationSessionModel.fromJson(json);
-      for (final item in session.suggestions) {
-        _suggestions[item.id] = item;
-      }
-      if (accountId != null) {
-        await _database
-            .into(_database.optimizationSnapshots)
-            .insertOnConflictUpdate(
-              OptimizationSnapshotsCompanion.insert(
-                cacheKey: '$accountId:$sessionId',
-                userId: accountId,
-                sessionId: sessionId,
-                payload: jsonEncode(json),
-                updatedAt: DateTime.now(),
-              ),
-            );
-      }
-      return session;
-    } on DioException catch (error) {
-      if (!_isOffline(error) || accountId == null) rethrow;
-      final cached =
-          await (_database.select(_database.optimizationSnapshots)
-                ..where((row) => row.cacheKey.equals('$accountId:$sessionId')))
-              .getSingleOrNull();
-      if (cached == null) rethrow;
-      final session = OptimizationSessionModel.fromJson(
-        Map<String, dynamic>.from(jsonDecode(cached.payload) as Map),
-      );
-      for (final item in session.suggestions) {
-        _suggestions[item.id] = item;
-      }
-      return session;
-    }
-  }
-
-  @override
   Future<List<OptimizationSessionModel>> getOptimizationSessions({
     String? status,
     String? search,
@@ -131,97 +70,48 @@ class ApiOptimizationRepository implements OptimizationRepository {
     String? ordering,
   }) async {
     final queryParams = <String, dynamic>{};
-    if (status != null && status.isNotEmpty) queryParams['status'] = status;
+    if (status != null) queryParams['status'] = status;
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
-    if (resumeId != null && resumeId.isNotEmpty) {
-      queryParams['resume_id'] = resumeId;
-    }
-    if (ordering != null && ordering.isNotEmpty) {
-      queryParams['ordering'] = ordering;
-    }
+    if (resumeId != null) queryParams['resume_id'] = resumeId;
+    if (ordering != null) queryParams['ordering'] = ordering;
 
-    try {
-      final response = await _dio.get(
-        'job-optimizer/sessions/',
-        queryParameters: queryParams,
-      );
-      final dynamic raw = response.data;
-      final List<dynamic> list = raw is List
-          ? raw
-          : (raw is Map && raw['results'] is List
-                ? raw['results'] as List
-                : []);
-
-      final sessions = list
-          .map(
-            (item) => OptimizationSessionModel.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .toList();
-
-      final accountId = _userId();
-      if (accountId != null) {
-        for (final session in sessions) {
-          await _database
-              .into(_database.optimizationSnapshots)
-              .insertOnConflictUpdate(
-                OptimizationSnapshotsCompanion.insert(
-                  cacheKey: '$accountId:${session.id}',
-                  userId: accountId,
-                  sessionId: session.id,
-                  payload: jsonEncode({
-                    'id': session.id,
-                    'source_resume_id': session.sourceResumeId,
-                    'source_resume_title': session.sourceResumeTitle,
-                    'status': session.status,
-                    'job_description': session.jobDescription?.toJson(),
-                    'analysis_json': session.analysisJson,
-                    'match_results_json': session.matchResultsJson,
-                    'source_resume_version': session.sourceResumeVersion,
-                    'created_at': session.createdAt?.toIso8601String(),
-                    'updated_at': session.updatedAt?.toIso8601String(),
-                    'completed_at': session.completedAt?.toIso8601String(),
-                  }),
-                  updatedAt: DateTime.now(),
-                ),
-              );
-        }
-      }
-      return sessions;
-    } on DioException catch (error) {
-      final accountId = _userId();
-      if (!_isOffline(error) || accountId == null) rethrow;
-      final cachedRows = await (_database.select(
-        _database.optimizationSnapshots,
-      )..where((row) => row.userId.equals(accountId))).get();
-      return cachedRows.map((row) {
-        final map = Map<String, dynamic>.from(jsonDecode(row.payload) as Map);
-        return OptimizationSessionModel.fromJson(map);
-      }).toList();
-    }
+    final response = await _dio.get(
+      'job-optimizer/sessions/',
+      queryParameters: queryParams.isEmpty ? null : queryParams,
+    );
+    final dynamic data = response.data;
+    final List<dynamic> list = data is List
+        ? data
+        : (data is Map && data['results'] is List
+              ? data['results'] as List
+              : []);
+    return list
+        .map(
+          (item) => OptimizationSessionModel.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .toList();
   }
 
   @override
   Future<void> deleteOptimizationSession(String sessionId) async {
     await _dio.delete('job-optimizer/sessions/$sessionId/');
-    final accountId = _userId();
-    if (accountId != null) {
-      await (_database.delete(
-        _database.optimizationSnapshots,
-      )..where((row) => row.cacheKey.equals('$accountId:$sessionId'))).go();
-    }
   }
 
   @override
-  Future<OptimizationSessionModel> updateOptimizationSession(
+  Future<void> updateOptimizationSession(
     String sessionId,
     Map<String, dynamic> data,
   ) async {
-    final response = await _dio.patch(
-      'job-optimizer/sessions/$sessionId/',
-      data: data,
-    );
+    await _dio.patch('job-optimizer/sessions/$sessionId/', data: data);
+  }
+
+  @override
+  Future<OptimizationSessionModel> getOptimizationSession(
+    String sessionId,
+  ) async {
+    final response = await _dio.get('job-optimizer/sessions/$sessionId/');
     return OptimizationSessionModel.fromJson(
       Map<String, dynamic>.from(response.data as Map),
     );
@@ -417,8 +307,7 @@ class ApiOptimizationRepository implements OptimizationRepository {
             Map<String, dynamic>.from(value as Map),
           ),
         )
-        .toList()
-      ..forEach((item) => _suggestions[item.id] = item);
+        .toList();
   }
 
   @override
@@ -449,45 +338,16 @@ class ApiOptimizationRepository implements OptimizationRepository {
       SuggestionStatus.edited => 'edit',
       SuggestionStatus.pending => 'undo',
     };
-    final data = {
-      if (value != null) 'value': value,
-      if (decisionVersion != null) 'decision_version': decisionVersion,
-    };
-    try {
-      final response = await _dio.post(
-        'job-optimizer/suggestions/$id/$action/',
-        data: data,
-      );
-      final result = OptimizationSuggestion.fromApi(
-        Map<String, dynamic>.from(response.data as Map),
-      );
-      _suggestions[id] = result;
-      await _markOptimizerPdfsStale();
-      return result;
-    } on DioException catch (error) {
-      final accountId = _userId();
-      final current = _suggestions[id];
-      if (!_isOffline(error) || accountId == null || current == null) rethrow;
-      await _database
-          .into(_database.mutationOutbox)
-          .insert(
-            MutationOutboxCompanion.insert(
-              userId: accountId,
-              entityType: 'suggestion_decision',
-              entityLocalId: id,
-              operation: action,
-              payload: jsonEncode({
-                'path': 'job-optimizer/suggestions/$id/$action/',
-                'data': data,
-              }),
-              createdAt: DateTime.now(),
-            ),
-          );
-      final queued = current.copyWith(proposed: value, status: status);
-      _suggestions[id] = queued;
-      await _markOptimizerPdfsStale();
-      return queued;
-    }
+    final response = await _dio.post(
+      'job-optimizer/suggestions/$id/$action/',
+      data: {
+        if (value != null) 'value': value,
+        if (decisionVersion != null) 'decision_version': decisionVersion,
+      },
+    );
+    return OptimizationSuggestion.fromApi(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   }
 
   @override
@@ -526,11 +386,34 @@ class ApiOptimizationRepository implements OptimizationRepository {
   }
 
   @override
+  Future<int> getAvailableCredits() async {
+    final info = await getCreditInfo();
+    return (info['available_credits'] as num).toInt();
+  }
+
+  @override
+  Future<Map<String, dynamic>> getCreditInfo() async {
+    final response = await _dio.get('ai/credits/');
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  @override
+  Future<List<int>> getOptimizedPdf(String versionId) async {
+    final response = await _dio.get<List<int>>(
+      'job-optimizer/versions/$versionId/pdf/',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return response.data ?? const [];
+  }
+
+  @override
   Future<OptimizationSummaryData> getOptimizationSummary(
     String sessionId,
   ) async {
-    final response = await _dio.get('job-optimizer/sessions/$sessionId/summary/');
-    return OptimizationSummaryData.fromJson(
+    final response = await _dio.get(
+      'job-optimizer/sessions/$sessionId/summary/',
+    );
+    return OptimizationSummaryData.fromApi(
       Map<String, dynamic>.from(response.data as Map),
     );
   }
@@ -538,9 +421,21 @@ class ApiOptimizationRepository implements OptimizationRepository {
   @override
   Future<OptimizedVersionDetail> getOptimizedVersion(String versionId) async {
     final response = await _dio.get('job-optimizer/versions/$versionId/');
-    return OptimizedVersionDetail.fromJson(
+    return OptimizedVersionDetail.fromApi(
       Map<String, dynamic>.from(response.data as Map),
     );
+  }
+
+  @override
+  Future<Map<String, dynamic>> revertOptimizedChange(
+    String versionId,
+    String suggestionId,
+  ) async {
+    final response = await _dio.post(
+      'job-optimizer/versions/$versionId/revert/',
+      data: {'suggestion_id': suggestionId},
+    );
+    return Map<String, dynamic>.from(response.data as Map);
   }
 
   @override
@@ -556,103 +451,16 @@ class ApiOptimizationRepository implements OptimizationRepository {
         if (templateId != null) 'template_id': templateId,
       },
     );
-    await _markOptimizerPdfsStale();
-    return OptimizedVersionDetail.fromJson(
+    return OptimizedVersionDetail.fromApi(
       Map<String, dynamic>.from(response.data as Map),
     );
   }
 
   @override
-  Future<Map<String, dynamic>> revertOptimizedChange(
-    String versionId,
-    String suggestionId,
+  Future<Map<String, dynamic>> getOptimizationPdfStatus(
+    String sessionId,
   ) async {
-    final response = await _dio.post(
-      'job-optimizer/versions/$versionId/revert/',
-      data: {'suggestion_id': suggestionId},
-    );
-    await _markOptimizerPdfsStale();
+    final response = await _dio.get('job-optimizer/sessions/$sessionId/pdf/');
     return Map<String, dynamic>.from(response.data as Map);
-  }
-
-  @override
-  Future<Map<String, dynamic>> submitBillingTicket({
-    required String category,
-    required String subject,
-    required String message,
-    String? transactionReference,
-    Map<String, dynamic>? metadata,
-    String? idempotencyKey,
-  }) async {
-    final key =
-        idempotencyKey ?? 'ticket-${DateTime.now().microsecondsSinceEpoch}';
-    final response = await _dio.post(
-      'billing/support/tickets/',
-      data: {
-        'category': category,
-        'subject': subject,
-        'message': message,
-        if (transactionReference != null)
-          'transaction_reference': transactionReference,
-        if (metadata != null) 'metadata': metadata,
-        'idempotency_key': key,
-      },
-      options: Options(headers: {'Idempotency-Key': key}),
-    );
-    return Map<String, dynamic>.from(response.data as Map);
-  }
-
-  @override
-  Future<int> getAvailableCredits() async {
-    final info = await getCreditInfo();
-    return (info['available_credits'] as num).toInt();
-  }
-
-  @override
-  Future<Map<String, dynamic>> getCreditInfo() async {
-    final response = await _dio.get('ai/credits/');
-    return Map<String, dynamic>.from(response.data as Map);
-  }
-
-  @override
-  Future<List<int>> getOptimizedPdf(String versionId) async {
-    final accountId = _userId();
-    final cacheId = 'optimized-$versionId';
-    if (accountId != null) {
-      final metadata = await _pdfCache.metadata(accountId, cacheId);
-      if (metadata != null && !metadata.stale) {
-        final bytes = await _pdfCache.read(metadata);
-        if (bytes != null) return bytes;
-      }
-    }
-    final response = await _dio.get<List<int>>(
-      'job-optimizer/versions/$versionId/pdf/',
-      options: Options(responseType: ResponseType.bytes),
-    );
-    final bytes = response.data ?? const <int>[];
-    if (accountId != null && bytes.isNotEmpty) {
-      await _pdfCache.write(
-        userId: accountId,
-        resumeId: cacheId,
-        etag: response.headers.value('etag') ?? '',
-        bytes: Uint8List.fromList(bytes),
-      );
-    }
-    return bytes;
-  }
-
-  bool _isOffline(DioException error) =>
-      error.type == DioExceptionType.connectionError ||
-      error.type == DioExceptionType.connectionTimeout ||
-      error.type == DioExceptionType.receiveTimeout ||
-      error.type == DioExceptionType.sendTimeout ||
-      error.error is SocketException;
-
-  Future<void> _markOptimizerPdfsStale() async {
-    // Version identifiers are only known when a PDF is requested. The
-    // metadata store safely marks matching cached optimizer exports stale.
-    final accountId = _userId();
-    if (accountId == null) return;
-    await _pdfCache.markAllOptimizerPdfsStale(accountId);
   }
 }

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { 'colors': { 'secondary-container': '#93f0e8', 'surface': '#f9f9ff', 'on-tertiary-fixed': '#001d36', 'outline': '#747686', 'surface-bright': '#f9f9ff', 'on-tertiary-container': '#c9e0ff', 'error-container': '#ffdad6', 'on-background': '#121b2e', 'on-secondary-fixed': '#00201e', 'surface-container-highest': '#d9e2fc', 'on-secondary-container': '#006f69', 'on-surface-variant': '#434654', 'on-error': '#ffffff', 'on-primary-container': '#d5dcff', 'tertiary-fixed-dim': '#9dcaff', 'primary-fixed-dim': '#b5c4ff', 'inverse-surface': '#273044', 'tertiary-container': '#0d65a6', 'on-primary': '#ffffff', 'primary': '#003fb3', 'primary-container': '#2457d6', 'inverse-on-surface': '#edf0ff', 'secondary-fixed': '#96f3eb', 'surface-container-high': '#e1e8ff', 'surface-variant': '#d9e2fc', 'surface-dim': '#d1daf4', 'primary-fixed': '#dce1ff', 'surface-container-low': '#f1f3ff', 'on-secondary-fixed-variant': '#00504c', 'outline-variant': '#c3c5d7', 'secondary-fixed-dim': '#79d6cf', 'on-primary-fixed-variant': '#003cad', 'on-tertiary': '#ffffff', 'error': '#ba1a1a', 'on-surface': '#121b2e', 'surface-container': '#e9edff', 'background': '#f9f9ff', 'secondary': '#006a65', 'on-tertiary-fixed-variant': '#00497c', 'tertiary': '#004c81', 'tertiary-fixed': '#d1e4ff', 'surface-tint': '#1f54d3', 'on-primary-fixed': '#00164d', 'on-secondary': '#ffffff', 'inverse-primary': '#b5c4ff', 'on-error-container': '#93000a', 'surface-container-lowest': '#ffffff' }, 'borderRadius': { 'DEFAULT': '0.25rem', 'lg': '0.5rem', 'xl': '0.75rem', 'full': '9999px' }, 'spacing': { 'space-xl': '1.5rem', 'space-md': '1rem', 'space-xxs': '0.25rem', 'space-lg': '1.25rem', 'gutter': '1rem', 'space-sm': '0.75rem', 'space-xs': '0.5rem', 'space-xxl': '2rem', 'margin': '1rem' }, 'fontFamily': { 'body-md': ['Hanken Grotesk'], 'label-md': ['Hanken Grotesk'], 'display-lg': ['Hanken Grotesk'], 'label-lg': ['Hanken Grotesk'], 'label-sm': ['Hanken Grotesk'], 'headline-lg': ['Hanken Grotesk'], 'display-md': ['Hanken Grotesk'], 'headline-md': ['Hanken Grotesk'], 'body-lg': ['Hanken Grotesk'], 'display-sm': ['Hanken Grotesk'], 'headline-lg-mobile': ['Hanken Grotesk'], 'headline-sm': ['Hanken Grotesk'], 'title-md': ['Hanken Grotesk'], 'title-sm': ['Hanken Grotesk'], 'title-lg': ['Hanken Grotesk'], 'body-sm': ['Hanken Grotesk'] }, 'fontSize': { 'body-md': ['14px', { 'lineHeight': '20px', 'letterSpacing': '0.25px', 'fontWeight': '400' }], 'label-md': ['12px', { 'lineHeight': '16px', 'letterSpacing': '0.5px', 'fontWeight': '600' }], 'display-lg': ['57px', { 'lineHeight': '64px', 'letterSpacing': '-0.25px', 'fontWeight': '700' }], 'label-lg': ['14px', { 'lineHeight': '20px', 'letterSpacing': '0.1px', 'fontWeight': '600' }], 'label-sm': ['11px', { 'lineHeight': '16px', 'letterSpacing': '0.5px', 'fontWeight': '600' }], 'headline-lg': ['32px', { 'lineHeight': '40px', 'letterSpacing': '0px', 'fontWeight': '600' }], 'display-md': ['45px', { 'lineHeight': '52px', 'letterSpacing': '0px', 'fontWeight': '600' }], 'headline-md': ['28px', { 'lineHeight': '36px', 'letterSpacing': '0px', 'fontWeight': '600' }], 'body-lg': ['16px', { 'lineHeight': '24px', 'letterSpacing': '0.5px', 'fontWeight': '400' }], 'display-sm': ['36px', { 'lineHeight': '44px', 'letterSpacing': '0px', 'fontWeight': '600' }], 'headline-lg-mobile': ['28px', { 'lineHeight': '36px', 'letterSpacing': '0px', 'fontWeight': '600' }], 'headline-sm': ['24px', { 'lineHeight': '32px', 'letterSpacing': '0px', 'fontWeight': '600' }], 'title-md': ['16px', { 'lineHeight': '24px', 'letterSpacing': '0.15px', 'fontWeight': '600' }], 'title-sm': ['14px', { 'lineHeight': '20px', 'letterSpacing': '0.1px', 'fontWeight': '600' }], 'title-lg': ['22px', { 'lineHeight': '28px', 'letterSpacing': '0px', 'fontWeight': '500' }], 'body-sm': ['12px', { 'lineHeight': '16px', 'letterSpacing': '0.4px', 'fontWeight': '400' }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-body-md text-on-surface flex flex-col antialiased"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter flex items-center justify-between"><div class="flex items-center gap-space-xs"><button aria-label="Go Back" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high transition-colors" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface-variant leading-none">PrepMateAI</span><h1 class="font-title-md text-title-md text-on-surface leading-tight">Optimize Resume</h1></div></div><div class="flex items-center gap-space-sm"><div class="flex items-center gap-space-xxs px-space-xs py-1 rounded-full bg-surface-container-high text-primary"><span class="material-symbols-outlined text-[16px]">bolt</span><span class="font-label-sm text-label-sm font-semibold">12 AI</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Content Body Container -->
+<div class="flex flex-col px-gutter py-space-md gap-space-lg">
+<!-- Subtitle Banner -->
+<div class="flex flex-col gap-space-xxs">
+<p class="font-body-md text-body-md text-on-surface-variant">
+        Tailor your resume to a specific job opportunity.
+      </p>
+</div>
+<!-- Stepper / Workflow Indicator -->
+<div class="flex flex-col bg-surface-container-lowest rounded-xl p-space-md shadow-sm gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-primary font-semibold uppercase tracking-wider">Step 1 of 4</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Input &amp; Target Job</span>
+</div>
+<!-- Progress Track -->
+<div class="grid grid-cols-4 gap-space-xs items-center w-full">
+<!-- Step 1 Active -->
+<div class="flex flex-col gap-1">
+<div class="h-1.5 w-full rounded-full bg-primary"></div>
+<span class="font-label-sm text-[10px] text-primary font-bold">1. Target</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col gap-1">
+<div class="h-1.5 w-full rounded-full bg-surface-container-highest"></div>
+<span class="font-label-sm text-[10px] text-on-surface-variant">2. Analysis</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col gap-1">
+<div class="h-1.5 w-full rounded-full bg-surface-container-highest"></div>
+<span class="font-label-sm text-[10px] text-on-surface-variant">3. Suggest</span>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col gap-1">
+<div class="h-1.5 w-full rounded-full bg-surface-container-highest"></div>
+<span class="font-label-sm text-[10px] text-on-surface-variant">4. ATS Score</span>
+</div>
+</div>
+</div>
+<!-- Selected Resume Card -->
+<div class="flex flex-col bg-surface-container-lowest rounded-xl p-space-md shadow-sm gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">Selected Resume</span>
+<button class="flex items-center gap-space-xxs text-primary font-label-md text-label-md hover:underline" id="changeResumeBtn" type="button">
+<span>Change Resume</span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+</div>
+<div class="flex items-start gap-space-sm bg-surface-container-low p-space-sm rounded-lg">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[24px]">description</span>
+</div>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center gap-space-xs">
+<h2 class="font-title-sm text-title-sm text-on-surface font-semibold truncate">Software Developer Resume</h2>
+<span class="px-space-xxs py-0.5 rounded bg-surface-container-highest text-primary font-label-sm text-[10px]">v2.4</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            Updated 2 days ago • Modern Template
+          </p>
+<div class="flex items-center gap-space-xs mt-space-xs">
+<span class="px-space-xs py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">verified</span>
+              74 ATS baseline
+            </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Job Description Input Section -->
+<div class="flex flex-col bg-surface-container-lowest rounded-xl p-space-md shadow-sm gap-space-sm">
+<div class="flex items-center justify-between">
+<label class="font-title-sm text-title-sm text-on-surface font-semibold" for="jobDescriptionInput">
+          Job Description
+        </label>
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-1 text-primary bg-surface-container-high px-space-xs py-1 rounded-lg font-label-sm text-label-sm hover:bg-surface-container-highest transition-colors" id="pasteBtn" type="button">
+<span class="material-symbols-outlined text-[14px]">content_paste</span>
+<span>Paste</span>
+</button>
+<button class="flex items-center gap-1 text-on-surface-variant bg-surface-container-high px-space-xs py-1 rounded-lg font-label-sm text-label-sm hover:bg-surface-container-highest transition-colors" id="clearBtn" type="button">
+<span class="material-symbols-outlined text-[14px]">clear</span>
+<span>Clear</span>
+</button>
+</div>
+</div>
+<div class="relative flex flex-col rounded-lg bg-surface-container-low p-space-sm">
+<textarea class="w-full bg-transparent font-body-md text-body-md text-on-surface focus:outline-none resize-none leading-relaxed" id="jobDescriptionInput" placeholder="Paste or type the target job description here..." rows="7">Senior Mobile Engineer (Flutter/Dart) at TechNova Inc.
+We are looking for an experienced Flutter engineer with deep experience in Riverpod, clean architecture, REST APIs, and automated CI/CD pipelines. The ideal candidate will optimize app performance, reduce latency, and champion modular UI systems.</textarea>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant">
+          Paste complete text for an accurate analysis.
+        </span>
+<span class="px-space-xs py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold shrink-0" id="charCountBadge">
+          1,420 / 8,000 (Valid)
+        </span>
+</div>
+</div>
+<!-- AI Credits & Master Safety Indicator -->
+<div class="flex items-start gap-space-sm bg-surface-container-low rounded-xl p-space-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">42 AI credits remaining</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5 leading-normal">
+          This analysis uses ~10 credits. Your master resume remains 100% unchanged.
+        </p>
+</div>
+</div>
+<!-- Primary CTA Button -->
+<div class="flex flex-col gap-space-sm pt-space-xs">
+<button class="w-full h-12 bg-primary-container text-on-primary font-label-lg text-label-lg rounded-xl flex items-center justify-center gap-space-xs shadow-md active:scale-[0.99] transition-transform" id="analyzeBtn" type="button">
+<span>Analyze Job (10 Credits)</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<!-- Sub-button Pre-flight Checklist Indicator -->
+<div class="flex items-center justify-center gap-space-md py-space-xxs">
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-secondary">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Resume parsed</span>
+</div>
+<span class="text-outline-variant font-label-sm">•</span>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-secondary">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Keywords ready</span>
+</div>
+<span class="text-outline-variant font-label-sm">•</span>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">radio_button_unchecked</span>
+<span>AI match ready</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Micro-interactions Controller Script -->
+<script>
+    (function() {
+      const textarea = document.getElementById('jobDescriptionInput');
+      const charBadge = document.getElementById('charCountBadge');
+      const clearBtn = document.getElementById('clearBtn');
+      const pasteBtn = document.getElementById('pasteBtn');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+
+      function updateCount() {
+        if (!textarea || !charBadge) return;
+        const len = textarea.value.length;
+        if (len === 0) {
+          charBadge.textContent = '0 / 8,000 (Required)';
+          charBadge.className = 'px-space-xs py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-semibold shrink-0';
+        } else if (len < 100) {
+          charBadge.textContent = len.toLocaleString() + ' / 8,000 (Too Short)';
+          charBadge.className = 'px-space-xs py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold shrink-0';
+        } else {
+          charBadge.textContent = len.toLocaleString() + ' / 8,000 (Valid)';
+          charBadge.className = 'px-space-xs py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold shrink-0';
+        }
+      }
+
+      if (textarea) {
+        textarea.addEventListener('input', updateCount);
+        updateCount();
+      }
+
+      if (clearBtn && textarea) {
+        clearBtn.addEventListener('click', () => {
+          textarea.value = '';
+          textarea.focus();
+          updateCount();
+        });
+      }
+
+      if (pasteBtn && textarea) {
+        pasteBtn.addEventListener('click', async () => {
+          try {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+              const text = await navigator.clipboard.readText();
+              if (text) {
+                textarea.value = text;
+                updateCount();
+              }
+            }
+          } catch (e) {
+            // Clipboard fallback: preserve existing text
+          }
+        });
+      }
+
+      if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', () => {
+          analyzeBtn.innerHTML = `
+            <span class="inline-block animate-spin material-symbols-outlined text-[18px]">progress_activity</span>
+            <span>Running Match Engine...</span>
+          `;
+          analyzeBtn.classList.add('opacity-90', 'pointer-events-none');
+        });
+      }
+    })();
+  </script>
+</div></main></body></html>

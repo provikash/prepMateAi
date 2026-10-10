@@ -12,7 +12,9 @@ FormSectionModel _section(
   key: key,
   type: type,
   aiActions: const [],
-  fields: fields ?? [FormFieldModel(key: key, label: key, type: 'list_object')],
+  fields:
+      fields ??
+      [FormFieldModel(key: key, label: key, type: 'list_object')],
   group: group,
 );
 
@@ -43,11 +45,14 @@ void main() {
     final journey = ResumeJourney.fromTemplate(template);
 
     expect(journey.steps, hasLength(5));
-    expect(journey.steps.map((step) => step.key), ResumeJourneyStepKey.values);
-    expect(journey.steps[1].sections.map((section) => section.key), [
-      'work',
-      'projects',
-    ]);
+    expect(
+      journey.steps.map((step) => step.key),
+      ResumeJourneyStepKey.values,
+    );
+    expect(
+      journey.steps[1].sections.map((section) => section.key),
+      ['work', 'projects'],
+    );
     expect(journey.optionalSections.map((section) => section.key), [
       'certificates',
       'languages',
@@ -76,8 +81,7 @@ void main() {
         'email': 'ada@example.com',
         'phone': '123',
         'label': 'Engineer',
-        'summary':
-            'A focused professional summary with specific experience and strengths for the target role.',
+        'summary': 'A focused professional summary with specific experience and strengths for the target role.',
       },
       'work': [
         {'name': 'Analytical Engines', 'position': 'Engineer'},

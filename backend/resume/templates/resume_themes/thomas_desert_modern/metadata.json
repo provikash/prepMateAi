@@ -1,0 +1,7 @@
+{
+  "name": "Thomas Desert Modern",
+  "slug": "thomas-desert-modern",
+  "version": 1,
+  "schema": "jsonresume",
+  "supported_sections": ["basics", "work", "projects", "education", "awards", "certificates", "publications", "volunteer", "languages", "skills", "interests", "references"]
+}

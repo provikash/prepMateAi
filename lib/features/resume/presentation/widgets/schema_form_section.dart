@@ -668,10 +668,17 @@ class _SchemaFieldInputState extends State<_SchemaFieldInput> {
           TextFormField(
             controller: widget.controller,
             enabled: !_ongoing,
+            style: TextStyle(
+              color: AppColors.of(context).textPrimary,
+              fontSize: 16,
+            ),
+            cursorColor: AppColors.of(context).primary,
             keyboardType: TextInputType.datetime,
             decoration: InputDecoration(
               labelText: label,
-              helperText: helper ?? 'Use YYYY, YYYY-MM, or YYYY-MM-DD.',
+              hintText: 'Example: 2025-06',
+              helperText:
+                  helper ?? 'Enter a year and month, or mark it as ongoing.',
               errorText: widget.backendError,
             ),
             onChanged: widget.onChanged,
@@ -712,6 +719,11 @@ class _SchemaFieldInputState extends State<_SchemaFieldInput> {
       children: [
         TextFormField(
           controller: widget.controller,
+          style: TextStyle(
+            color: AppColors.of(context).textPrimary,
+            fontSize: 16,
+          ),
+          cursorColor: AppColors.of(context).primary,
           keyboardType: keyboardType,
           maxLines: maxLines,
           decoration: InputDecoration(
@@ -934,7 +946,14 @@ class _LocationFieldInputState extends State<_LocationFieldInput> {
     padding: const EdgeInsets.only(bottom: 8),
     child: TextFormField(
       controller: _controller(part.$1),
-      decoration: InputDecoration(labelText: part.$2),
+      style: TextStyle(color: AppColors.of(context).textPrimary, fontSize: 16),
+      cursorColor: AppColors.of(context).primary,
+      decoration: InputDecoration(
+        hintText: part.$1 == 'city' ? 'Enter your city' : part.$2,
+        prefixIcon: part.$1 == 'city'
+            ? const Icon(Icons.location_on_outlined)
+            : null,
+      ),
       onChanged: (value) {
         _location[part.$1] = value.trim();
         widget.onChanged(Map<String, dynamic>.from(_location));
@@ -1045,6 +1064,11 @@ class _ProfilesFieldInputState extends State<_ProfilesFieldInput> {
                   ])
                     TextFormField(
                       controller: _controller(index, part.$1),
+                      style: TextStyle(
+                        color: AppColors.of(context).textPrimary,
+                        fontSize: 16,
+                      ),
+                      cursorColor: AppColors.of(context).primary,
                       keyboardType: part.$1 == 'url'
                           ? TextInputType.url
                           : TextInputType.text,

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/theme.dart';
-import '../../../../core/widgets/main_bottom_nav.dart';
 import '../../../auth/presentation/viewmodel/auth_viewmodel.dart';
+import '../../../resume/presentation/providers/resume_providers.dart';
 import '../../providers/home_providers.dart';
+import '../widgets/template_sample_preview.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -20,6 +21,18 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = AppColors.of(context);
     final user = ref.watch(authViewModelProvider).user;
+    final pendingSync =
+        ref.watch(pendingMutationCountProvider).valueOrNull ?? 0;
+    final storageLabel = user == null
+        ? 'Saved on this device'
+        : pendingSync > 0
+        ? 'Waiting to sync'
+        : 'Cloud synced';
+    final storageColor = user == null
+        ? colors.primary
+        : pendingSync > 0
+        ? Colors.orange
+        : colors.secondary;
     final resumesAsync = ref.watch(resumeListProvider);
     final templatesAsync = ref.watch(templateListProvider);
 
@@ -112,17 +125,17 @@ class HomeScreen extends ConsumerWidget {
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: colors.secondary,
+                                  color: storageColor,
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Cloud synced',
+                                storageLabel,
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: colors.secondary,
+                                  color: storageColor,
                                 ),
                               ),
                               Text(
@@ -293,7 +306,7 @@ class HomeScreen extends ConsumerWidget {
                             Icon(Icons.stars, size: 14, color: colors.primary),
                             const SizedBox(width: 4),
                             Text(
-                              'RECOMMENDED NEXT STEP',
+                              'PREPMATE\'S MAIN FEATURE',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -306,7 +319,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Build your first job-ready resume',
+                        'Tailor your resume to a target job',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -315,7 +328,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Guided templates tuned for your career stage and project experience.',
+                        'Add a job description and PrepMate will find missing keywords, improve weak sections, and help your resume match the role.',
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.35,
@@ -338,13 +351,13 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               elevation: 0,
                             ),
-                            onPressed: () => context.push('/template'),
+                            onPressed: () => context.push('/resume/optimize'),
                             icon: const Icon(
-                              Icons.add_circle_outline,
+                              Icons.auto_graph_rounded,
                               size: 16,
                             ),
                             label: const Text(
-                              'Choose template',
+                              'Optimize for a job',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -355,7 +368,7 @@ class HomeScreen extends ConsumerWidget {
                           TextButton(
                             onPressed: () => context.push('/template'),
                             child: Text(
-                              'Explore formats',
+                              'Create a resume',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -594,10 +607,8 @@ class HomeScreen extends ConsumerWidget {
                             return Padding(
                               padding: const EdgeInsets.only(right: 12),
                               child: GestureDetector(
-                                onTap: () => context.push(
-                                  '/resume/form',
-                                  extra: resume.templateId,
-                                ),
+                                onTap: () =>
+                                    context.push('/resume/pdf/${resume.id}'),
                                 child: Container(
                                   width: 160,
                                   decoration: BoxDecoration(
@@ -885,16 +896,14 @@ class HomeScreen extends ConsumerWidget {
                                                 template.thumbnailUrl,
                                                 fit: BoxFit.cover,
                                                 errorBuilder: (_, __, ___) =>
-                                                    Icon(
-                                                      Icons.description,
-                                                      size: 36,
-                                                      color: colors.primary,
+                                                    TemplateSamplePreview(
+                                                      templateId: template.id,
+                                                      compact: true,
                                                     ),
                                               )
-                                            : Icon(
-                                                Icons.description,
-                                                size: 36,
-                                                color: colors.primary,
+                                            : TemplateSamplePreview(
+                                                templateId: template.id,
+                                                compact: true,
                                               ),
                                       ),
                                     ),
@@ -939,9 +948,6 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
-      ),
-      bottomNavigationBar: const MainBottomNavigation(
-        currentTab: MainNavTab.home,
       ),
     );
   }

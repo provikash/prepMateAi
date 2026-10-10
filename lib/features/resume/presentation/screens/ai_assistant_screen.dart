@@ -582,19 +582,6 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
               children: [
                 _buildToolCard(
                   context,
-                  title: 'Resume Optimizer',
-                  description:
-                      'Compare resume with a job description and boost relevance.',
-                  credits: 3,
-                  icon: Icons.document_scanner_outlined,
-                  onTap: () => _launchTool(
-                    toolName: 'Resume Optimizer',
-                    creditCost: 3,
-                    route: '/resume/ai-input/summary',
-                  ),
-                ),
-                _buildToolCard(
-                  context,
                   title: 'Professional Summary',
                   description:
                       'Draft or refine a concise summary using your experience.',
@@ -630,32 +617,6 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                     toolName: 'Skills Suggestions',
                     creditCost: 1,
                     route: '/resume/ai-input/skills',
-                  ),
-                ),
-                _buildToolCard(
-                  context,
-                  title: 'Cover Letter',
-                  description:
-                      'Create an editable tailored draft for a specific job.',
-                  credits: 2,
-                  icon: Icons.mail_outline,
-                  onTap: () => _launchTool(
-                    toolName: 'Cover Letter',
-                    creditCost: 2,
-                    route: '/resume/ai-input/summary',
-                  ),
-                ),
-                _buildToolCard(
-                  context,
-                  title: 'Improve Section',
-                  description:
-                      'Enhance tone, grammar, and ATS phrasing for any section.',
-                  credits: 1,
-                  icon: Icons.auto_fix_high,
-                  onTap: () => _launchTool(
-                    toolName: 'Improve Section',
-                    creditCost: 1,
-                    route: '/resume/ai-input/improve',
                   ),
                 ),
               ],

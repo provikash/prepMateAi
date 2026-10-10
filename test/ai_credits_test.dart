@@ -11,22 +11,17 @@ import 'package:prepmate_mobile/features/ai_credits/presentation/widgets/credit_
 
 void main() {
   group('AiCreditsViewModel', () {
-    test(
-      'loads account, plans, operations, subscription and transactions',
-      () async {
-        final repository = _FakeRepository();
-        final viewModel = AiCreditsViewModel(repository);
+    test('loads account, operations and transactions', () async {
+      final repository = _FakeRepository();
+      final viewModel = AiCreditsViewModel(repository);
 
-        await viewModel.load();
+      await viewModel.load();
 
-        expect(viewModel.state.status, AiCreditStatus.loaded);
-        expect(viewModel.state.account?.availableCredits, 24);
-        expect(viewModel.state.plans.single.name, 'Pro');
-        expect(viewModel.state.operations.single.creditCost, 5);
-        expect(viewModel.state.transactions.single.amount, -5);
-        expect(viewModel.state.currentPlan?.id, 'pro');
-      },
-    );
+      expect(viewModel.state.status, AiCreditStatus.loaded);
+      expect(viewModel.state.account?.availableCredits, 24);
+      expect(viewModel.state.operations.single.creditCost, 5);
+      expect(viewModel.state.transactions.single.amount, -5);
+    });
 
     test('exposes a recoverable repository error', () async {
       final viewModel = AiCreditsViewModel(_FakeRepository(failAccount: true));
@@ -239,7 +234,13 @@ class _FakeRepository implements AiCreditsRepository {
     ),
   ];
   @override
-  Future<List<AiCreditTransaction>> getTransactions() async {
+  Future<List<AiCreditTransaction>> getTransactions({
+    String? filter,
+    String? query,
+    String? ordering,
+    int? limit,
+    int? offset,
+  }) async {
     transactionCalls++;
     if (failTransactions) throw Exception('ledger unavailable');
     return [
@@ -270,6 +271,29 @@ class _FakeRepository implements AiCreditsRepository {
     required String paymentId,
     required String signature,
   }) => throw UnimplementedError();
+
+  @override
+  Future<OrderStatusResult> getOrderStatus(String orderId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<OrderReceipt> getOrderReceipt(String orderId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Map<String, dynamic>> submitSupportTicket({
+    required String category,
+    required String subject,
+    required String message,
+    String? transactionReference,
+    String? idempotencyKey,
+    Map<String, dynamic>? metadata,
+  }) async => {
+    'id': 'ticket-1',
+    'category': category,
+    'subject': subject,
+    'status': 'OPEN',
+  };
 }
 
 class _SuccessRemote extends AiCreditsRemoteDataSource {
@@ -281,7 +305,13 @@ class _SuccessRemote extends AiCreditsRemoteDataSource {
     'used_this_cycle': 60,
   };
   @override
-  Future<List<Map<String, dynamic>>> getTransactions() async => [
+  Future<List<Map<String, dynamic>>> getTransactions({
+    String? filter,
+    String? query,
+    String? ordering,
+    int? limit,
+    int? offset,
+  }) async => [
     {
       'id': '1',
       'transaction_type': 'USAGE',

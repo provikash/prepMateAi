@@ -21,7 +21,7 @@ class MainBottomNavigation extends StatelessWidget {
       case MainNavTab.resumes:
         context.go('/resumes');
       case MainNavTab.aiTools:
-        context.go('/resume/ai-assistant');
+        context.go('/resume/optimize');
       case MainNavTab.profile:
         context.go('/profile');
     }
@@ -74,9 +74,9 @@ class MainBottomNavigation extends StatelessWidget {
               _buildNavItem(
                 context: context,
                 tab: MainNavTab.aiTools,
-                icon: Icons.auto_awesome_outlined,
-                activeIcon: Icons.auto_awesome,
-                label: 'AI Tools',
+                icon: Icons.track_changes_outlined,
+                activeIcon: Icons.track_changes,
+                label: 'Optimize',
                 colors: colors,
               ),
               _buildNavItem(

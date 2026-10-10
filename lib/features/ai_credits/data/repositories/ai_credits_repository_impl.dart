@@ -11,8 +11,20 @@ class AiCreditsRepositoryImpl implements AiCreditsRepository {
   Future<AiCreditAccount> getCreditAccount() async =>
       AiCreditAccountModel.fromJson(await _remote.getAccount());
   @override
-  Future<List<AiCreditTransaction>> getTransactions() async =>
-      (await _remote.getTransactions())
+  Future<List<AiCreditTransaction>> getTransactions({
+    String? filter,
+    String? query,
+    String? ordering,
+    int? limit,
+    int? offset,
+  }) async =>
+      (await _remote.getTransactions(
+        filter: filter,
+        query: query,
+        ordering: ordering,
+        limit: limit,
+        offset: offset,
+      ))
           .map(AiCreditTransactionModel.fromJson)
           .toList();
   @override
@@ -23,19 +35,22 @@ class AiCreditsRepositoryImpl implements AiCreditsRepository {
     final products = await getProducts();
     final monthly = products
         .where((item) => item.code == 'premium_monthly')
-        .first;
+        .firstOrNull;
     final annual = products
         .where((item) => item.code == 'premium_annual')
-        .first;
+        .firstOrNull;
+    if (monthly == null && annual == null) {
+      return const [];
+    }
     return [
       SubscriptionPlan(
         id: 'premium',
         name: 'Premium',
         slug: 'premium',
-        monthlyPrice: monthly.amount / 100,
-        annualPrice: annual.amount / 100,
-        currency: monthly.currency,
-        monthlyAiCredits: monthly.credits,
+        monthlyPrice: (monthly?.amount ?? 9900) / 100,
+        annualPrice: (annual?.amount ?? 99900) / 100,
+        currency: monthly?.currency ?? 'INR',
+        monthlyAiCredits: monthly?.credits ?? 500,
         features: const [
           'Job description optimization',
           'ATS scoring and keyword diagnostics',
@@ -46,6 +61,7 @@ class AiCreditsRepositoryImpl implements AiCreditsRepository {
       ),
     ];
   }
+
 
   @override
   Future<UserSubscription?> getCurrentSubscription() async {
@@ -80,5 +96,30 @@ class AiCreditsRepositoryImpl implements AiCreditsRepository {
   );
 
   @override
+  Future<OrderStatusResult> getOrderStatus(String orderId) async =>
+      OrderStatusResultModel.fromJson(await _remote.getOrderStatus(orderId));
+
+  @override
+  Future<OrderReceipt> getOrderReceipt(String orderId) async =>
+      OrderReceiptModel.fromJson(await _remote.getOrderReceipt(orderId));
+
+  @override
   Future<void> refresh() async {}
+
+  @override
+  Future<Map<String, dynamic>> submitSupportTicket({
+    required String category,
+    required String subject,
+    required String message,
+    String? transactionReference,
+    String? idempotencyKey,
+    Map<String, dynamic>? metadata,
+  }) => _remote.submitSupportTicket(
+    category: category,
+    subject: subject,
+    message: message,
+    transactionReference: transactionReference,
+    idempotencyKey: idempotencyKey,
+    metadata: metadata,
+  );
 }

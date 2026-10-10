@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 
 import '../../features/resume/data/datasources/resume_remote_data_source.dart';
+import '../../features/resume/data/resume_id.dart';
 import '../database/app_database.dart';
 
 enum SyncRunSource { manual, foreground, background }
@@ -114,10 +115,11 @@ class SyncEngine {
   Future<void> _syncResume(MutationOutboxData mutation) async {
     final local = await _database.readLocalResume(mutation.entityLocalId);
     if (local == null) return;
+    final remoteId = serverResumeIdOrNull(local.remoteId);
     if (mutation.operation == 'delete') {
-      if (local.remoteId != null) {
+      if (remoteId != null) {
         await _resumes.deleteResume(
-          local.remoteId!,
+          remoteId,
           baseRevision: mutation.baseRevision,
         );
       }
@@ -130,12 +132,12 @@ class SyncEngine {
       jsonDecode(mutation.payload) as Map,
     );
     final saved = await _resumes.saveResume(
-      resumeId: local.remoteId,
+      resumeId: remoteId,
       templateId: payload['template_id'].toString(),
       title: payload['title']?.toString() ?? 'Resume',
       data: Map<String, dynamic>.from(payload['data'] as Map),
       draft: payload['draft'] == true,
-      baseRevision: local.remoteId == null ? null : mutation.baseRevision,
+      baseRevision: remoteId == null ? null : mutation.baseRevision,
     );
     await (_database.update(
       _database.localResumes,
@@ -228,6 +230,7 @@ class SyncEngine {
         .insert(
           LocalResumesCompanion.insert(
             localId: copyId,
+            workspaceId: Value(local.workspaceId),
             userId: local.userId,
             payload: jsonEncode(payload),
             syncStatus: const Value('conflict'),

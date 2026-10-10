@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prepmate_mobile/core/cache/cache_store.dart';
 import 'package:prepmate_mobile/config/theme.dart';
 import 'package:prepmate_mobile/core/providers/theme_provider.dart';
 import 'package:prepmate_mobile/features/auth/data/models/user_model.dart';
+import 'package:prepmate_mobile/features/profile/domain/entities/profile_lifecycle_models.dart';
 import 'package:prepmate_mobile/features/profile/domain/repositories/profile_repository.dart';
 import 'package:prepmate_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:prepmate_mobile/features/profile/presentation/screens/profile_screen.dart';
@@ -74,12 +74,17 @@ class _PreviewProfileRepository implements ProfileRepository {
   Future<UserModel> getProfile() async => user;
 
   @override
-  Future<UserModel> refreshProfile() async => user;
+  Stream<CachedValue<UserModel>> watchProfile() => Stream.value(
+        CachedValue(
+          value: user,
+          isOffline: false,
+          isStale: false,
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   @override
-  Stream<CachedValue<UserModel>> watchProfile() => Stream.value(
-    CachedValue(value: user, updatedAt: DateTime(2026), isStale: false),
-  );
+  Future<UserModel> refreshProfile() async => user;
 
   @override
   Future<void> logout() async {}
@@ -88,8 +93,9 @@ class _PreviewProfileRepository implements ProfileRepository {
   Future<UserModel> updateProfile(Map<String, dynamic> data) async => user;
 
   @override
-  Future<UserModel> completeOnboarding() async => user;
+  Future<UserModel> uploadProfileImage(String filePath) async => user;
 
   @override
-  Future<UserModel> uploadProfileImage(String filePath) async => user;
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+

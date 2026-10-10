@@ -14,18 +14,12 @@ class AiCreditsViewModel extends StateNotifier<AiCreditState> {
     try {
       final results = await Future.wait<Object?>([
         _repository.getCreditAccount(),
-        _repository.getPlans(),
         _repository.getOperations(),
-        _repository.getCurrentSubscription(),
-        _repository.getProducts(),
       ]);
       state = state.copyWith(
         status: AiCreditStatus.loaded,
         account: results[0] as AiCreditAccount,
-        plans: results[1] as List<SubscriptionPlan>,
-        operations: results[2] as List<AiOperation>,
-        currentSubscription: results[3] as UserSubscription?,
-        products: results[4] as List<BillingProduct>,
+        operations: results[1] as List<AiOperation>,
         clearError: true,
       );
       await loadTransactions();
@@ -37,15 +31,67 @@ class AiCreditsViewModel extends StateNotifier<AiCreditState> {
     }
   }
 
-  Future<void> loadTransactions() async {
+  Future<void> loadTransactions({
+    String? filter,
+    String? query,
+    String? ordering,
+  }) async {
     try {
-      final transactions = await _repository.getTransactions();
+      final transactions = await _repository.getTransactions(
+        filter: filter,
+        query: query,
+        ordering: ordering,
+      );
       state = state.copyWith(
         transactions: transactions,
         clearTransactionsError: true,
       );
     } catch (error) {
       state = state.copyWith(transactionsError: _message(error));
+    }
+  }
+
+  Future<OrderStatusResult?> getOrderStatus(String orderId) async {
+    try {
+      return await _repository.getOrderStatus(orderId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<OrderReceipt?> getOrderReceipt(String orderId) async {
+    try {
+      return await _repository.getOrderReceipt(orderId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<CheckoutOrder?> createOrder(String productCode) async {
+    try {
+      return await _repository.createOrder(productCode);
+    } catch (error) {
+      state = state.copyWith(error: _message(error));
+      return null;
+    }
+  }
+
+  Future<bool> verifyPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async {
+    try {
+      await _repository.verifyPayment(
+        orderId: orderId,
+        paymentId: paymentId,
+        signature: signature,
+      );
+      await refresh();
+      return true;
+    } catch (error) {
+      state = state.copyWith(error: _message(error));
+      return false;
     }
   }
 
@@ -65,6 +111,30 @@ class AiCreditsViewModel extends StateNotifier<AiCreditState> {
   }
 
   Future<void> refreshAfterAiOperation() => refresh();
+
+  Future<Map<String, dynamic>?> submitSupportTicket({
+    required String category,
+    required String subject,
+    required String message,
+    String? transactionReference,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final key = 'support-${DateTime.now().millisecondsSinceEpoch}';
+    try {
+      final res = await _repository.submitSupportTicket(
+        category: category,
+        subject: subject,
+        message: message,
+        transactionReference: transactionReference,
+        idempotencyKey: key,
+        metadata: metadata,
+      );
+      return res;
+    } catch (error) {
+      state = state.copyWith(error: _message(error));
+      return null;
+    }
+  }
 
   String _message(Object error) =>
       error.toString().replaceFirst('Exception: ', '');

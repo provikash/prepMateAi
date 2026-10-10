@@ -46,7 +46,7 @@ void main() {
   });
 
   test(
-    'routing sends incomplete users to onboarding and completed users home',
+    'routing sends incomplete users to onboarding and completed users dashboard',
     () {
       final incomplete = User(id: '1', email: '', phoneNumber: '+919876543210');
       final complete = incomplete.copyWith(profileCompleted: true);
@@ -59,7 +59,7 @@ void main() {
           ),
           Uri.parse('/splash'),
         ),
-        startsWith('/onboarding'),
+        '/onboarding/career-progress',
       );
       expect(
         authRedirect(
@@ -70,7 +70,7 @@ void main() {
           ),
           Uri.parse('/splash'),
         ),
-        '/home',
+        '/dashboard',
       );
       expect(
         authRedirect(
@@ -79,6 +79,16 @@ void main() {
             hasCheckedSession: true,
           ),
           Uri.parse('/home'),
+        ),
+        isNull,
+      );
+      expect(
+        authRedirect(
+          AuthState(
+            status: AuthStatus.unauthenticated,
+            hasCheckedSession: true,
+          ),
+          Uri.parse('/resume/optimize'),
         ),
         startsWith('/login'),
       );

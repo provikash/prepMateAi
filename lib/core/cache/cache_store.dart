@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/app_database.dart';
 import '../network/request_deduplicator.dart';
@@ -75,11 +76,44 @@ class CacheEntry {
 
   bool isFresh(DateTime now) => now.isBefore(expiresAt);
   bool isUsable(DateTime now) => now.isBefore(staleAt);
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'value': value,
+    'user_id': userId,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'expires_at': expiresAt.toUtc().toIso8601String(),
+    'stale_at': staleAt.toUtc().toIso8601String(),
+    'etag': etag,
+    'resource_version': resourceVersion,
+    'schema_version': schemaVersion,
+  };
+
+  static CacheEntry? tryParse(String encoded) {
+    try {
+      final json = jsonDecode(encoded);
+      if (json is! Map<String, dynamic> ||
+          json['schema_version'] != cacheSchemaVersion) {
+        return null;
+      }
+      return CacheEntry(
+        key: json['key'] as String,
+        value: json['value'],
+        userId: json['user_id'] as String?,
+        createdAt: DateTime.parse(json['created_at'] as String),
+        expiresAt: DateTime.parse(json['expires_at'] as String),
+        staleAt: DateTime.parse(json['stale_at'] as String),
+        etag: json['etag'] as String?,
+        resourceVersion: json['resource_version'] as String?,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 abstract interface class CacheStore {
   Future<CacheEntry?> read(String key);
-  Stream<CacheEntry?> watch(String key);
   Future<void> write(CacheEntry entry);
   Future<void> remove(String key);
   Future<void> removeByPrefix(String prefix);
@@ -91,7 +125,9 @@ class DriftCacheStore implements CacheStore {
 
   final AppDatabase database;
 
-  CacheEntry? _decode(CachedResource? row) {
+  @override
+  Future<CacheEntry?> read(String key) async {
+    final row = await database.readResource(key);
     if (row == null || row.cacheSchema != cacheSchemaVersion) return null;
     try {
       return CacheEntry(
@@ -106,46 +142,25 @@ class DriftCacheStore implements CacheStore {
         schemaVersion: row.cacheSchema,
       );
     } catch (_) {
+      await remove(key);
       return null;
     }
   }
 
   @override
-  Future<CacheEntry?> read(String key) async {
-    final row = await database.readResource(key);
-    final entry = _decode(row);
-    if (row != null && entry == null) await remove(key);
-    return entry;
-  }
-
-  @override
-  Stream<CacheEntry?> watch(String key) {
-    return database
-        .watchResource(key)
-        .map(_decode)
-        .distinct(
-          (previous, next) =>
-              previous?.createdAt == next?.createdAt &&
-              previous?.value == next?.value,
-        );
-  }
-
-  @override
-  Future<void> write(CacheEntry entry) {
-    return database.writeResource(
-      CachedResourcesCompanion.insert(
-        cacheKey: entry.key,
-        payload: jsonEncode(entry.value),
-        userId: Value(entry.userId),
-        createdAt: entry.createdAt,
-        expiresAt: entry.expiresAt,
-        staleAt: entry.staleAt,
-        etag: Value(entry.etag),
-        resourceVersion: Value(entry.resourceVersion),
-        cacheSchema: entry.schemaVersion,
-      ),
-    );
-  }
+  Future<void> write(CacheEntry entry) => database.writeResource(
+    CachedResourcesCompanion.insert(
+      cacheKey: entry.key,
+      payload: jsonEncode(entry.value),
+      userId: Value(entry.userId),
+      createdAt: entry.createdAt,
+      expiresAt: entry.expiresAt,
+      staleAt: entry.staleAt,
+      etag: Value(entry.etag),
+      resourceVersion: Value(entry.resourceVersion),
+      cacheSchema: entry.schemaVersion,
+    ),
+  );
 
   @override
   Future<void> remove(String key) => database.removeResource(key);
@@ -156,28 +171,83 @@ class DriftCacheStore implements CacheStore {
 
   @override
   Future<void> clearExpired() =>
-      database.removeExpiredResources(DateTime.now().toUtc());
+      database.removeExpiredResources(DateTime.now());
 }
 
-class CachedValue<T> {
-  const CachedValue({
-    required this.value,
-    required this.updatedAt,
-    required this.isStale,
-    this.isOffline = false,
-  });
+class SharedPreferencesCacheStore implements CacheStore {
+  SharedPreferencesCacheStore({this.maximumEntries = 180});
 
-  final T value;
-  final DateTime updatedAt;
-  final bool isStale;
-  final bool isOffline;
+  static const _prefix = 'prepmate_cache_';
+  final int maximumEntries;
+  Future<SharedPreferences>? _preferences;
 
-  CachedValue<T> copyWith({bool? isOffline}) => CachedValue(
-    value: value,
-    updatedAt: updatedAt,
-    isStale: isStale,
-    isOffline: isOffline ?? this.isOffline,
-  );
+  Future<SharedPreferences> get _prefs =>
+      _preferences ??= SharedPreferences.getInstance();
+
+  String _storageKey(String key) => '$_prefix$key';
+
+  @override
+  Future<CacheEntry?> read(String key) async {
+    final prefs = await _prefs;
+    final storageKey = _storageKey(key);
+    final encoded = prefs.getString(storageKey);
+    if (encoded == null) return null;
+    final entry = CacheEntry.tryParse(encoded);
+    if (entry == null || entry.key != key) {
+      await prefs.remove(storageKey);
+      return null;
+    }
+    return entry;
+  }
+
+  @override
+  Future<void> write(CacheEntry entry) async {
+    final prefs = await _prefs;
+    await prefs.setString(_storageKey(entry.key), jsonEncode(entry.toJson()));
+    await _evictIfNeeded(prefs);
+  }
+
+  @override
+  Future<void> remove(String key) async {
+    await (await _prefs).remove(_storageKey(key));
+  }
+
+  @override
+  Future<void> removeByPrefix(String prefix) async {
+    final prefs = await _prefs;
+    final storagePrefix = _storageKey(prefix);
+    final keys = prefs.getKeys().where((key) => key.startsWith(storagePrefix));
+    await Future.wait(keys.map(prefs.remove));
+  }
+
+  @override
+  Future<void> clearExpired() async {
+    final prefs = await _prefs;
+    final now = DateTime.now();
+    for (final key in prefs.getKeys().where((key) => key.startsWith(_prefix))) {
+      final encoded = prefs.getString(key);
+      final entry = encoded == null ? null : CacheEntry.tryParse(encoded);
+      if (entry == null || !entry.isUsable(now)) await prefs.remove(key);
+    }
+  }
+
+  Future<void> _evictIfNeeded(SharedPreferences prefs) async {
+    final entries = <MapEntry<String, CacheEntry>>[];
+    for (final key in prefs.getKeys().where((key) => key.startsWith(_prefix))) {
+      final encoded = prefs.getString(key);
+      final entry = encoded == null ? null : CacheEntry.tryParse(encoded);
+      if (entry == null) {
+        await prefs.remove(key);
+      } else {
+        entries.add(MapEntry(key, entry));
+      }
+    }
+    if (entries.length <= maximumEntries) return;
+    entries.sort((a, b) => a.value.createdAt.compareTo(b.value.createdAt));
+    for (final entry in entries.take(entries.length - maximumEntries)) {
+      await prefs.remove(entry.key);
+    }
+  }
 }
 
 class CacheKeyFactory {
@@ -222,6 +292,44 @@ class CacheCoordinator {
 
   final CacheStore store;
   final RequestDeduplicator deduplicator;
+
+  Stream<CacheResult<T>> watch<T>({
+    required String key,
+    required CachePolicy policy,
+    required T Function(Object? value) decode,
+    required Object? Function(T value) encode,
+    required Future<T> Function() remote,
+    String? userId,
+  }) async* {
+    final now = DateTime.now();
+    final cached = await store.read(key);
+    if (cached != null && cached.isUsable(now)) {
+      yield CacheResult(
+        value: decode(cached.value),
+        isStale: !cached.isFresh(now),
+        updatedAt: cached.createdAt,
+      );
+    }
+
+    try {
+      final value = await _fetchAndStore(
+        key: key,
+        policy: policy,
+        encode: encode,
+        remote: remote,
+        userId: userId,
+      );
+      yield CacheResult(value: value, updatedAt: DateTime.now());
+    } catch (_) {
+      if (cached == null || !cached.isUsable(now)) rethrow;
+      yield CacheResult(
+        value: decode(cached.value),
+        isStale: true,
+        isOffline: true,
+        updatedAt: cached.createdAt,
+      );
+    }
+  }
 
   Future<void> put<T>({
     required String key,
@@ -286,71 +394,6 @@ class CacheCoordinator {
     );
   }
 
-  Stream<CachedValue<T>> watch<T>({
-    required String key,
-    required CachePolicy policy,
-    required T Function(Object? value) decode,
-    required Object? Function(T value) encode,
-    required Future<T> Function() remote,
-    String? userId,
-  }) async* {
-    final initial = await store.read(key);
-    final now = DateTime.now();
-    var lastCreatedAt = initial?.createdAt;
-    if (initial != null && initial.isUsable(now)) {
-      yield CachedValue(
-        value: decode(initial.value),
-        updatedAt: initial.createdAt,
-        isStale: !initial.isFresh(now),
-      );
-    }
-
-    try {
-      await _fetchAndStore(
-        key: key,
-        policy: policy,
-        encode: encode,
-        remote: remote,
-        userId: userId,
-      );
-    } catch (_) {
-      if (initial == null || !initial.isUsable(now)) rethrow;
-      yield CachedValue(
-        value: decode(initial.value),
-        updatedAt: initial.createdAt,
-        isStale: true,
-        isOffline: true,
-      );
-    }
-
-    await for (final entry in store.watch(key)) {
-      if (entry == null) continue;
-      if (entry.createdAt == lastCreatedAt) continue;
-      lastCreatedAt = entry.createdAt;
-      final observedAt = DateTime.now();
-      if (!entry.isUsable(observedAt)) continue;
-      yield CachedValue(
-        value: decode(entry.value),
-        updatedAt: entry.createdAt,
-        isStale: !entry.isFresh(observedAt),
-      );
-    }
-  }
-
-  Future<T> refresh<T>({
-    required String key,
-    required CachePolicy policy,
-    required Object? Function(T value) encode,
-    required Future<T> Function() remote,
-    String? userId,
-  }) => _fetchAndStore(
-    key: key,
-    policy: policy,
-    encode: encode,
-    remote: remote,
-    userId: userId,
-  );
-
   Future<T> _fetchAndStore<T>({
     required String key,
     required CachePolicy policy,
@@ -374,14 +417,22 @@ class CacheCoordinator {
   });
 }
 
-final appDatabaseProvider = Provider<AppDatabase>((ref) {
-  final database = AppDatabase();
-  ref.onDispose(database.close);
-  return database;
-});
+class CacheResult<T> {
+  const CacheResult({
+    required this.value,
+    this.isStale = false,
+    this.isOffline = false,
+    this.updatedAt,
+  });
+
+  final T value;
+  final bool isStale;
+  final bool isOffline;
+  final DateTime? updatedAt;
+}
 
 final cacheStoreProvider = Provider<CacheStore>((ref) {
-  final store = DriftCacheStore(ref.watch(appDatabaseProvider));
+  final store = SharedPreferencesCacheStore();
   unawaited(store.clearExpired());
   return store;
 });

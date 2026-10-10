@@ -37,7 +37,7 @@ class PdfCacheRecord {
         etag: json['etag'] as String? ?? '',
         cachedAt: DateTime.parse(json['cached_at'] as String),
         size: json['size'] as int,
-        stale: json['stale'] == true,
+        stale: json['stale'] as bool? ?? false,
       );
     } catch (_) {
       return null;
@@ -103,7 +103,6 @@ class PdfCacheStore {
       etag: etag,
       cachedAt: DateTime.now(),
       size: bytes.length,
-      stale: false,
     );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -131,19 +130,6 @@ class PdfCacheStore {
     final record = PdfCacheRecord.tryParse(prefs.getString(key) ?? '');
     if (record == null) return;
     await prefs.setString(key, jsonEncode({...record.toJson(), 'stale': true}));
-  }
-
-  Future<void> markAllOptimizerPdfsStale(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final prefix = '$_metadataPrefix$userId:optimized-';
-    for (final key in prefs.getKeys().where((key) => key.startsWith(prefix))) {
-      final record = PdfCacheRecord.tryParse(prefs.getString(key) ?? '');
-      if (record == null) continue;
-      await prefs.setString(
-        key,
-        jsonEncode({...record.toJson(), 'stale': true}),
-      );
-    }
   }
 
   Future<void> removeForUser(String userId) async {

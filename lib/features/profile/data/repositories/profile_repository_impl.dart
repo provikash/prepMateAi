@@ -3,6 +3,7 @@ import '../datasources/profile_remote_data_source.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../../../auth/data/datasources/auth_remote_data_source.dart';
 import '../../../../core/cache/cache_store.dart';
+import '../../domain/entities/profile_lifecycle_models.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
   final ProfileRemoteDataSource remote;
@@ -33,39 +34,42 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Stream<CachedValue<UserModel>> watchProfile() {
+  Stream<CachedValue<UserModel>> watchProfile() async* {
     final id = userId();
-    if (id == null || id.isEmpty) {
-      return Stream.fromFuture(remote.getProfile()).map(
-        (value) => CachedValue(
-          value: value,
-          updatedAt: DateTime.now(),
-          isStale: false,
-        ),
-      );
+    if (id != null && id.isNotEmpty) {
+      final key = CacheKeyFactory.user(id, 'profile');
+      final entry = await cache.store.read(key);
+      if (entry != null && entry.value != null) {
+        try {
+          final cachedUser = UserModel.fromJson(
+            Map<String, dynamic>.from(entry.value! as Map),
+          );
+          yield CachedValue(
+            value: cachedUser,
+            updatedAt: entry.createdAt,
+            isStale: !entry.isFresh(DateTime.now()),
+          );
+        } catch (_) {}
+      }
     }
-    return cache.watch(
-      key: CacheKeyFactory.user(id, 'profile'),
-      userId: id,
-      policy: CachePolicy.profile,
-      decode: (value) =>
-          UserModel.fromJson(Map<String, dynamic>.from(value! as Map)),
-      encode: (value) => value.toJson(),
-      remote: remote.getProfile,
-    );
+    try {
+      final fresh = await remote.getProfile();
+      await _cacheProfile(fresh);
+      yield CachedValue(
+        value: fresh,
+        updatedAt: DateTime.now(),
+        isStale: false,
+      );
+    } catch (_) {
+      if (id == null || id.isEmpty) rethrow;
+    }
   }
 
   @override
-  Future<UserModel> refreshProfile() {
-    final id = userId();
-    if (id == null || id.isEmpty) return remote.getProfile();
-    return cache.refresh(
-      key: CacheKeyFactory.user(id, 'profile'),
-      userId: id,
-      policy: CachePolicy.profile,
-      encode: (value) => value.toJson(),
-      remote: remote.getProfile,
-    );
+  Future<UserModel> refreshProfile() async {
+    final fresh = await remote.getProfile();
+    await _cacheProfile(fresh);
+    return fresh;
   }
 
   @override
@@ -89,6 +93,28 @@ class ProfileRepositoryImpl implements ProfileRepository {
     return value;
   }
 
+  @override
+  Future<UserModel> deleteProfileImage() async {
+    final value = await remote.deleteProfileImage();
+    await _cacheProfile(value);
+    return value;
+  }
+
+  @override
+  Future<ProfileMetadata> getMetadata() => remote.getProfileMetadata();
+
+  @override
+  Future<CascadeResumesResult> cascadeResumes(List<String> resumeIds, {List<String> fields = const ['job_title', 'location']}) =>
+      remote.cascadeResumes(resumeIds: resumeIds, fields: fields);
+
+  @override
+  Future<Map<String, dynamic>> requestPhoneChange(String newPhoneNumber) =>
+      remote.requestPhoneChange(newPhoneNumber);
+
+  @override
+  Future<Map<String, dynamic>> verifyPhoneChange(String newPhoneNumber, String challengeId, String otp) =>
+      remote.verifyPhoneChange(newPhoneNumber: newPhoneNumber, challengeId: challengeId, otp: otp);
+
   Future<void> _cacheProfile(UserModel value) async {
     final id = userId() ?? value.id;
     await cache.put(
@@ -102,4 +128,47 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<void> logout() => authRemote.logout();
+
+  @override
+  Future<UserPreferences> getPreferences() async {
+    final data = await remote.getPreferences();
+    return UserPreferences.fromJson(data);
+  }
+
+  @override
+  Future<UserPreferences> updatePreferences(Map<String, dynamic> data) async {
+    final res = await remote.updatePreferences(data);
+    return UserPreferences.fromJson(res);
+  }
+
+  @override
+  Future<DataExportStatus> getDataExportStatus() async {
+    final data = await remote.getDataExportStatus();
+    return DataExportStatus.fromJson(data);
+  }
+
+  @override
+  Future<DataExportStatus> requestDataExport() async {
+    final data = await remote.requestDataExport();
+    return DataExportStatus.fromJson(data);
+  }
+
+  @override
+  Future<AccountDeletionStatus> getDeletionStatus() async {
+    final data = await remote.getDeletionStatus();
+    return AccountDeletionStatus.fromJson(data);
+  }
+
+  @override
+  Future<AccountDeletionStatus> scheduleDeletion({String? reason}) async {
+    final data = await remote.scheduleDeletion(reason: reason);
+    return AccountDeletionStatus.fromJson(data);
+  }
+
+  @override
+  Future<AccountDeletionStatus> cancelDeletion() async {
+    final data = await remote.cancelDeletion();
+    return AccountDeletionStatus.fromJson(data);
+  }
 }
+

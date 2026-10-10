@@ -5,6 +5,7 @@ import '../../../../config/theme.dart';
 import '../../../../core/widgets/app_filter_chip.dart';
 import '../../data/models/template_model.dart';
 import '../../providers/home_providers.dart';
+import '../widgets/template_sample_preview.dart';
 
 class TemplateGalleryScreen extends ConsumerStatefulWidget {
   const TemplateGalleryScreen({super.key});
@@ -335,21 +336,14 @@ class _TemplateGalleryScreenState extends ConsumerState<TemplateGalleryScreen> {
                                       child: Image.network(
                                         featured.thumbnailUrl,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Center(
-                                          child: Icon(
-                                            Icons.description,
-                                            size: 48,
-                                            color: colors.primary,
-                                          ),
-                                        ),
+                                        errorBuilder: (_, __, ___) =>
+                                            TemplateSamplePreview(
+                                              templateId: featured.id,
+                                            ),
                                       ),
                                     )
-                                  : Center(
-                                      child: Icon(
-                                        Icons.description,
-                                        size: 48,
-                                        color: colors.primary,
-                                      ),
+                                  : TemplateSamplePreview(
+                                      templateId: featured.id,
                                     ),
                             ),
                             const SizedBox(height: 12),
@@ -482,16 +476,15 @@ class _TemplateGalleryScreenState extends ConsumerState<TemplateGalleryScreen> {
                                       ? Image.network(
                                           template.thumbnailUrl,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Icon(
-                                            Icons.description,
-                                            size: 40,
-                                            color: colors.primary,
-                                          ),
+                                          errorBuilder: (_, __, ___) =>
+                                              TemplateSamplePreview(
+                                                templateId: template.id,
+                                                compact: true,
+                                              ),
                                         )
-                                      : Icon(
-                                          Icons.description,
-                                          size: 40,
-                                          color: colors.primary,
+                                      : TemplateSamplePreview(
+                                          templateId: template.id,
+                                          compact: true,
                                         ),
                                 ),
                               ),

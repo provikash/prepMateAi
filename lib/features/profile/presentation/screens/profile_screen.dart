@@ -28,6 +28,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.initState();
     Future.microtask(() {
       final cached = ref.read(authViewModelProvider).user;
+      if (cached == null) return;
       if (cached is UserModel) {
         ref.read(profileProvider.notifier).seed(cached);
       }
@@ -46,11 +47,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
     if (!confirmed) return;
     await ref.read(authProvider.notifier).logout();
-    if (mounted) context.go('/login');
+    if (mounted) context.go('/dashboard');
   }
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(authViewModelProvider).user == null) {
+      return AppScaffold(
+        title: 'Profile & settings',
+        body: ListView(
+          padding: const EdgeInsets.all(AppSpacing.screen),
+          children: [
+            const Icon(Icons.person_outline_rounded, size: 64),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'You are using PrepMate as a guest',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              'Resume work is saved on this device. Sign in when you want to use AI tools or sync across devices.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            FilledButton(
+              onPressed: () => context.push('/login'),
+              child: const Text('Sign in'),
+            ),
+            TextButton(
+              onPressed: () => context.push('/help'),
+              child: const Text('Help and support'),
+            ),
+          ],
+        ),
+      );
+    }
     final state = ref.watch(profileProvider);
     final user = state.user;
 
